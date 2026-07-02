@@ -22,12 +22,20 @@
     "voice": {"type": "string", "default": "明朗女声"},
     "output_formats": {
       "type": "array",
-      "items": {"enum": ["text", "json", "csv", "markdown"]},
+      "items": {"enum": ["text", "json", "csv", "markdown", "segmentation_manuscript"]},
       "minItems": 1,
       "uniqueItems": true,
       "default": ["text"]
     },
     "output_path": {"type": ["string", "null"], "default": null},
+    "manuscript_output_directory": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "oceanengine_csv_output_path": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "batch": {"type": "boolean", "default": false},
     "debug": {"type": "boolean", "default": false},
     "plugin_directories": {
@@ -50,4 +58,3 @@
   },
   "required": ["category"]
 }
-

@@ -6,6 +6,9 @@ from collections.abc import Sequence
 from .models import CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
 
 REQUIRED_BENEFIT = "淘宝闪购最高12元无门槛红包"
+NO_SPLIT_OPEN = "[[NO_SPLIT]]"
+NO_SPLIT_CLOSE = "[[/NO_SPLIT]]"
+MARKED_REQUIRED_BENEFIT = f"{NO_SPLIT_OPEN}{REQUIRED_BENEFIT}{NO_SPLIT_CLOSE}"
 MIN_COPY_CHARACTERS = 80
 MAX_COPY_CHARACTERS = 120
 
@@ -36,8 +39,18 @@ CALLS_TO_ACTION = (
 FORMAT_PREFIXES = ("#", "-", "*", "1.", "1、", "①")
 
 
+def strip_no_split_markers(text: str) -> str:
+    return text.replace(NO_SPLIT_OPEN, "").replace(NO_SPLIT_CLOSE, "")
+
+
+def wrap_required_benefit(text: str) -> str:
+    if MARKED_REQUIRED_BENEFIT in text:
+        return text
+    return text.replace(REQUIRED_BENEFIT, MARKED_REQUIRED_BENEFIT)
+
+
 def count_spoken_characters(text: str) -> int:
-    return len(re.sub(r"\s+", "", text))
+    return len(re.sub(r"\s+", "", strip_no_split_markers(text)))
 
 
 def validate_copy(text: str) -> CopyValidationReport:
@@ -60,9 +73,17 @@ def validate_copy(text: str) -> CopyValidationReport:
                 REQUIRED_BENEFIT,
             )
         )
+    elif MARKED_REQUIRED_BENEFIT not in cleaned:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_NO_SPLIT_MARKER,
+                "固定利益点必须使用 NO_SPLIT 标签完整包裹",
+                MARKED_REQUIRED_BENEFIT,
+            )
+        )
 
     # “最高”是固定利益点的一部分；先移除固定口径，再检查禁用的单字“最”。
-    expression_scope = cleaned.replace(REQUIRED_BENEFIT, "")
+    expression_scope = strip_no_split_markers(cleaned).replace(REQUIRED_BENEFIT, "")
     for expression in BANNED_EXPRESSIONS:
         if expression in expression_scope:
             issues.append(ValidationIssue(IssueCode.BANNED_EXPRESSION, "出现禁止表达", expression))

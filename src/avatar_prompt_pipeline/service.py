@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .models import ProductBrief, PromptPackage
 from .template_loader import TEMPLATE_VERSION, load_template
+from .validation import strip_no_split_markers
 
 
 def compose_prompt_package(brief: ProductBrief) -> PromptPackage:
@@ -21,7 +22,7 @@ def compose_prompt_package(brief: ProductBrief) -> PromptPackage:
 
 
 def render_avatar_prompt(script: str) -> str:
-    cleaned_script = script.replace("\x00", "").strip()
+    cleaned_script = strip_no_split_markers(script.replace("\x00", "")).strip()
     if not cleaned_script:
         raise ValueError("口播文案不能为空")
     return load_template("avatar_prompt.txt").replace("{{SCRIPT}}", cleaned_script)

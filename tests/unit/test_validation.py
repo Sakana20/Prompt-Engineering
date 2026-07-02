@@ -2,16 +2,20 @@ import pytest
 
 from avatar_prompt_pipeline.models import IssueCode, VisualProfile
 from avatar_prompt_pipeline.validation import (
+    MARKED_REQUIRED_BENEFIT,
     REQUIRED_BENEFIT,
     copy_similarity,
+    count_spoken_characters,
+    strip_no_split_markers,
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
+    wrap_required_benefit,
 )
 
 VALID_COPY = (
     "下班赶上大雨，走到小区门口鞋子已经湿了一圈，临时买东西时我总怕选错款。"
-    "淘宝闪购最高12元无门槛红包"
+    "[[NO_SPLIT]]淘宝闪购最高12元无门槛红包[[/NO_SPLIT]]"
     "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关也不占地方，"
     "红包结算时直接抵扣，雨天补一双省心不少。"
 )
@@ -31,6 +35,24 @@ def test_required_highest_benefit_does_not_trigger_banned_single_character() -> 
     assert not any(
         issue.code is IssueCode.BANNED_EXPRESSION and issue.value == "最" for issue in report.issues
     )
+
+
+def test_no_split_markers_do_not_count_as_spoken_characters() -> None:
+    assert count_spoken_characters(MARKED_REQUIRED_BENEFIT) == len(REQUIRED_BENEFIT)
+
+
+def test_unwrapped_benefit_is_rejected() -> None:
+    report = validate_copy(strip_no_split_markers(VALID_COPY))
+
+    assert any(issue.code is IssueCode.MISSING_NO_SPLIT_MARKER for issue in report.issues)
+
+
+def test_benefit_marker_helpers_are_idempotent_and_lossless() -> None:
+    unwrapped = strip_no_split_markers(VALID_COPY)
+
+    assert wrap_required_benefit(unwrapped) == VALID_COPY
+    assert wrap_required_benefit(VALID_COPY) == VALID_COPY
+    assert strip_no_split_markers(VALID_COPY) == unwrapped
 
 
 def test_previous_benefit_wording_is_rejected() -> None:

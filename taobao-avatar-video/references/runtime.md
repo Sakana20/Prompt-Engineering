@@ -46,6 +46,15 @@ Skill 输入配置使用 JSON、YAML 或 TOML 时，字段必须符合
 
 ## 输出
 
-保留 `text`、`json`、`csv`、`markdown` 四种 Skill 输出。CSV 必须符合即创任务契约；
-JSON 保留结构化审计字段；Markdown 用于人工验证记录；text 用于单条直接结果。请求多个
-格式时分别落盘，不得用一种格式覆盖另一种。
+保留 `text`、`json`、`csv`、`markdown` 四种 Skill 输出，并增加独立的
+`segmentation_manuscript` 交接格式：
+
+- 每个任务写一份 `<task_id>.smartsplit.txt`，保留 `[[NO_SPLIT]]`；
+- 每个批次写一份 Oceanengine CSV，`script` 写入前移除控制标签；
+- JSON 保留结构化审计字段，Markdown 用于人工验证记录，text 用于单条直接结果。
+
+默认字幕稿目录为当前项目的 `output/manuscripts/<batch>/`；CSV 默认写入目标项目的
+`input/`。两类路径必须分别配置和记录，写一种格式不得创建、覆盖或运行另一种格式。
+
+仓库内分别使用 `write_segmentation_manuscript(...)` 和 `write_oceanengine_csv(...)`。
+两个 writer 都采用 UTF-8 原子写入并拒绝覆盖；调用方必须显式选择需要写出的产物。

@@ -13,6 +13,7 @@ class IssueCode(StrEnum):
     TOO_SHORT = "TOO_SHORT"
     TOO_LONG = "TOO_LONG"
     MISSING_BENEFIT = "MISSING_BENEFIT"
+    MISSING_NO_SPLIT_MARKER = "MISSING_NO_SPLIT_MARKER"
     BANNED_EXPRESSION = "BANNED_EXPRESSION"
     CALL_TO_ACTION = "CALL_TO_ACTION"
     FORMAT_VIOLATION = "FORMAT_VIOLATION"
@@ -110,6 +111,17 @@ class GeneratedScript:
 class AvatarVideoPrompt:
     text: str
     source_script: str
+
+
+@dataclass(frozen=True, slots=True)
+class OceanengineTask:
+    task_id: str
+    person_prompt: str
+    marked_script: str
+    aspect_ratio: str
+    voice: str
+    title: str
+    notes: str
 
 
 @dataclass(frozen=True, slots=True)

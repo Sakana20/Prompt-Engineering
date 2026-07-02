@@ -23,16 +23,21 @@ analysis and generation directly as Codex. Do not call another LLM.
 3. If only a category is supplied, generate a draft using generic situations and observable
    category-level properties. Do not invent material, performance, price, brand, sales, efficacy,
    or promotion facts. State briefly that product-specific claims require review.
-4. Generate each 80–120 Chinese-character spoken copy directly from the canonical rules. For a
-   batch, vary scene, opening, concern, transition, selling-point order, and ending.
+4. Generate each 80–120 Chinese-character spoken copy as one concrete, continuous slice of life,
+   not a fixed scene-concern-benefit-features-ending sequence. Prefer visible actions and specific
+   details over abstract claims. For a batch, vary the person's immediate task, the detail that
+   triggers demand, the benefit transition, product interaction, and the final beat.
 5. Validate every copy before continuing:
-   - preserve `淘宝闪购最高12元无门槛红包` in meaning;
+   - preserve
+     `[[NO_SPLIT]]淘宝闪购最高12元无门槛红包[[/NO_SPLIT]]` exactly; the tags are
+     subtitle-segmentation control metadata and do not count as spoken characters;
    - reject banned words and click/purchase calls to action;
    - use only confirmed product facts;
    - output natural prose, not a title, list, explanation, or Markdown.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` and
    revise any failing copy before generating its avatar prompt.
-6. Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
+6. Remove `[[NO_SPLIT]]` tags before generating an avatar video prompt; they are not spoken text.
+   Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
    Give every prompt a different person and a different outfit. Vary face shape, visible facial
    features, hairstyle, hair color, and clothing combination while keeping the overall account
    aesthetic young, natural, clean, and approachable.
@@ -43,6 +48,8 @@ analysis and generation directly as Codex. Do not call another LLM.
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
    instructions into that image prompt.
+   Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
+   separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
    literal placeholder “品类”; for example use `西瓜+1` or `雨伞+1`.
 9. Preview the copy, avatar prompt, static person prompt, and facts used. Require explicit approval
@@ -55,7 +62,11 @@ analysis and generation directly as Codex. Do not call another LLM.
 - **Copy only:** return only the finished spoken copy unless the user asks for analysis.
 - **Avatar prompt only:** return only the complete avatar prompt.
 - **Review mode:** show copy, avatar prompt, facts used, unknowns, and risk flags.
-- **Task package:** create UTF-8 CSV matching the downstream contract, then run preflight.
+- **Task package:** create two independent handoffs from the same accepted result:
+  - one UTF-8 `<task_id>.smartsplit.txt` per task, preserving `[[NO_SPLIT]]`;
+  - one batch UTF-8 CSV for Oceanengine, stripping `[[NO_SPLIT]]` from every `script`.
+  Writing either handoff must not invoke, create, overwrite, import, or run the other consumer.
+  Run Oceanengine preflight only when the user requests that CSV workflow.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or

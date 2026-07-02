@@ -8,6 +8,7 @@ from avatar_prompt_pipeline.validation import (
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
+    wrap_required_benefit,
 )
 
 BATCH_PATH = Path(__file__).parents[1] / "cases" / "honey_peach_batch_20260702.csv"
@@ -32,7 +33,8 @@ def test_honey_peach_batch_matches_prompt_and_copy_contract() -> None:
     assert all(row["voice"] == "明朗女声" for row in rows)
     assert [row["notes"] for row in rows] == [f"水蜜桃+{index}" for index in range(1, 6)]
 
-    reports = [validate_copy(row["script"]) for row in rows]
+    assert all("[[NO_SPLIT]]" not in row["script"] for row in rows)
+    reports = [validate_copy(wrap_required_benefit(row["script"])) for row in rows]
     assert all(report.is_valid for report in reports)
     assert validate_batch_diversity([row["script"] for row in rows]) == ()
     assert validate_visual_diversity(VISUAL_PROFILES) == ()

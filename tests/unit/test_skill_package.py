@@ -16,12 +16,25 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "runtime.md").is_file()
     assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
+    assert "$smartsplit" not in skill.lower()
+    assert "invoke smartsplit" not in skill.lower()
+    assert "<task_id>.smartsplit.txt" in skill
+    assert "one batch UTF-8 CSV" in skill
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
     metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
 
     assert 'default_prompt: "使用 $taobao-avatar-video ' in metadata
+
+
+def test_copywriting_rules_prefer_one_natural_scene_over_fixed_marketing_structure() -> None:
+    rules = (SKILL_ROOT / "references" / "copywriting-rules.md").read_text(encoding="utf-8")
+
+    assert "不要套用“场景—顾虑—利益点—卖点—购买体验”的固定顺序" in rules
+    assert "只使用已确认事实" in rules
+    assert "与场景直接相关的使用动作" in rules
+    assert "不强制总结红包、抵扣、省心或方便" in rules
 
 
 def test_cli_schema_covers_every_existing_cli_parameter() -> None:
@@ -60,4 +73,6 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
         "json",
         "csv",
         "markdown",
+        "segmentation_manuscript",
     }
+    assert {"manuscript_output_directory", "oceanengine_csv_output_path"} <= properties.keys()
