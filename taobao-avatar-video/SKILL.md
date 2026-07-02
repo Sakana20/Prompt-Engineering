@@ -26,7 +26,7 @@ analysis and generation directly as Codex. Do not call another LLM.
 4. Generate each 80–120 Chinese-character spoken copy directly from the canonical rules. For a
    batch, vary scene, opening, concern, transition, selling-point order, and ending.
 5. Validate every copy before continuing:
-   - preserve `淘宝闪购，最高12元无门槛红包天天享。` in meaning;
+   - preserve `淘宝闪购最高12元无门槛红包` in meaning;
    - reject banned words and click/purchase calls to action;
    - use only confirmed product facts;
    - output natural prose, not a title, list, explanation, or Markdown.

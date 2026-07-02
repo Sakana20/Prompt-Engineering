@@ -11,7 +11,7 @@ from avatar_prompt_pipeline.validation import (
 
 VALID_COPY = (
     "下班赶上大雨，走到小区门口鞋子已经湿了一圈，临时买东西时我总怕选错款。"
-    "淘宝闪购，最高12元无门槛红包天天享。"
+    "淘宝闪购最高12元无门槛红包"
     "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关也不占地方，"
     "红包结算时直接抵扣，雨天补一双省心不少。"
 )
@@ -31,6 +31,17 @@ def test_required_highest_benefit_does_not_trigger_banned_single_character() -> 
     assert not any(
         issue.code is IssueCode.BANNED_EXPRESSION and issue.value == "最" for issue in report.issues
     )
+
+
+def test_previous_benefit_wording_is_rejected() -> None:
+    previous_wording = VALID_COPY.replace(
+        REQUIRED_BENEFIT,
+        "淘宝闪购，最高12元无门槛红包天天享。",
+    )
+
+    report = validate_copy(previous_wording)
+
+    assert any(issue.code is IssueCode.MISSING_BENEFIT for issue in report.issues)
 
 
 def test_copy_reports_multiple_actionable_issues() -> None:

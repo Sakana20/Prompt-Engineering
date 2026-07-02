@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 from .models import CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
 
-REQUIRED_BENEFIT = "淘宝闪购，最高12元无门槛红包天天享。"
+REQUIRED_BENEFIT = "淘宝闪购最高12元无门槛红包"
 MIN_COPY_CHARACTERS = 80
 MAX_COPY_CHARACTERS = 120
 
