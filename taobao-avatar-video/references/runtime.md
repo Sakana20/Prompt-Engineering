@@ -53,8 +53,17 @@ Skill 输入配置使用 JSON、YAML 或 TOML 时，字段必须符合
 - 每个批次写一份 Oceanengine CSV，`script` 写入前移除控制标签；
 - JSON 保留结构化审计字段，Markdown 用于人工验证记录，text 用于单条直接结果。
 
-默认字幕稿目录为当前项目的 `output/manuscripts/<batch>/`；CSV 默认写入目标项目的
-`input/`。两类路径必须分别配置和记录，写一种格式不得创建、覆盖或运行另一种格式。
+统一输出层级为：
+
+```text
+/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/
+├── <task_id>.smartsplit.txt
+└── <task>.csv
+```
+
+日期使用本地 `YYYYMMDD`。同一任务的两类文件位于同一任务目录，但必须分别写入和记录；
+写一种格式不得创建、覆盖或运行另一种格式。`target_project` 仅表示后续即创预检、导入
+和执行目标，不是默认文件写出目录。
 
 仓库内分别使用 `write_segmentation_manuscript(...)` 和 `write_oceanengine_csv(...)`。
 两个 writer 都采用 UTF-8 原子写入并拒绝覆盖；调用方必须显式选择需要写出的产物。

@@ -34,12 +34,15 @@
 - 检查单条及 5 条批量多样性；
 - 记录规则版本、事实来源和生成时间；
 - 根据失败样本迭代 `SKILL.md` 与 references。
-- 已根据“防晒帽”失败样本将文案模板升级为 `2026-07-02-natural-v4`：取消固定五段式，
-  改为单一生活片段、自然利益点衔接和 1–2 个具体使用动作；待用新样本继续前向验收。
+- 已根据前向反馈将文案模板升级为 `2026-07-02-product-led-v5`：场景约占 20%，商品和
+  选择理由约占 50%，利益点与具体购买体验约占 30%，避免模板广告腔和过度生活叙事；
+  待用新样本继续前向验收。
 - 已增加 SmartSplit `NO_SPLIT` 利益点标注；标签不计口播字数，并在数字人 Prompt 与
   Oceanengine CSV 边界移除。标注动作不触发 CSV 创建或导入。
 - 已拆分为独立文件 writer：每任务字幕稿保留标签，每批次即创 CSV 移除标签；两类文件
   可分别生成且拒绝覆盖，不再由一个 Skill 调用另一个 Skill。
+- 两类 writer 默认按 `Prompt Engineering/<YYYYMMDD>/<task>/` 输出；同一任务的字幕稿
+  与 CSV 位于同一目录，但仍分别生成。项目输出不等于写入即创项目。
 
 已完成样本：
 
@@ -78,13 +81,13 @@
 
 验收：任务归因 100%，中断恢复无重复提交，无凭据泄露。
 
-### Phase 6：Skill 封装与安装（进行中）
+### Phase 6：Skill 封装与安装（已完成）
 
 - 保留 `compose`、`validate-copy` 及全部现有参数；
 - 使用透明启动器转发当前与未来 CLI 参数；
 - 为 CLI、启动器和 Skill 配置逐项提供 JSON Schema；
 - 保留配置、批处理、Codex 插件声明、安全调试输出；
-- 保留 text、JSON、CSV、Markdown 输出约定；
+- 保留 text、JSON、CSV、Markdown、segmentation_manuscript 输出约定；
 - 通过官方 Skill 校验后安装到 `$CODEX_HOME/skills/taobao-avatar-video`。
 
 ## 未决策项

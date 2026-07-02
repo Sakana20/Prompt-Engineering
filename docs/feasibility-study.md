@@ -159,10 +159,10 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes
 RB-20260702-001,"年轻亚洲女生……","雨季把雨靴放在玄关……",9:16,明朗女声,雨靴雨天通勤,待人工审核
 ```
 
-CSV 建议写入目标项目的 `input/` 目录，文件名包含规范化品类与日期，例如：
+CSV 按项目日期和任务目录输出，例如：
 
 ```text
-input/rain_boots_batch_20260702.csv
+/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/rain_boots_batch/rain_boots_batch.csv
 ```
 
 ## 6. 推荐工作边界
@@ -190,7 +190,7 @@ input/rain_boots_batch_20260702.csv
 | 合规或事实风险 | 夸大功效、虚构促销 | 建立“仅可使用用户确认事实”白名单 |
 | CSV 污染 | 逗号、引号、换行破坏文件 | 使用标准 CSV 库写入并执行目标项目预检 |
 | 重复任务或重复扣费 | `task_id` 冲突、盲目重跑 | 确定性 ID、SQLite 幂等、提交前人工确认 |
-| 跨项目写入失败 | 当前工作区无目标目录写权限 | 实施时申请目标项目写权限，或先输出到本项目再人工/脚本同步 |
+| 跨项目写入失败 | 当前工作区无目标目录写权限 | 先输出到 `Prompt Engineering/<日期>/<任务>/`，后续步骤单独授权 |
 
 ## 8. 首版验收标准
 
@@ -239,13 +239,15 @@ input/rain_boots_batch_20260702.csv
 - 由口播文案生成多人物数字人口播 Prompt。
 
 后续实现应把它们作为**版本化模板**保存。文案模板已根据前向样本升级为
-`2026-07-02-natural-v4`，由固定五段式改为单一连续生活片段，并使用
-`[[NO_SPLIT]]…[[/NO_SPLIT]]` 包裹固定利益点；模板升级时保留版本号和生成记录，便于
+`2026-07-02-product-led-v5`，定位为“商品导向的生活化分享”：场景约占 20%，商品和
+选择理由约占 50%，利益点与具体购买体验约占 30%；同时使用
+`[[NO_SPLIT]]…[[/NO_SPLIT]]` 包裹固定利益点。模板升级时保留版本号和生成记录，便于
 判断成片变化究竟来自模板、商品资料还是模型。
 
-产物采用文件交接而非 Skill 互调：每个任务生成一份保留标签的
-`<task_id>.smartsplit.txt`；每个批次生成一份去除标签的 Oceanengine CSV。两类产物
-分别落盘、分别授权，生成字幕稿不会触发 CSV，生成 CSV 也不会运行字幕流程。
+产物采用文件交接而非 Skill 互调：每个任务在
+`/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/` 下生成一份
+保留标签的 `<task_id>.smartsplit.txt` 和一份去除标签的 `<task>.csv`。两类产物分别
+落盘、分别授权，生成字幕稿不会触发 CSV，生成 CSV 也不会运行字幕流程。
 
 ### 11.1 已由模板确定、不再需要讨论的规则
 
@@ -352,13 +354,14 @@ script
 用户输入商品/品类资料
   → 注入已验证文案 Prompt
   → 80–120 字成品口播
-  → 注入已验证数字人 Prompt
-  → 完整数字人视频 Prompt（留档）
-  → 静态画面信息提取
-  → Auto Oceanengine 的 person_prompt + script CSV
-  → preflight
-  → 人工确认
-  → import / run-api-video
+  ├─ Prompt Engineering/<YYYYMMDD>/<task>/<task_id>.smartsplit.txt
+  └─ 注入已验证数字人 Prompt
+       → 完整数字人视频 Prompt（留档）
+       → 静态画面信息提取
+       → Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv
+       → 用户另行要求后执行 preflight
+       → 人工确认
+       → import / run-api-video
 ```
 
 建议上游记录增加两个独立字段，避免混淆：

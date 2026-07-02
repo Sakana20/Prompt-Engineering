@@ -4,11 +4,14 @@ import csv
 import os
 import tempfile
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
 from .models import OceanengineTask
 from .validation import strip_no_split_markers, validate_copy
+
+DEFAULT_OUTPUT_ROOT = Path("/Users/sakana/Desktop/Work/Codex/Prompt Engineering")
 
 CSV_FIELDS = (
     "task_id",
@@ -19,6 +22,24 @@ CSV_FIELDS = (
     "title",
     "notes",
 )
+
+
+def default_task_directory(task_name: str, *, date: str | None = None) -> Path:
+    output_date = date or datetime.now().astimezone().strftime("%Y%m%d")
+    return DEFAULT_OUTPUT_ROOT / output_date / task_name
+
+
+def default_manuscript_path(
+    task_name: str,
+    task_id: str,
+    *,
+    date: str | None = None,
+) -> Path:
+    return default_task_directory(task_name, date=date) / f"{task_id}.smartsplit.txt"
+
+
+def default_oceanengine_csv_path(task_name: str, *, date: str | None = None) -> Path:
+    return default_task_directory(task_name, date=date) / f"{task_name}.csv"
 
 
 def _write_atomic(destination: Path, writer: Callable[[TextIO], None]) -> Path:

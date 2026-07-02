@@ -19,7 +19,7 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert "$smartsplit" not in skill.lower()
     assert "invoke smartsplit" not in skill.lower()
     assert "<task_id>.smartsplit.txt" in skill
-    assert "one batch UTF-8 CSV" in skill
+    assert "Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv" in skill
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
@@ -28,13 +28,13 @@ def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
     assert 'default_prompt: "使用 $taobao-avatar-video ' in metadata
 
 
-def test_copywriting_rules_prefer_one_natural_scene_over_fixed_marketing_structure() -> None:
+def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None:
     rules = (SKILL_ROOT / "references" / "copywriting-rules.md").read_text(encoding="utf-8")
 
-    assert "不要套用“场景—顾虑—利益点—卖点—购买体验”的固定顺序" in rules
-    assert "只使用已确认事实" in rules
-    assert "与场景直接相关的使用动作" in rules
-    assert "不强制总结红包、抵扣、省心或方便" in rules
+    assert "商品导向的生活化分享" in rules
+    assert "约占全文 20%" in rules
+    assert "商品内容约占全文 50%" in rules
+    assert "利益点和购买体验约占全文 30%" in rules
 
 
 def test_cli_schema_covers_every_existing_cli_parameter() -> None:
@@ -75,4 +75,12 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
         "markdown",
         "segmentation_manuscript",
     }
-    assert {"manuscript_output_directory", "oceanengine_csv_output_path"} <= properties.keys()
+    assert {
+        "output_root",
+        "output_date",
+        "task_name",
+        "manuscript_output_directory",
+        "oceanengine_csv_output_path",
+        "oceanengine_csv_output_directory",
+    } <= properties.keys()
+    assert properties["output_root"]["default"].endswith("/Codex/Prompt Engineering")

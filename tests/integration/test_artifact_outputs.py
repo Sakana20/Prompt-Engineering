@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from avatar_prompt_pipeline.artifacts import (
+    default_manuscript_path,
+    default_oceanengine_csv_path,
     write_oceanengine_csv,
     write_segmentation_manuscript,
 )
@@ -15,6 +17,17 @@ MARKED_SCRIPT = (
     "就买了个哈密瓜。送到后切几块装进盘里，坐在沙发上慢慢吃，"
     "剩下的用保鲜盒收好，晚上家里人回来还能一起分。"
 )
+
+
+def test_default_artifact_paths_use_date_and_task_hierarchy() -> None:
+    assert default_manuscript_path("hami-melon-batch", "HM-001", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/HM-001.smartsplit.txt"
+    )
+    assert default_oceanengine_csv_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.csv"
+    )
 
 
 @pytest.mark.integration

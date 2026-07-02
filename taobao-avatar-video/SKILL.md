@@ -23,10 +23,12 @@ analysis and generation directly as Codex. Do not call another LLM.
 3. If only a category is supplied, generate a draft using generic situations and observable
    category-level properties. Do not invent material, performance, price, brand, sales, efficacy,
    or promotion facts. State briefly that product-specific claims require review.
-4. Generate each 80–120 Chinese-character spoken copy as one concrete, continuous slice of life,
-   not a fixed scene-concern-benefit-features-ending sequence. Prefer visible actions and specific
-   details over abstract claims. For a batch, vary the person's immediate task, the detail that
-   triggers demand, the benefit transition, product interaction, and the final beat.
+4. Generate each 80–120 Chinese-character spoken copy as product-led conversational sharing.
+   Keep scene setup to one or at most two sentences (about 20%), make the product, selection
+   reason, and one or two confirmed details the core (about 50%), and use the remaining space for
+   the marked benefit and a concrete purchase experience (about 30%). Do not expand the setup into
+   a complete lifestyle story. For a batch, vary demand, product emphasis, benefit transition,
+   and purchase experience.
 5. Validate every copy before continuing:
    - preserve
      `[[NO_SPLIT]]淘宝闪购最高12元无门槛红包[[/NO_SPLIT]]` exactly; the tags are
@@ -63,10 +65,16 @@ analysis and generation directly as Codex. Do not call another LLM.
 - **Avatar prompt only:** return only the complete avatar prompt.
 - **Review mode:** show copy, avatar prompt, facts used, unknowns, and risk flags.
 - **Task package:** create two independent handoffs from the same accepted result:
-  - one UTF-8 `<task_id>.smartsplit.txt` per task, preserving `[[NO_SPLIT]]`;
-  - one batch UTF-8 CSV for Oceanengine, stripping `[[NO_SPLIT]]` from every `script`.
+  - one UTF-8
+    `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task_id>.smartsplit.txt`
+    per task, preserving `[[NO_SPLIT]]`;
+  - one batch UTF-8
+    `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv`,
+    stripping `[[NO_SPLIT]]` from every `script`.
   Writing either handoff must not invoke, create, overwrite, import, or run the other consumer.
-  Run Oceanengine preflight only when the user requests that CSV workflow.
+  The date directory uses local `YYYYMMDD`; both files for one task share the same task directory.
+  Do not copy into the Oceanengine project or run preflight unless the user separately requests
+  that workflow.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or

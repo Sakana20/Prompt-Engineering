@@ -95,11 +95,15 @@ pytest: 20 passed
 - 5 个 `person_prompt` 均为静态画面描述；
 - 比例均为 `9:16`，音色均为 `明朗女声`。
 
-CSV 已写入：
+历史验证时 CSV 写入：
 
 ```text
 /Users/sakana/Desktop/Work/Codex/Auto Oceanengine 26.6.22/input/watermelon_batch_20260702.csv
 ```
+
+当前版本已将默认输出层级调整为
+`/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv`；
+以上路径仅记录当时验证事实。
 
 下游执行结果：
 

@@ -19,10 +19,12 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "已确认卖点：中筒款式" in package.copywriting_prompt
     assert "禁止使用：绝对防滑" in package.copywriting_prompt
     assert "不要套用" not in package.copywriting_prompt
-    assert "整段只围绕一个生活片段" in package.copywriting_prompt
-    assert "与当前场景直接相关的使用动作" in package.copywriting_prompt
+    assert "约占全文 20%" in package.copywriting_prompt
+    assert "商品相关内容约占全文 50%" in package.copywriting_prompt
+    assert "利益点与购买体验约占全文 30%" in package.copywriting_prompt
+    assert "不要写成完整生活故事" in package.copywriting_prompt
     assert "不要单独写成播报口号" in package.copywriting_prompt
-    assert package.template_version == "2026-07-02-natural-v4"
+    assert package.template_version == "2026-07-02-product-led-v5"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

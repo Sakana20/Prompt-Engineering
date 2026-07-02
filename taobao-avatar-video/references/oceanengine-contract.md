@@ -11,9 +11,15 @@
 写入前读取目标项目的 `AGENTS.md` 和当前 `README.md`。目标目录权限不足时请求用户授权，
 不得绕过沙箱。
 
-## CSV
+## CSV 暂存
 
-任务文件使用 UTF-8 CSV，写入 `input/`，字段固定为：
+任务文件使用 UTF-8 CSV，默认写入：
+
+```text
+/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv
+```
+
+字段固定为：
 
 | 字段 | 规则 |
 |---|---|
@@ -49,11 +55,13 @@
 
 ## 执行边界
 
-先运行：
+只有用户另行要求即创预检时，才在目标项目中读取暂存 CSV 并运行：
 
 ```bash
-uv run jichuang preflight input/<batch>.csv
+uv run jichuang preflight \
+  '/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv'
 ```
 
-预检通过不等于授权导入或付费生成。只有用户分别明确授权后，才能执行 `import` 或
-`run-api-video`。提交结果不确定时不得重试，先核对平台任务引用。
+暂存 CSV 不等于写入目标项目。预检通过也不等于授权导入或付费生成。只有用户分别明确
+授权后，才能执行 `import` 或 `run-api-video`。提交结果不确定时不得重试，先核对平台
+任务引用。

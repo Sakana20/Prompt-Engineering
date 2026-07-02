@@ -48,7 +48,8 @@ Prompt/CSV 边界移除标签。集成测试必须证明字幕稿 writer 与 CSV
 
 ### 集成测试
 
-使用 pytest 临时目录验证 JSON 原子落盘与未来 CSV 合约。不得增加其他 LLM provider。
+使用 pytest 临时目录验证 JSON、字幕稿和 CSV 原子落盘及双文件合约。不得增加其他
+LLM provider。
 
 ### 端到端测试
 
@@ -58,7 +59,7 @@ Prompt/CSV 边界移除标签。集成测试必须证明字幕稿 writer 与 CSV
 ### Skill 验证
 
 每次修改 `taobao-avatar-video/` 后运行官方 `quick_validate.py`。测试还应检查 Skill 名称、
-frontmatter、UI 元数据和三个 reference 文件，避免开发仓库正常但分发目录残缺。
+frontmatter、UI 元数据及全部必需 reference 文件，避免开发仓库正常但分发目录残缺。
 
 ### 测试资料归档
 

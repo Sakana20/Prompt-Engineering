@@ -28,11 +28,30 @@
       "default": ["text"]
     },
     "output_path": {"type": ["string", "null"], "default": null},
+    "output_root": {
+      "type": "string",
+      "default": "/Users/sakana/Desktop/Work/Codex/Prompt Engineering"
+    },
+    "output_date": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]{8}$",
+      "default": null,
+      "description": "YYYYMMDD；为空时使用本地当前日期"
+    },
+    "task_name": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "输出层级中的任务目录名"
+    },
     "manuscript_output_directory": {
       "type": ["string", "null"],
       "default": null
     },
     "oceanengine_csv_output_path": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "oceanengine_csv_output_directory": {
       "type": ["string", "null"],
       "default": null
     },
