@@ -1,0 +1,5 @@
+interface:
+  display_name: "淘宝闪购数字人视频"
+  short_description: "从商品资料生成生活化口播、数字人提示词与即创任务包"
+  default_prompt: "使用 $taobao-avatar-video 根据我提供的商品品类生成口播、数字人 Prompt 和即创任务包。"
+

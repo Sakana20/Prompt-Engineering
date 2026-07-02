@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Any
+
+
+class BriefValidationError(ValueError):
+    """Raised when a product brief cannot safely drive prompt generation."""
+
+
+def _clean(value: str) -> str:
+    return " ".join(value.replace("\x00", "").split())
+
+
+@dataclass(frozen=True, slots=True)
+class ProductBrief:
+    category: str
+    product_name: str = ""
+    selling_points: tuple[str, ...] = ()
+    forbidden_claims: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        category = _clean(self.category)
+        if not category:
+            raise BriefValidationError("商品品类不能为空")
+        object.__setattr__(self, "category", category)
+        object.__setattr__(self, "product_name", _clean(self.product_name))
+        object.__setattr__(
+            self,
+            "selling_points",
+            tuple(point for item in self.selling_points if (point := _clean(item))),
+        )
+        object.__setattr__(
+            self,
+            "forbidden_claims",
+            tuple(claim for item in self.forbidden_claims if (claim := _clean(item))),
+        )
+
+    @property
+    def is_draft_only(self) -> bool:
+        return not self.selling_points
+
+    def product_context(self) -> str:
+        lines = [f"商品品类：{self.category}"]
+        if self.product_name:
+            lines.append(f"商品名称：{self.product_name}")
+        if self.selling_points:
+            lines.append("已确认卖点：" + "；".join(self.selling_points))
+        else:
+            lines.append("未提供已确认卖点：仅生成品类创意草案，不得补充具体商品事实")
+        if self.forbidden_claims:
+            lines.append("禁止使用：" + "；".join(self.forbidden_claims))
+        return "\n".join(lines)
+
+
+@dataclass(frozen=True, slots=True)
+class PromptPackage:
+    schema_version: str
+    template_version: str
+    brief: ProductBrief
+    copywriting_prompt: str
+    avatar_prompt_template: str
+    review_required: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
