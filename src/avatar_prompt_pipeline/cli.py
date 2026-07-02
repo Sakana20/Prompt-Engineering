@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 from collections.abc import Sequence
 
 from .io import serialize_package, write_package
 from .models import BriefValidationError, ProductBrief
 from .service import compose_prompt_package
+from .validation import validate_copy
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,11 +23,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--forbidden-claim", action="append", default=[], help="禁止使用的信息，可重复传入"
     )
     compose.add_argument("--output", help="输出 JSON 路径；省略时打印到标准输出")
+    validate = commands.add_parser("validate-copy", help="校验一段已生成口播")
+    validate.add_argument("text", help="待校验口播正文")
     return parser
 
 
 def run(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "validate-copy":
+        report = validate_copy(args.text)
+        print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+        return 0 if report.is_valid else 1
     if args.command != "compose":
         raise AssertionError(f"未知命令：{args.command}")
     try:

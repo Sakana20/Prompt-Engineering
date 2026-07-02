@@ -30,6 +30,12 @@ uv run avatar-prompts compose --category 雨靴 \
 uv run avatar-prompts compose --category 雨靴 --output output/rain-boots.json
 ```
 
+校验 Codex 生成的口播：
+
+```bash
+uv run avatar-prompts validate-copy '完整口播正文'
+```
+
 ## 质量检查
 
 ```bash
@@ -45,6 +51,7 @@ uv run pytest
 - [架构设计](docs/architecture.md)
 - [实现计划](docs/implementation-plan.md)
 - [开发规范](docs/development.md)
+- [“西瓜”品类前向验证](tests/cases/validation-watermelon.md)
 
 ## Skill 验证
 

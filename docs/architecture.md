@@ -40,6 +40,11 @@ CSV 文件操作，不调用另一个 LLM。
 `PromptPackage` 包含 schema 版本、模板版本、输入资料、文案 Prompt、数字人 Prompt 模板
 和审核标记。JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQLite。
 
+`GeneratedScript` 与 `AvatarVideoPrompt` 表示 Codex 的两层生成结果。文案必须先通过
+`CopyValidationReport`：字符数、固定利益点、禁词、行动引导和格式均合格后，才进入
+数字人 Prompt 阶段。批量结果另以二元字符 Jaccard 相似度检测重复和高同质内容；该指标
+只做保守预警，不能替代 Codex 对场景和表达差异的语义判断。
+
 ## Skill 与 Prompt 资源
 
 可分发 Skill 位于 `taobao-avatar-video/`。核心流程在 `SKILL.md`，详细规则按需放在

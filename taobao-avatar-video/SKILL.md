@@ -28,6 +28,8 @@ analysis and generation directly as Codex. Do not call another LLM.
    - reject banned words and click/purchase calls to action;
    - use only confirmed product facts;
    - output natural prose, not a title, list, explanation, or Markdown.
+   When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` and
+   revise any failing copy before generating its avatar prompt.
 6. Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
    Keep the account IP stable while adapting scene, clothing, action, emotion, and product placement.
 7. Treat identity honestly: text alone provides style consistency, not guaranteed facial identity.
@@ -36,6 +38,8 @@ analysis and generation directly as Codex. Do not call another LLM.
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
    instructions into that image prompt.
+   Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
+   literal placeholder “品类”; for example use `西瓜+1` or `雨伞+1`.
 9. Preview the copy, avatar prompt, static person prompt, and facts used. Require explicit approval
    before any paid video submission.
 10. Use the target project's own `preflight` before import. Never silently overwrite an existing
@@ -59,4 +63,3 @@ only consumes the static `person_prompt` and `script`.
 - Never expose cookies, tokens, browser profiles, signatures, or account identifiers.
 - Never trigger `run-api-video` from a general “generate prompts” request.
 - Treat import and paid generation as separate user-authorized actions.
-

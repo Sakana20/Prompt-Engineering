@@ -31,6 +31,8 @@
 - `tests/unit/`：纯函数、校验、模板和领域模型。
 - `tests/integration/`：文件系统、任务包、下游 CSV 合约。
 - `tests/e2e/`：CLI 用户入口；默认不得访问网络或付费流程。
+- `tests/cases/`：前向验证记录、脱敏样本和 golden cases。
+- 所有测试产物与验证报告统一放在 `tests/`，不得放入 `docs/`。
 - 每次行为变更同时补充相应测试。
 - Skill 结构变更后运行 `skill-creator` 的 `quick_validate.py`。
 

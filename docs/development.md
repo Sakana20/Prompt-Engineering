@@ -56,6 +56,12 @@ uv run pytest -m e2e
 每次修改 `taobao-avatar-video/` 后运行官方 `quick_validate.py`。测试还应检查 Skill 名称、
 frontmatter、UI 元数据和三个 reference 文件，避免开发仓库正常但分发目录残缺。
 
+### 测试资料归档
+
+所有前向验证记录、脱敏输入、预期输出、golden cases 和测试报告统一放在 `tests/`。
+其中人工可读的品类验证记录放在 `tests/cases/`；`docs/` 只保留长期有效的架构、计划和
+开发规范。
+
 ## 变更清单
 
 每次实现行为变更时：

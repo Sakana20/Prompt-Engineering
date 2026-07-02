@@ -1,11 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from enum import StrEnum
 from typing import Any
 
 
 class BriefValidationError(ValueError):
     """Raised when a product brief cannot safely drive prompt generation."""
+
+
+class IssueCode(StrEnum):
+    TOO_SHORT = "TOO_SHORT"
+    TOO_LONG = "TOO_LONG"
+    MISSING_BENEFIT = "MISSING_BENEFIT"
+    BANNED_EXPRESSION = "BANNED_EXPRESSION"
+    CALL_TO_ACTION = "CALL_TO_ACTION"
+    FORMAT_VIOLATION = "FORMAT_VIOLATION"
+    DUPLICATE_COPY = "DUPLICATE_COPY"
+    HIGH_SIMILARITY = "HIGH_SIMILARITY"
 
 
 def _clean(value: str) -> str:
@@ -64,3 +76,35 @@ class PromptPackage:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class ValidationIssue:
+    code: IssueCode
+    message: str
+    value: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class CopyValidationReport:
+    character_count: int
+    issues: tuple[ValidationIssue, ...] = ()
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.issues
+
+    def to_dict(self) -> dict[str, Any]:
+        return {**asdict(self), "is_valid": self.is_valid}
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedScript:
+    text: str
+    report: CopyValidationReport
+
+
+@dataclass(frozen=True, slots=True)
+class AvatarVideoPrompt:
+    text: str
+    source_script: str
