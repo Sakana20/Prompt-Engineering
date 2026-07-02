@@ -12,6 +12,8 @@ analysis and generation directly as Codex. Do not call another LLM.
 
 1. Read [copywriting-rules.md](references/copywriting-rules.md) and
    [avatar-rules.md](references/avatar-rules.md).
+   For CLI, configuration, batching, plugins, debug output, or output-format requests, also read
+   [runtime.md](references/runtime.md) and its linked schemas.
 2. Normalize the user's facts into:
    - category;
    - product name, if supplied;
@@ -31,9 +33,12 @@ analysis and generation directly as Codex. Do not call another LLM.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` and
    revise any failing copy before generating its avatar prompt.
 6. Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
-   Keep the account IP stable while adapting scene, clothing, action, emotion, and product placement.
-7. Treat identity honestly: text alone provides style consistency, not guaranteed facial identity.
-   For strict identity, require a confirmed reference image or reusable person asset.
+   Give every prompt a different person and a different outfit. Vary face shape, visible facial
+   features, hairstyle, hair color, and clothing combination while keeping the overall account
+   aesthetic young, natural, clean, and approachable.
+7. Before export, list an `identity_key` and `outfit_key` for every prompt and verify both are unique
+   within the batch. Never use continuity wording such as “same person”, “same face”, “固定人物”,
+   or “保持脸部特征一致”.
 8. When the user requests an Oceanengine task package, read
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
@@ -52,6 +57,12 @@ analysis and generation directly as Codex. Do not call another LLM.
 - **Review mode:** show copy, avatar prompt, facts used, unknowns, and risk flags.
 - **Task package:** create UTF-8 CSV matching the downstream contract, then run preflight.
 
+Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
+Validate every explicit parameter against `references/cli-parameters.schema.json` or
+`references/skill-config.schema.json`. Preserve requested configuration files, batching, installed
+Codex plugins, safe debug output, and all requested output formats. Never remove an existing field,
+command, format, hook, or behavior while packaging or installing this skill.
+
 For batches, keep a one-to-one mapping among source facts, copy, avatar prompt, `task_id`, and output
 row. Preserve the full avatar prompt in the audit record even though the current Oceanengine chain
 only consumes the static `person_prompt` and `script`.
@@ -59,7 +70,7 @@ only consumes the static `person_prompt` and `script`.
 ## Safety Boundary
 
 - Never invent product or promotion facts.
-- Never claim strict same-face identity from text-only generation.
+- Never reuse the same person or the same outfit within a batch.
 - Never expose cookies, tokens, browser profiles, signatures, or account identifiers.
 - Never trigger `run-api-video` from a general “generate prompts” request.
 - Treat import and paid generation as separate user-authorized actions.

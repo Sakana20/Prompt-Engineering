@@ -1,11 +1,12 @@
 import pytest
 
-from avatar_prompt_pipeline.models import IssueCode
+from avatar_prompt_pipeline.models import IssueCode, VisualProfile
 from avatar_prompt_pipeline.validation import (
     REQUIRED_BENEFIT,
     copy_similarity,
     validate_batch_diversity,
     validate_copy,
+    validate_visual_diversity,
 )
 
 VALID_COPY = (
@@ -66,3 +67,27 @@ def test_copy_similarity_is_symmetric() -> None:
     assert copy_similarity("雨天出门穿雨靴", "雨天通勤穿雨靴") == copy_similarity(
         "雨天通勤穿雨靴", "雨天出门穿雨靴"
     )
+
+
+def test_visual_diversity_accepts_unique_people_and_outfits() -> None:
+    profiles = [
+        VisualProfile("圆脸短发", "黄色针织衫+白色长裤"),
+        VisualProfile("长脸高马尾", "蓝色衬衫+卡其半裙"),
+    ]
+
+    assert validate_visual_diversity(profiles) == ()
+
+
+def test_visual_diversity_reports_reused_person_and_outfit() -> None:
+    profiles = [
+        VisualProfile("圆脸短发", "黄色针织衫+白色长裤"),
+        VisualProfile("圆脸短发", "黄色针织衫+白色长裤"),
+    ]
+
+    codes = {issue.code for issue in validate_visual_diversity(profiles)}
+    assert codes == {IssueCode.DUPLICATE_PERSON, IssueCode.DUPLICATE_OUTFIT}
+
+
+def test_visual_diversity_rejects_empty_keys() -> None:
+    with pytest.raises(ValueError, match="不能为空"):
+        validate_visual_diversity([VisualProfile("", "蓝色连衣裙")])

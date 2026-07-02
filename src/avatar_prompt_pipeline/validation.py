@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from .models import CopyValidationReport, IssueCode, ValidationIssue
+from .models import CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
 
 REQUIRED_BENEFIT = "淘宝闪购，最高12元无门槛红包天天享。"
 MIN_COPY_CHARACTERS = 80
@@ -115,4 +115,38 @@ def validate_batch_diversity(
                         pair,
                     )
                 )
+    return tuple(issues)
+
+
+def validate_visual_diversity(
+    profiles: Sequence[VisualProfile],
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    seen_identities: dict[str, int] = {}
+    seen_outfits: dict[str, int] = {}
+    for index, profile in enumerate(profiles, start=1):
+        identity = profile.identity_key.strip()
+        outfit = profile.outfit_key.strip()
+        if not identity or not outfit:
+            raise ValueError("人物身份键和服装键不能为空")
+        if identity in seen_identities:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.DUPLICATE_PERSON,
+                    "批次存在重复人物",
+                    f"{seen_identities[identity]},{index}",
+                )
+            )
+        else:
+            seen_identities[identity] = index
+        if outfit in seen_outfits:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.DUPLICATE_OUTFIT,
+                    "批次存在重复服装",
+                    f"{seen_outfits[outfit]},{index}",
+                )
+            )
+        else:
+            seen_outfits[outfit] = index
     return tuple(issues)

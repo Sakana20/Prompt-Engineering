@@ -6,9 +6,10 @@ from .models import (
     GeneratedScript,
     ProductBrief,
     PromptPackage,
+    VisualProfile,
 )
 from .service import compose_prompt_package
-from .validation import validate_batch_diversity, validate_copy
+from .validation import validate_batch_diversity, validate_copy, validate_visual_diversity
 
 __all__ = [
     "AvatarVideoPrompt",
@@ -16,7 +17,9 @@ __all__ = [
     "GeneratedScript",
     "ProductBrief",
     "PromptPackage",
+    "VisualProfile",
     "compose_prompt_package",
     "validate_batch_diversity",
     "validate_copy",
+    "validate_visual_diversity",
 ]

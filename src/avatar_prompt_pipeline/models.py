@@ -18,6 +18,8 @@ class IssueCode(StrEnum):
     FORMAT_VIOLATION = "FORMAT_VIOLATION"
     DUPLICATE_COPY = "DUPLICATE_COPY"
     HIGH_SIMILARITY = "HIGH_SIMILARITY"
+    DUPLICATE_PERSON = "DUPLICATE_PERSON"
+    DUPLICATE_OUTFIT = "DUPLICATE_OUTFIT"
 
 
 def _clean(value: str) -> str:
@@ -108,3 +110,9 @@ class GeneratedScript:
 class AvatarVideoPrompt:
     text: str
     source_script: str
+
+
+@dataclass(frozen=True, slots=True)
+class VisualProfile:
+    identity_key: str
+    outfit_key: str

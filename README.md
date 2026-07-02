@@ -8,9 +8,14 @@
 1. `SKILL.md` 定义触发条件与执行流程；
 2. `references/` 保存已验证文案规则、数字人规则和即创契约；
 3. `agents/openai.yaml` 提供 Codex UI 元数据。
+4. `scripts/run_cli.py` 透明保留全部现有 CLI 参数。
+5. JSON Schema 描述 CLI 参数与 Skill 配置、批处理、插件、调试和输出格式。
 
 不接入其他 LLM 或模型 API。仓库中的 Python 只承担确定性编排、校验、序列化和未来 CSV
 导出，不负责语义生成。写入下游、导入任务和付费视频生成仍是独立授权边界。
+
+批量生成时，每条 Prompt 必须使用不同人物和不同服装；人物可以不同，但保持年轻、自然、
+干净、生活化的统一账号审美。
 
 ## 环境
 
@@ -58,4 +63,11 @@ uv run pytest
 ```bash
 uv run python /Users/sakana/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
   taobao-avatar-video
+```
+
+Skill CLI 透明入口：
+
+```bash
+python taobao-avatar-video/scripts/run_cli.py -- compose --category 西瓜
+python taobao-avatar-video/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
 ```

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 SKILL_ROOT = Path(__file__).parents[2] / "taobao-avatar-video"
@@ -13,9 +14,50 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "copywriting-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "avatar-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
+    assert (SKILL_ROOT / "references" / "runtime.md").is_file()
+    assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
     metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
 
     assert 'default_prompt: "使用 $taobao-avatar-video ' in metadata
+
+
+def test_cli_schema_covers_every_existing_cli_parameter() -> None:
+    schema = json.loads(
+        (SKILL_ROOT / "references" / "cli-parameters.schema.json").read_text(encoding="utf-8")
+    )
+    compose = schema["oneOf"][0]["properties"]
+    validate = schema["oneOf"][1]["properties"]
+
+    assert set(compose) == {
+        "command",
+        "category",
+        "product_name",
+        "selling_point",
+        "forbidden_claim",
+        "output",
+    }
+    assert set(validate) == {"command", "text"}
+    assert set(schema["$defs"]["launcher"]["properties"]) == {
+        "project_root",
+        "debug",
+        "python_executable",
+        "arguments",
+    }
+
+
+def test_skill_config_schema_preserves_runtime_capabilities() -> None:
+    schema = json.loads(
+        (SKILL_ROOT / "references" / "skill-config.schema.json").read_text(encoding="utf-8")
+    )
+    properties = schema["properties"]
+
+    assert {"batch", "debug", "plugin_directories", "plugins"} <= properties.keys()
+    assert set(properties["output_formats"]["items"]["enum"]) == {
+        "text",
+        "json",
+        "csv",
+        "markdown",
+    }

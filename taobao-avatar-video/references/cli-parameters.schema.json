@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/taobao-avatar-video/cli-parameters.schema.json",
+  "title": "avatar-prompts CLI parameters",
+  "oneOf": [
+    {
+      "title": "compose",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "category"],
+      "properties": {
+        "command": {"const": "compose"},
+        "category": {"type": "string", "minLength": 1, "x-cli": "--category"},
+        "product_name": {"type": "string", "default": "", "x-cli": "--product-name"},
+        "selling_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--selling-point",
+          "x-repeatable": true
+        },
+        "forbidden_claim": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--forbidden-claim",
+          "x-repeatable": true
+        },
+        "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"}
+      }
+    },
+    {
+      "title": "validate-copy",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "text"],
+      "properties": {
+        "command": {"const": "validate-copy"},
+        "text": {"type": "string", "minLength": 1, "x-cli-position": 1}
+      }
+    }
+  ],
+  "$defs": {
+    "launcher": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project_root": {
+          "type": "string",
+          "default": "/Users/sakana/Desktop/Work/Codex/Prompt Engineering",
+          "x-cli": "--project-root"
+        },
+        "debug": {"type": "boolean", "default": false, "x-cli": "--debug"},
+        "python_executable": {
+          "type": ["string", "null"],
+          "default": null,
+          "x-cli": "--python-executable"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {"type": "string"},
+          "x-cli-position": "remainder"
+        }
+      }
+    }
+  }
+}

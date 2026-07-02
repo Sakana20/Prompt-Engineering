@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/taobao-avatar-video/skill-config.schema.json",
+  "title": "Taobao Avatar Video Skill configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "category": {"type": "string", "minLength": 1},
+    "product_name": {"type": "string", "default": ""},
+    "selling_points": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "forbidden_claims": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "count": {"type": "integer", "minimum": 1, "default": 1},
+    "aspect_ratio": {"type": "string", "enum": ["9:16", "16:9", "1:1"], "default": "9:16"},
+    "voice": {"type": "string", "default": "明朗女声"},
+    "output_formats": {
+      "type": "array",
+      "items": {"enum": ["text", "json", "csv", "markdown"]},
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": ["text"]
+    },
+    "output_path": {"type": ["string", "null"], "default": null},
+    "batch": {"type": "boolean", "default": false},
+    "debug": {"type": "boolean", "default": false},
+    "plugin_directories": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "plugins": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "target_project": {
+      "type": "string",
+      "default": "/Users/sakana/Desktop/Work/Codex/Auto Oceanengine 26.6.22"
+    },
+    "preflight": {"type": "boolean", "default": true},
+    "allow_import": {"type": "boolean", "default": false},
+    "allow_paid_generation": {"type": "boolean", "default": false}
+  },
+  "required": ["category"]
+}
+
