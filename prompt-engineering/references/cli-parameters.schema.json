@@ -7,7 +7,11 @@
       "title": "compose",
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "category"],
+      "required": ["command"],
+      "anyOf": [
+        {"required": ["category"]},
+        {"required": ["config"]}
+      ],
       "properties": {
         "command": {"const": "compose"},
         "category": {"type": "string", "minLength": 1, "x-cli": "--category"},
@@ -40,6 +44,12 @@
           "x-cli": "--benefit-point",
           "x-repeatable": true
         },
+        "config": {
+          "type": ["string", "null"],
+          "default": null,
+          "x-cli": "--config",
+          "description": "项目配置 JSON；传入后使用其中的商品和活动口径"
+        },
         "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"}
       }
     },
@@ -64,6 +74,12 @@
           "default": [],
           "x-cli": "--benefit-point",
           "x-repeatable": true
+        },
+        "config": {
+          "type": ["string", "null"],
+          "default": null,
+          "x-cli": "--config",
+          "description": "项目配置 JSON；传入后使用其中的活动校验契约"
         }
       }
     }

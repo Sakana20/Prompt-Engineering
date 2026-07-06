@@ -56,6 +56,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "platform",
         "campaign_name",
         "benefit_point",
+        "config",
         "output",
     }
     assert set(validate) == {
@@ -65,6 +66,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "platform",
         "campaign_name",
         "benefit_point",
+        "config",
     }
     assert set(schema["$defs"]["launcher"]["properties"]) == {
         "project_root",
@@ -97,6 +99,7 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
         "oceanengine_csv_output_directory",
     } <= properties.keys()
     assert properties["output_root"]["default"].endswith("/Codex/Prompt Engineering")
+    assert "project_id" in properties
 
 
 def test_single_skill_is_generalized_with_campaign_contract() -> None:
@@ -113,3 +116,4 @@ def test_single_skill_is_generalized_with_campaign_contract() -> None:
     assert "Compatibility defaults" in skill
     assert config["properties"]["benefit_points"]["maxItems"] == 3
     assert "benefit_point" in cli["oneOf"][0]["properties"]
+    assert "config" in cli["oneOf"][0]["properties"]

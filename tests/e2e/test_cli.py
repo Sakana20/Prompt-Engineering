@@ -47,6 +47,109 @@ def test_compose_cli_accepts_custom_and_no_benefit_campaigns(
 
 
 @pytest.mark.e2e
+def test_compose_cli_uses_project_config_without_default_campaign(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config_path = tmp_path / "taobao-25-project.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "project_id": "taobao-25-no-threshold-redpacket",
+                "category": "西瓜",
+                "platform": "淘宝闪购",
+                "campaign_name": "25元无门槛红包项目",
+                "benefit_points": [
+                    {
+                        "id": "primary-benefit",
+                        "text": "淘宝闪购最高25元无门槛红包",
+                    }
+                ],
+                "campaign_forbidden_expressions": ["12元无门槛红包"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run(["compose", "--config", str(config_path)])
+
+    output: dict[str, Any] = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert output["brief"]["category"] == "西瓜"
+    assert output["campaign"]["campaign_name"] == "25元无门槛红包项目"
+    assert output["campaign"]["benefit_points"][0]["text"] == "淘宝闪购最高25元无门槛红包"
+    assert output["campaign"]["forbidden_expressions"] == ["12元无门槛红包"]
+    assert REQUIRED_BENEFIT not in output["copywriting_prompt"]
+
+
+@pytest.mark.e2e
+def test_validate_copy_cli_uses_project_config_contract(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config_path = tmp_path / "taobao-25-project.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "category": "西瓜",
+                "benefit_points": [
+                    {
+                        "id": "primary-benefit",
+                        "text": "淘宝闪购最高25元无门槛红包",
+                    }
+                ],
+                "campaign_forbidden_expressions": ["12元无门槛红包"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    text = (
+        "下班回家路上想顺手买点水果，看到小区附近还有新鲜西瓜可选，"
+        "[[NO_SPLIT]]淘宝闪购最高25元无门槛红包[[/NO_SPLIT]]"
+        "正好能用。这类水果适合切好放进冰箱，饭后端出来一家人分着吃，"
+        "临时补一份也不用绕远路。"
+    )
+
+    result = run(["validate-copy", text, "--config", str(config_path)])
+
+    output: dict[str, Any] = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert output["is_valid"] is True
+
+    previous_text = text.replace("25元无门槛红包", "12元无门槛红包")
+    result = run(["validate-copy", previous_text, "--config", str(config_path)])
+
+    output = json.loads(capsys.readouterr().out)
+    assert result == 1
+    assert any(issue["code"] == "MISSING_BENEFIT" for issue in output["issues"])
+    assert any(issue["code"] == "BANNED_EXPRESSION" for issue in output["issues"])
+
+
+@pytest.mark.e2e
+def test_project_config_rejects_mixed_campaign_arguments(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "project.json"
+    config_path.write_text(
+        json.dumps({"category": "西瓜", "benefit_points": []}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit, match="不要同时传入活动口径参数"):
+        run(
+            [
+                "compose",
+                "--config",
+                str(config_path),
+                "--benefit-point",
+                "淘宝闪购最高12元无门槛红包",
+            ]
+        )
+
+
+@pytest.mark.e2e
 def test_compose_cli_writes_requested_file(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -19,6 +19,20 @@ Skill 输入配置使用 JSON、YAML 或 TOML 时，字段必须符合
 [skill-config.schema.json](skill-config.schema.json)。未知字段不得静默丢弃。仓库原有
 `pyproject.toml`、Prompt 资源和下游项目配置保持原样，不迁移、不删减。
 
+Python CLI 当前支持一个项目一个 JSON 配置文件：
+
+```bash
+uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
+uv run avatar-prompts validate-copy '口播正文' --config configs/projects/taobao-25-no-threshold-redpacket.json
+```
+
+项目配置文件代表一组完整且互斥的商品与活动口径。传入 `--config` 后，CLI 使用配置中的
+`category`、商品事实、`platform`、`campaign_name`、`benefit_points`、
+`campaign_forbidden_expressions` 和 `required_disclosures`；不得同时传入
+`--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。如“淘宝闪购 12 元
+无门槛红包”和“淘宝闪购 25 元无门槛红包”方向不同，应分别保存为两个项目配置，并在各自
+配置中用 `campaign_forbidden_expressions` 禁止另一个口径。
+
 ## 批处理
 
 `count > 1` 或 `batch=true` 时执行批处理。每条记录保持独立的文案、人物、服装、

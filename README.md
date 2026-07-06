@@ -19,6 +19,10 @@ Skill 包含：
 
 利益点来自用户输入或已确认预设。CLI 使用 `--benefit-point` 覆盖默认利益点，使用
 `--preset none` 创建无利益点任务；不得自行创造促销、金额或门槛。
+也可以使用一个项目一个 JSON 配置文件的方式固化完整项目口径。配置文件包含商品资料、
+平台、活动名、利益点、互斥或禁用表达；适合“淘宝闪购 12 元无门槛红包”和“淘宝闪购
+25 元无门槛红包”这类不能混用的项目。传入 `--config` 后，不再自动加载默认淘宝利益点，
+也不要同时传入 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。
 
 不接入其他 LLM 或模型 API。仓库中的 Python 只承担确定性编排、校验、序列化和产物
 写出，不负责语义生成。写入下游、导入任务和付费视频生成仍是独立授权边界。
@@ -50,6 +54,34 @@ uv run avatar-prompts compose --category 雨靴 \
 
 ```bash
 uv run avatar-prompts compose --category 雨靴 --output output/rain-boots.json
+```
+
+使用项目配置文件：
+
+```json
+{
+  "project_id": "taobao-25-no-threshold-redpacket",
+  "category": "西瓜",
+  "platform": "淘宝闪购",
+  "campaign_name": "25元无门槛红包项目",
+  "benefit_points": [
+    {
+      "id": "primary-benefit",
+      "text": "淘宝闪购最高25元无门槛红包",
+      "required": true,
+      "exact_match": true,
+      "no_split": true,
+      "priority": 1
+    }
+  ],
+  "campaign_forbidden_expressions": ["12元无门槛红包"]
+}
+```
+
+```bash
+uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
+uv run avatar-prompts validate-copy '完整口播正文' \
+  --config configs/projects/taobao-25-no-threshold-redpacket.json
 ```
 
 校验 Codex 生成的口播：

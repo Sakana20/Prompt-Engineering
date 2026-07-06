@@ -8,6 +8,8 @@
 - 支持 0–3 条利益点、替换利益点、多利益点和无利益点；
 - 校验器按活动契约检查精确措辞、标签和禁词豁免；
 - CLI 新增 `--preset`、`--platform`、`--campaign-name`、`--benefit-point`；
+- CLI 新增 `--config` 项目配置入口，支持一个项目一个 JSON 配置文件；传入后使用配置中的
+  商品和活动口径，不叠加默认预设或其他活动参数；
 - 将 `prompt-engineering` 升级为通用化 Skill，并保留当前淘宝默认利益点兼容行为；
 - 双文件和 Oceanengine 输出边界保持不变。
 

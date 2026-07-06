@@ -99,6 +99,9 @@ Compatibility defaults:
 - If the user provides an explicit benefit, use that benefit instead of the preset.
 - If the user says no benefit or no promotion, use `--preset none` semantics and generate without
   any promotional benefit.
+- If the user provides a project configuration file, treat it as the complete project mouthpiece:
+  use its product facts, campaign facts, benefit points, forbidden expressions, and disclosures.
+  Do not combine it with the default preset or unrelated campaign arguments.
 
 For batches, keep a one-to-one mapping among source facts, copy, avatar prompt, `task_id`, and output
 row. Preserve the full avatar prompt in the audit record even though the current Oceanengine chain
