@@ -3,41 +3,26 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from .models import CampaignSpec, CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
+from .models import (
+    CampaignSpec,
+    CopyValidationReport,
+    IssueCode,
+    ValidationConfig,
+    ValidationIssue,
+    VisualProfile,
+)
 from .presets import TAOBAO_DEFAULT_BENEFIT, TAOBAO_DEFAULT_CAMPAIGN
 
+DEFAULT_VALIDATION_CONFIG = ValidationConfig()
 REQUIRED_BENEFIT = TAOBAO_DEFAULT_BENEFIT
 NO_SPLIT_OPEN = "[[NO_SPLIT]]"
 NO_SPLIT_CLOSE = "[[/NO_SPLIT]]"
 MARKED_REQUIRED_BENEFIT = f"{NO_SPLIT_OPEN}{REQUIRED_BENEFIT}{NO_SPLIT_CLOSE}"
-MIN_COPY_CHARACTERS = 80
-MAX_COPY_CHARACTERS = 120
-
-BANNED_EXPRESSIONS = (
-    "最",
-    "绝对",
-    "全网最低",
-    "补贴",
-    "0元购",
-    "免单",
-    "秒杀",
-    "限时疯抢",
-    "比超市便宜",
-    "闭眼入",
-    "快冲",
-    "姐妹们",
-    "家人们",
-    "冲就完了",
-)
-CALLS_TO_ACTION = (
-    "点击视频下方链接",
-    "点链接",
-    "立即购买",
-    "赶紧下单",
-    "点击购买",
-    "直播间",
-)
-FORMAT_PREFIXES = ("#", "-", "*", "1.", "1、", "①")
+MIN_COPY_CHARACTERS = DEFAULT_VALIDATION_CONFIG.min_characters
+MAX_COPY_CHARACTERS = DEFAULT_VALIDATION_CONFIG.max_characters
+BANNED_EXPRESSIONS = DEFAULT_VALIDATION_CONFIG.banned_expressions
+CALLS_TO_ACTION = DEFAULT_VALIDATION_CONFIG.call_to_actions
+FORMAT_PREFIXES = DEFAULT_VALIDATION_CONFIG.format_prefixes
 
 
 def strip_no_split_markers(text: str) -> str:
@@ -52,6 +37,10 @@ def wrap_required_benefit(text: str) -> str:
 
 def wrap_campaign_benefits(text: str, campaign: CampaignSpec) -> str:
     wrapped = text
+    for phrase in campaign.no_split_phrases:
+        marked = f"{NO_SPLIT_OPEN}{phrase}{NO_SPLIT_CLOSE}"
+        if marked not in wrapped:
+            wrapped = wrapped.replace(phrase, marked)
     for benefit in campaign.benefit_points:
         marked = f"{NO_SPLIT_OPEN}{benefit.text}{NO_SPLIT_CLOSE}"
         if benefit.no_split and marked not in wrapped:
@@ -66,17 +55,26 @@ def count_spoken_characters(text: str) -> int:
 def validate_copy(
     text: str,
     campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+    validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
 ) -> CopyValidationReport:
     cleaned = text.replace("\x00", "").strip()
     count = count_spoken_characters(cleaned)
     issues: list[ValidationIssue] = []
-    if count < MIN_COPY_CHARACTERS:
+    if count < validation_config.min_characters:
         issues.append(
-            ValidationIssue(IssueCode.TOO_SHORT, f"口播少于 {MIN_COPY_CHARACTERS} 字", str(count))
+            ValidationIssue(
+                IssueCode.TOO_SHORT,
+                f"口播少于 {validation_config.min_characters} 字",
+                str(count),
+            )
         )
-    if count > MAX_COPY_CHARACTERS:
+    if count > validation_config.max_characters:
         issues.append(
-            ValidationIssue(IssueCode.TOO_LONG, f"口播超过 {MAX_COPY_CHARACTERS} 字", str(count))
+            ValidationIssue(
+                IssueCode.TOO_LONG,
+                f"口播超过 {validation_config.max_characters} 字",
+                str(count),
+            )
         )
     if cleaned.count(NO_SPLIT_OPEN) != cleaned.count(NO_SPLIT_CLOSE):
         issues.append(
@@ -86,6 +84,16 @@ def validate_copy(
             )
         )
     expression_scope = strip_no_split_markers(cleaned)
+    for phrase in campaign.no_split_phrases:
+        marked = f"{NO_SPLIT_OPEN}{phrase}{NO_SPLIT_CLOSE}"
+        if marked not in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.MISSING_NO_SPLIT_MARKER,
+                    "组合保护片段必须使用 NO_SPLIT 标签完整包裹",
+                    marked,
+                )
+            )
     for benefit in campaign.benefit_points:
         if benefit.required and benefit.exact_match and benefit.text not in cleaned:
             issues.append(
@@ -108,14 +116,14 @@ def validate_copy(
         if benefit.text in expression_scope:
             expression_scope = expression_scope.replace(benefit.text, "")
 
-    banned_expressions = (*BANNED_EXPRESSIONS, *campaign.forbidden_expressions)
+    banned_expressions = (*validation_config.banned_expressions, *campaign.forbidden_expressions)
     for expression in banned_expressions:
         if expression in expression_scope:
             issues.append(ValidationIssue(IssueCode.BANNED_EXPRESSION, "出现禁止表达", expression))
-    for expression in CALLS_TO_ACTION:
+    for expression in validation_config.call_to_actions:
         if expression in cleaned:
             issues.append(ValidationIssue(IssueCode.CALL_TO_ACTION, "出现行动引导", expression))
-    if "\n" in cleaned or cleaned.startswith(FORMAT_PREFIXES):
+    if "\n" in cleaned or cleaned.startswith(validation_config.format_prefixes):
         issues.append(
             ValidationIssue(
                 IssueCode.FORMAT_VIOLATION,

@@ -1,6 +1,12 @@
 import pytest
 
-from avatar_prompt_pipeline.models import BenefitPoint, CampaignSpec, IssueCode, VisualProfile
+from avatar_prompt_pipeline.models import (
+    BenefitPoint,
+    CampaignSpec,
+    IssueCode,
+    ValidationConfig,
+    VisualProfile,
+)
 from avatar_prompt_pipeline.validation import (
     MARKED_REQUIRED_BENEFIT,
     REQUIRED_BENEFIT,
@@ -16,7 +22,7 @@ from avatar_prompt_pipeline.validation import (
 
 VALID_COPY = (
     "下班赶上大雨，走到小区门口鞋子已经湿了一圈，临时买东西时我总怕选错款。"
-    "[[NO_SPLIT]]淘宝闪购最高12元无门槛红包[[/NO_SPLIT]]"
+    "[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]"
     "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关也不占地方，"
     "红包结算时直接抵扣，雨天补一双省心不少。"
 )
@@ -26,7 +32,7 @@ def test_valid_copy_passes_all_deterministic_rules() -> None:
     report = validate_copy(VALID_COPY)
 
     assert report.is_valid is True
-    assert 80 <= report.character_count <= 120
+    assert 80 <= report.character_count <= 100
     assert report.issues == ()
 
 
@@ -67,6 +73,76 @@ def test_custom_benefit_replaces_hard_coded_validation_contract() -> None:
     assert validate_copy(custom_copy).is_valid is False
 
 
+def test_exact_benefit_can_be_embedded_in_taobao_context() -> None:
+    campaign = CampaignSpec(
+        benefit_points=(BenefitPoint(id="custom", text="最高25元无门槛红包"),),
+    )
+    copy = (
+        "下班路上想顺手买点水果，看到附近还有西瓜可选，淘宝闪购现在发了福利，有"
+        "[[NO_SPLIT]]最高25元无门槛红包[[/NO_SPLIT]]可以用。"
+        "买回来切几块放进果盘，饭后大家分着吃，临时补一份水果也不用绕远路。"
+    )
+
+    assert validate_copy(copy, campaign).is_valid is True
+
+
+def test_call_to_action_rules_come_from_validation_config() -> None:
+    campaign = CampaignSpec(
+        benefit_points=(BenefitPoint(id="custom", text="最高25元无门槛红包"),),
+    )
+    promo_validation = ValidationConfig(call_to_actions=("直播间", "立即购买"))
+    copy = (
+        "早八人想喝咖啡，淘宝闪购现在发了福利，有"
+        "[[NO_SPLIT]]最高25元无门槛红包[[/NO_SPLIT]]可以用。"
+        "选好附近门店后下单更省心，咖啡送到手边也不用特意绕路等待。"
+        "点击左下角链接看看吧，喜欢就赶紧冲。"
+    )
+
+    assert validate_copy(copy, campaign, promo_validation).is_valid is True
+    assert any(issue.code is IssueCode.CALL_TO_ACTION for issue in validate_copy(copy).issues)
+
+
+def test_project_no_split_phrase_must_wrap_combined_benefit_text() -> None:
+    campaign = CampaignSpec(
+        benefit_points=(
+            BenefitPoint(
+                id="primary-benefit",
+                text="最高25元无门槛红包",
+                no_split=False,
+                priority=1,
+            ),
+            BenefitPoint(
+                id="allowance-card-benefit",
+                text="还可以叠加九折津贴卡",
+                required=False,
+                no_split=False,
+                priority=2,
+            ),
+        ),
+        no_split_phrases=("最高25元无门槛红包，还可以叠加九折津贴卡",),
+    )
+    copy = (
+        "早八想喝霸王茶姬，淘宝闪购现在发福利，有"
+        "[[NO_SPLIT]]最高25元无门槛红包，还可以叠加九折津贴卡[[/NO_SPLIT]]。"
+        "附近门店配送到家，看到0.1元起的选择就顺手下单，官方链接就在左下角，今天想喝就赶紧冲。"
+    )
+    split_copy = copy.replace(
+        "[[NO_SPLIT]]最高25元无门槛红包，还可以叠加九折津贴卡[[/NO_SPLIT]]",
+        "[[NO_SPLIT]]最高25元无门槛红包[[/NO_SPLIT]]，"
+        "[[NO_SPLIT]]还可以叠加九折津贴卡[[/NO_SPLIT]]",
+    )
+
+    assert validate_copy(copy, campaign, ValidationConfig(call_to_actions=())).is_valid is True
+    assert any(
+        issue.code is IssueCode.MISSING_NO_SPLIT_MARKER
+        for issue in validate_copy(
+            split_copy, campaign, ValidationConfig(call_to_actions=())
+        ).issues
+    )
+    wrapped = wrap_campaign_benefits("最高25元无门槛红包，还可以叠加九折津贴卡，0.1元起", campaign)
+    assert "[[NO_SPLIT]]0.1元起[[/NO_SPLIT]]" not in wrapped
+
+
 def test_multiple_and_no_benefit_campaigns_are_supported() -> None:
     campaign = CampaignSpec(
         benefit_points=(
@@ -103,7 +179,7 @@ def test_malformed_no_split_tags_are_rejected() -> None:
 def test_previous_benefit_wording_is_rejected() -> None:
     previous_wording = VALID_COPY.replace(
         REQUIRED_BENEFIT,
-        "淘宝闪购，最高12元无门槛红包天天享。",
+        "高至12元无门槛红包",
     )
 
     report = validate_copy(previous_wording)

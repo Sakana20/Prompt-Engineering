@@ -1,0 +1,48 @@
+{
+  "project_id": "taobao-12-no-threshold-redpacket",
+  "category": "西瓜",
+  "platform": "淘宝闪购",
+  "campaign_name": "默认红包活动",
+  "benefit_points": [
+    {
+      "id": "primary-benefit",
+      "text": "最高12元无门槛红包",
+      "required": true,
+      "exact_match": true,
+      "no_split": true,
+      "priority": 1
+    }
+  ],
+  "campaign_forbidden_expressions": [
+    "最高25元无门槛红包"
+  ],
+  "required_disclosures": [],
+  "validation_config_path": "../validation/strict-default.json",
+  "language_style": {
+    "name": "product-led-conversational",
+    "tone": "普通人分享购买理由和使用体验，保留生活感，但商品必须是表达重点",
+    "point_of_view": "像同事或朋友随口分享",
+    "sentence_style": "句子短一些、信息清楚、自然停顿，不使用商品详情页语气",
+    "emphasis": [
+      "商品名称、购买理由和使用方式应清楚可听，不能被生活细节淹没",
+      "抽象评价后面要有具体依据",
+      "每句话承担不同信息，不解释显而易见的功能，不为凑字数重复表达"
+    ],
+    "avoid_phrases": [
+      "临时想买又怕麻烦",
+      "不知道怎么选",
+      "拿起来就能用",
+      "放着也方便",
+      "红包直接抵扣",
+      "补一个挺省心",
+      "日常使用很合适",
+      "以前……后来……",
+      "之前……直到……",
+      "自从用了……",
+      "真后悔没早点……"
+    ],
+    "extra_rules": [
+      "利益点自然嵌入购买理由，不要单独写成活动播报"
+    ]
+  }
+}

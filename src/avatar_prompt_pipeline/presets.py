@@ -1,19 +1,17 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from .config import load_project_config
 from .models import BenefitPoint, CampaignSpec
 
-TAOBAO_DEFAULT_BENEFIT = "淘宝闪购最高12元无门槛红包"
-
-TAOBAO_DEFAULT_CAMPAIGN = CampaignSpec(
-    platform="淘宝闪购",
-    campaign_name="默认红包活动",
-    benefit_points=(
-        BenefitPoint(
-            id="primary-benefit",
-            text=TAOBAO_DEFAULT_BENEFIT,
-        ),
-    ),
+TAOBAO_DEFAULT_CONFIG_PATH = (
+    Path(__file__).parents[2] / "configs" / "projects" / "taobao-12-no-threshold-redpacket.json"
 )
+TAOBAO_DEFAULT_CONFIG = load_project_config(TAOBAO_DEFAULT_CONFIG_PATH)
+
+TAOBAO_DEFAULT_CAMPAIGN = TAOBAO_DEFAULT_CONFIG.campaign
+TAOBAO_DEFAULT_BENEFIT = TAOBAO_DEFAULT_CAMPAIGN.benefit_points[0].text
 
 
 def campaign_from_benefits(

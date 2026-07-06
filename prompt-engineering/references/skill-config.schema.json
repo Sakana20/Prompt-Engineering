@@ -46,6 +46,12 @@
       },
       "default": []
     },
+    "no_split_phrases": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": [],
+      "description": "需要作为连续整体保护的项目级片段，可跨多个利益点和衔接词"
+    },
     "campaign_forbidden_expressions": {
       "type": "array",
       "items": {"type": "string", "minLength": 1},
@@ -55,6 +61,44 @@
       "type": "array",
       "items": {"type": "string", "minLength": 1},
       "default": []
+    },
+    "confirmed_claims": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": [],
+      "description": "当前项目确认可用但不要求每条文案必写的活动事实或商品场景"
+    },
+    "validation_config_path": {
+      "type": "string",
+      "default": "",
+      "description": "相对当前项目配置文件的校验配置 JSON 路径；为空时使用默认严格校验"
+    },
+    "language_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "description": "当前项目的文案语言风格；未配置字段继承默认商品导向生活化风格",
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "default": "product-led-conversational"},
+        "tone": {"type": "string", "minLength": 1},
+        "point_of_view": {"type": "string", "minLength": 1},
+        "sentence_style": {"type": "string", "minLength": 1},
+        "emphasis": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": []
+        },
+        "avoid_phrases": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": []
+        },
+        "extra_rules": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": []
+        }
+      }
     },
     "count": {"type": "integer", "minimum": 1, "default": 1},
     "aspect_ratio": {"type": "string", "enum": ["9:16", "16:9", "1:1"], "default": "9:16"},

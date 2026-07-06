@@ -52,6 +52,11 @@ def test_compose_cli_uses_project_config_without_default_campaign(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     config_path = tmp_path / "taobao-25-project.json"
+    validation_path = tmp_path / "promo-validation.json"
+    validation_path.write_text(
+        json.dumps({"call_to_actions": ["直播间", "立即购买"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     config_path.write_text(
         json.dumps(
             {
@@ -62,10 +67,15 @@ def test_compose_cli_uses_project_config_without_default_campaign(
                 "benefit_points": [
                     {
                         "id": "primary-benefit",
-                        "text": "淘宝闪购最高25元无门槛红包",
+                        "text": "最高25元无门槛红包",
                     }
                 ],
-                "campaign_forbidden_expressions": ["12元无门槛红包"],
+                "campaign_forbidden_expressions": ["最高12元无门槛红包"],
+                "validation_config_path": validation_path.name,
+                "language_style": {
+                    "name": "benefit-forward-promo",
+                    "tone": "自然直接",
+                },
             },
             ensure_ascii=False,
         ),
@@ -78,9 +88,16 @@ def test_compose_cli_uses_project_config_without_default_campaign(
     assert result == 0
     assert output["brief"]["category"] == "西瓜"
     assert output["campaign"]["campaign_name"] == "25元无门槛红包项目"
-    assert output["campaign"]["benefit_points"][0]["text"] == "淘宝闪购最高25元无门槛红包"
-    assert output["campaign"]["forbidden_expressions"] == ["12元无门槛红包"]
-    assert REQUIRED_BENEFIT not in output["copywriting_prompt"]
+    assert output["campaign"]["benefit_points"][0]["text"] == "最高25元无门槛红包"
+    assert output["campaign"]["forbidden_expressions"] == ["最高12元无门槛红包"]
+    assert output["validation_config"]["call_to_actions"] == ["直播间", "立即购买"]
+    assert output["language_style"]["name"] == "benefit-forward-promo"
+    assert "风格名称：benefit-forward-promo" in output["copywriting_prompt"]
+    assert "禁止出现以下行动引导：直播间、立即购买" in output["copywriting_prompt"]
+    assert (
+        f"利益点[primary-benefit]：[[NO_SPLIT]]{REQUIRED_BENEFIT}"
+        not in output["copywriting_prompt"]
+    )
 
 
 @pytest.mark.e2e
@@ -89,6 +106,11 @@ def test_validate_copy_cli_uses_project_config_contract(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     config_path = tmp_path / "taobao-25-project.json"
+    validation_path = tmp_path / "promo-validation.json"
+    validation_path.write_text(
+        json.dumps({"call_to_actions": ["直播间", "立即购买"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     config_path.write_text(
         json.dumps(
             {
@@ -96,10 +118,11 @@ def test_validate_copy_cli_uses_project_config_contract(
                 "benefit_points": [
                     {
                         "id": "primary-benefit",
-                        "text": "淘宝闪购最高25元无门槛红包",
+                        "text": "最高25元无门槛红包",
                     }
                 ],
-                "campaign_forbidden_expressions": ["12元无门槛红包"],
+                "campaign_forbidden_expressions": ["最高12元无门槛红包"],
+                "validation_config_path": validation_path.name,
             },
             ensure_ascii=False,
         ),
@@ -107,7 +130,7 @@ def test_validate_copy_cli_uses_project_config_contract(
     )
     text = (
         "下班回家路上想顺手买点水果，看到小区附近还有新鲜西瓜可选，"
-        "[[NO_SPLIT]]淘宝闪购最高25元无门槛红包[[/NO_SPLIT]]"
+        "[[NO_SPLIT]]最高25元无门槛红包[[/NO_SPLIT]]"
         "正好能用。这类水果适合切好放进冰箱，饭后端出来一家人分着吃，"
         "临时补一份也不用绕远路。"
     )
@@ -118,7 +141,7 @@ def test_validate_copy_cli_uses_project_config_contract(
     assert result == 0
     assert output["is_valid"] is True
 
-    previous_text = text.replace("25元无门槛红包", "12元无门槛红包")
+    previous_text = text.replace("最高25元无门槛红包", "最高12元无门槛红包")
     result = run(["validate-copy", previous_text, "--config", str(config_path)])
 
     output = json.loads(capsys.readouterr().out)
@@ -144,7 +167,7 @@ def test_project_config_rejects_mixed_campaign_arguments(
                 "--config",
                 str(config_path),
                 "--benefit-point",
-                "淘宝闪购最高12元无门槛红包",
+                "最高12元无门槛红包",
             ]
         )
 

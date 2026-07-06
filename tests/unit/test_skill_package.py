@@ -100,6 +100,10 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
     } <= properties.keys()
     assert properties["output_root"]["default"].endswith("/Codex/Prompt Engineering")
     assert "project_id" in properties
+    assert "confirmed_claims" in properties
+    assert "validation_config_path" in properties
+    assert "language_style" in properties
+    assert "avoid_phrases" in properties["language_style"]["properties"]
 
 
 def test_single_skill_is_generalized_with_campaign_contract() -> None:

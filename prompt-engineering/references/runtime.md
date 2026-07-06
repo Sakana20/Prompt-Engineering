@@ -28,10 +28,19 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 
 项目配置文件代表一组完整且互斥的商品与活动口径。传入 `--config` 后，CLI 使用配置中的
 `category`、商品事实、`platform`、`campaign_name`、`benefit_points`、
-`campaign_forbidden_expressions` 和 `required_disclosures`；不得同时传入
+`campaign_forbidden_expressions`、`required_disclosures`、`confirmed_claims`、
+`validation_config_path` 和 `language_style`；不得同时传入
 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。如“淘宝闪购 12 元
 无门槛红包”和“淘宝闪购 25 元无门槛红包”方向不同，应分别保存为两个项目配置，并在各自
 配置中用 `campaign_forbidden_expressions` 禁止另一个口径。
+兼容预设 `taobao-instant-commerce-default` 使用
+`configs/projects/taobao-12-no-threshold-redpacket.json` 作为数据源。
+`language_style` 只影响 Codex 的文案生成指令，不参与确定性校验；校验仍由活动契约、
+禁词、行动引导和格式规则负责。
+`validation_config_path` 指向独立校验配置，校验配置决定字数、禁词、行动引导禁用词和格式
+前缀；不要在项目口径里维护 CTA 许可列表。
+`confirmed_claims` 是确认可用但不强制每条都写入的活动事实或商品场景；不得从样本文案中
+扩展出未确认品牌、价格、商品范围或配送承诺。
 
 ## 批处理
 

@@ -10,6 +10,8 @@
 - CLI 新增 `--preset`、`--platform`、`--campaign-name`、`--benefit-point`；
 - CLI 新增 `--config` 项目配置入口，支持一个项目一个 JSON 配置文件；传入后使用配置中的
   商品和活动口径，不叠加默认预设或其他活动参数；
+- 项目配置新增 `language_style`，用于按项目注入文案语气、叙述视角、句式节奏、表达重点
+  和避免套话；
 - 将 `prompt-engineering` 升级为通用化 Skill，并保留当前淘宝默认利益点兼容行为；
 - 双文件和 Oceanengine 输出边界保持不变。
 
@@ -29,7 +31,7 @@
 ### Phase 1：Skill 生成合约与本地校验（已完成）
 
 - 已定义 `GeneratedScript`、`AvatarVideoPrompt`、验证问题和风险报告；
-- 已校验 80–120 字、活动利益点、禁词、行动引导和单段正文格式；
+- 已校验 80–100 字、活动利益点、禁词、行动引导和单段正文格式；
 - 已实现去空白字符计数，并明确其是字符规则而非真实口播时长；
 - 已实现重复文案和二元字符 Jaccard 高相似检测；
 - 已添加雨靴脱敏 golden case 和 CLI 端到端测试；

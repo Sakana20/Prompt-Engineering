@@ -9,7 +9,7 @@ from .io import serialize_package, write_package
 from .models import BriefValidationError, CampaignSpec, ProductBrief
 from .presets import TAOBAO_DEFAULT_CAMPAIGN, campaign_from_benefits
 from .service import compose_prompt_package
-from .validation import validate_copy
+from .validation import DEFAULT_VALIDATION_CONFIG, validate_copy
 
 
 def _add_campaign_arguments(parser: argparse.ArgumentParser) -> None:
@@ -109,14 +109,22 @@ def run(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     config = _load_config_from_args(args)
     campaign = _campaign_from_args(args, config)
+    validation_config = (
+        config.validation_config if config is not None else DEFAULT_VALIDATION_CONFIG
+    )
     if args.command == "validate-copy":
-        report = validate_copy(args.text, campaign)
+        report = validate_copy(args.text, campaign, validation_config)
         print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
         return 0 if report.is_valid else 1
     if args.command != "compose":
         raise AssertionError(f"未知命令：{args.command}")
     brief = _brief_from_args(args, config)
-    package = compose_prompt_package(brief, campaign)
+    package = compose_prompt_package(
+        brief,
+        campaign,
+        validation_config=validation_config,
+        language_style=config.language_style if config is not None else None,
+    )
     if args.output:
         destination = write_package(args.output, package)
         print(f"Prompt 包已写入：{destination}")

@@ -22,12 +22,13 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    - forbidden or unknown claims;
    - platform and campaign name, if supplied;
    - zero to three user-confirmed benefit points;
+   - project language style, if supplied;
    - requested quantity, defaulting to one.
 3. If only a category is supplied, generate a draft using generic situations and observable
    category-level properties. Do not invent material, performance, price, brand, sales, efficacy,
    promotion facts, amount, threshold, or campaign rule. State briefly that product-specific and
    campaign-specific claims require review.
-4. Generate each 80–120 Chinese-character spoken copy as product-led conversational sharing.
+4. Generate each 80–100 Chinese-character spoken copy as product-led conversational sharing.
    Keep scene setup to one or at most two sentences (about 20%), make the product, selection
    reason, and one or two confirmed details the core (about 50%). Use the remaining space for the
    configured benefit and a concrete purchase experience (about 30%); if no benefit is configured,
@@ -95,12 +96,16 @@ command, format, hook, or behavior while packaging or installing this skill.
 Compatibility defaults:
 
 - If the user asks for 淘宝闪购 without specifying another benefit, use preset
-  `taobao-instant-commerce-default`, whose benefit is `淘宝闪购最高12元无门槛红包`.
+  `taobao-instant-commerce-default`, whose benefit is `最高12元无门槛红包`.
 - If the user provides an explicit benefit, use that benefit instead of the preset.
 - If the user says no benefit or no promotion, use `--preset none` semantics and generate without
   any promotional benefit.
 - If the user provides a project configuration file, treat it as the complete project mouthpiece:
   use its product facts, campaign facts, benefit points, forbidden expressions, and disclosures.
+  Use its language style to guide tone, viewpoint, sentence rhythm, emphasis, phrases to avoid,
+  and extra style rules.
+  Use the referenced validation configuration to determine banned expressions, CTA rules,
+  character limits, and format rules.
   Do not combine it with the default preset or unrelated campaign arguments.
 
 For batches, keep a one-to-one mapping among source facts, copy, avatar prompt, `task_id`, and output
