@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://local.codex/taobao-avatar-video/cli-parameters.schema.json",
+  "$id": "https://local.codex/prompt-engineering/cli-parameters.schema.json",
   "title": "avatar-prompts CLI parameters",
   "oneOf": [
     {
@@ -26,6 +26,20 @@
           "x-cli": "--forbidden-claim",
           "x-repeatable": true
         },
+        "preset": {
+          "enum": ["taobao-instant-commerce-default", "none"],
+          "default": "taobao-instant-commerce-default",
+          "x-cli": "--preset"
+        },
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--benefit-point",
+          "x-repeatable": true
+        },
         "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"}
       }
     },
@@ -36,7 +50,21 @@
       "required": ["command", "text"],
       "properties": {
         "command": {"const": "validate-copy"},
-        "text": {"type": "string", "minLength": 1, "x-cli-position": 1}
+        "text": {"type": "string", "minLength": 1, "x-cli-position": 1},
+        "preset": {
+          "enum": ["taobao-instant-commerce-default", "none"],
+          "default": "taobao-instant-commerce-default",
+          "x-cli": "--preset"
+        },
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--benefit-point",
+          "x-repeatable": true
+        }
       }
     }
   ],

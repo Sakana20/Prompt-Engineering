@@ -3,9 +3,10 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from .models import CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
+from .models import CampaignSpec, CopyValidationReport, IssueCode, ValidationIssue, VisualProfile
+from .presets import TAOBAO_DEFAULT_BENEFIT, TAOBAO_DEFAULT_CAMPAIGN
 
-REQUIRED_BENEFIT = "淘宝闪购最高12元无门槛红包"
+REQUIRED_BENEFIT = TAOBAO_DEFAULT_BENEFIT
 NO_SPLIT_OPEN = "[[NO_SPLIT]]"
 NO_SPLIT_CLOSE = "[[/NO_SPLIT]]"
 MARKED_REQUIRED_BENEFIT = f"{NO_SPLIT_OPEN}{REQUIRED_BENEFIT}{NO_SPLIT_CLOSE}"
@@ -49,11 +50,23 @@ def wrap_required_benefit(text: str) -> str:
     return text.replace(REQUIRED_BENEFIT, MARKED_REQUIRED_BENEFIT)
 
 
+def wrap_campaign_benefits(text: str, campaign: CampaignSpec) -> str:
+    wrapped = text
+    for benefit in campaign.benefit_points:
+        marked = f"{NO_SPLIT_OPEN}{benefit.text}{NO_SPLIT_CLOSE}"
+        if benefit.no_split and marked not in wrapped:
+            wrapped = wrapped.replace(benefit.text, marked)
+    return wrapped
+
+
 def count_spoken_characters(text: str) -> int:
     return len(re.sub(r"\s+", "", strip_no_split_markers(text)))
 
 
-def validate_copy(text: str) -> CopyValidationReport:
+def validate_copy(
+    text: str,
+    campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+) -> CopyValidationReport:
     cleaned = text.replace("\x00", "").strip()
     count = count_spoken_characters(cleaned)
     issues: list[ValidationIssue] = []
@@ -65,26 +78,38 @@ def validate_copy(text: str) -> CopyValidationReport:
         issues.append(
             ValidationIssue(IssueCode.TOO_LONG, f"口播超过 {MAX_COPY_CHARACTERS} 字", str(count))
         )
-    if REQUIRED_BENEFIT not in cleaned:
+    if cleaned.count(NO_SPLIT_OPEN) != cleaned.count(NO_SPLIT_CLOSE):
         issues.append(
             ValidationIssue(
-                IssueCode.MISSING_BENEFIT,
-                "缺少固定淘宝闪购利益点，或利益点未按已验证口径输出",
-                REQUIRED_BENEFIT,
+                IssueCode.MALFORMED_NO_SPLIT_MARKER,
+                "NO_SPLIT 标签必须成对出现",
             )
         )
-    elif MARKED_REQUIRED_BENEFIT not in cleaned:
-        issues.append(
-            ValidationIssue(
-                IssueCode.MISSING_NO_SPLIT_MARKER,
-                "固定利益点必须使用 NO_SPLIT 标签完整包裹",
-                MARKED_REQUIRED_BENEFIT,
+    expression_scope = strip_no_split_markers(cleaned)
+    for benefit in campaign.benefit_points:
+        if benefit.required and benefit.exact_match and benefit.text not in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.MISSING_BENEFIT,
+                    f"缺少必填利益点：{benefit.id}",
+                    benefit.text,
+                )
             )
-        )
+            continue
+        marked = f"{NO_SPLIT_OPEN}{benefit.text}{NO_SPLIT_CLOSE}"
+        if benefit.required and benefit.no_split and marked not in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.MISSING_NO_SPLIT_MARKER,
+                    f"利益点 {benefit.id} 必须使用 NO_SPLIT 标签完整包裹",
+                    marked,
+                )
+            )
+        if benefit.text in expression_scope:
+            expression_scope = expression_scope.replace(benefit.text, "")
 
-    # “最高”是固定利益点的一部分；先移除固定口径，再检查禁用的单字“最”。
-    expression_scope = strip_no_split_markers(cleaned).replace(REQUIRED_BENEFIT, "")
-    for expression in BANNED_EXPRESSIONS:
+    banned_expressions = (*BANNED_EXPRESSIONS, *campaign.forbidden_expressions)
+    for expression in banned_expressions:
         if expression in expression_scope:
             issues.append(ValidationIssue(IssueCode.BANNED_EXPRESSION, "出现禁止表达", expression))
     for expression in CALLS_TO_ACTION:

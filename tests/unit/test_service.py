@@ -24,7 +24,8 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "利益点与购买体验约占全文 30%" in package.copywriting_prompt
     assert "不要写成完整生活故事" in package.copywriting_prompt
     assert "不要单独写成播报口号" in package.copywriting_prompt
-    assert package.template_version == "2026-07-02-product-led-v5"
+    assert "利益点[primary-benefit]" in package.copywriting_prompt
+    assert package.template_version == "2026-07-03-generic-campaign-v1"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

@@ -2,9 +2,9 @@
 
 ## 目标
 
-本项目是 Codex Skill。Codex 将可信商品资料转换成可审计的 Prompt 包，并最终输出兼容
-`Auto Oceanengine 26.6.22` 的任务 CSV。Codex 语义生成、确定性校验、下游文件写入和
-付费视频执行是四个清晰阶段。
+本项目提供通用商品内容核心和一个通用化 Codex Skill。Codex 将可信商品资料与活动资料转换为
+可审计 Prompt 包，并可输出兼容 `Auto Oceanengine 26.6.22` 的任务 CSV。Codex 语义生成、
+确定性校验、下游文件写入和付费视频执行保持分层。
 
 ## 组件
 
@@ -40,17 +40,21 @@ CSV 文件操作，不调用另一个 LLM。
 仅提供品类时，`is_draft_only` 为真，所有输出必须人工复核。不能用模型生成内容反向充当
 商品事实。
 
+`CampaignSpec` 包含平台、活动名、0–3 条 `BenefitPoint`、活动禁用表达和必须披露内容。
+每条利益点独立声明是否必填、是否逐字保留、是否用 `NO_SPLIT` 包裹及表达优先级。
+默认淘宝预设只用于兼容旧的淘宝闪购使用方式；同一个 Skill 可替换利益点或明确选择无利益点。
+
 `PromptPackage` 包含 schema 版本、模板版本、输入资料、文案 Prompt、数字人 Prompt 模板
 和审核标记。JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQLite。
 
 `GeneratedScript` 与 `AvatarVideoPrompt` 表示 Codex 的两层生成结果。文案必须先通过
-`CopyValidationReport`：字符数、固定利益点、禁词、行动引导和格式均合格后，才进入
+`CopyValidationReport`：字符数、活动契约、禁词、行动引导和格式均合格后，才进入
 数字人 Prompt 阶段。批量结果另以二元字符 Jaccard 相似度检测重复和高同质内容；该指标
 只做保守预警，不能替代 Codex 对场景和表达差异的语义判断。
 
 ## Skill 与 Prompt 资源
 
-可分发 Skill 位于 `taobao-avatar-video/`。核心流程在 `SKILL.md`，详细规则按需放在
+可分发 Skill 位于 `prompt-engineering/`。核心流程在 `SKILL.md`，详细规则按需放在
 `references/`。`src/avatar_prompt_pipeline/templates/` 暂时保留完整基线模板，供开发期
 回归和版本比较。每次模板或规则变更必须：
 
@@ -62,12 +66,15 @@ CSV 文件操作，不调用另一个 LLM。
 文案模板 `2026-07-02-product-led-v5` 定位为“商品导向的生活化分享”：场景或需求用
 1–2 句话快速交代，约占 20%；商品、选择理由和 1–2 个已确认特点约占 50%；利益点与
 具体购买体验约占 30%。场景只为商品服务，不展开成完整生活故事。确定性校验仍负责
-字数、固定利益点、禁词、行动引导和单段格式，表达比例和自然度由 Codex 与人工审核判断。
+字数、活动利益点、禁词、行动引导和单段格式，表达比例和自然度由 Codex 与人工审核判断。
 
 生成态利益点使用 `[[NO_SPLIT]]…[[/NO_SPLIT]]` 标注，标签不计入口播字数。产物在此
 扇出：同一任务目录位于 `Prompt Engineering/<YYYYMMDD>/<task>/`，其中字幕稿保留标签，
 CSV 的 `script` 去掉标签。两类 writer 独立调用，任何一方都不能隐式触发、覆盖、导入
 或运行另一方。
+
+`prompt-engineering/` 是唯一分发 Skill。用户指定商品和利益点即可生成对应产物；用户只
+给淘宝闪购场景且未指定利益点时，使用默认淘宝闪购利益点预设。
 
 Skill 使用透明 CLI 启动器调用仓库入口，不复制或删减底层参数。CLI 与 Skill 配置分别由
 `cli-parameters.schema.json`、`skill-config.schema.json` 描述。批处理、插件声明、安全

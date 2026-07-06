@@ -1,6 +1,6 @@
 import pytest
 
-from avatar_prompt_pipeline.models import IssueCode, VisualProfile
+from avatar_prompt_pipeline.models import BenefitPoint, CampaignSpec, IssueCode, VisualProfile
 from avatar_prompt_pipeline.validation import (
     MARKED_REQUIRED_BENEFIT,
     REQUIRED_BENEFIT,
@@ -10,6 +10,7 @@ from avatar_prompt_pipeline.validation import (
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
+    wrap_campaign_benefits,
     wrap_required_benefit,
 )
 
@@ -53,6 +54,50 @@ def test_benefit_marker_helpers_are_idempotent_and_lossless() -> None:
     assert wrap_required_benefit(unwrapped) == VALID_COPY
     assert wrap_required_benefit(VALID_COPY) == VALID_COPY
     assert strip_no_split_markers(VALID_COPY) == unwrapped
+
+
+def test_custom_benefit_replaces_hard_coded_validation_contract() -> None:
+    campaign = CampaignSpec(benefit_points=(BenefitPoint(id="custom", text="淘宝闪购满20减5"),))
+    custom_copy = VALID_COPY.replace(
+        MARKED_REQUIRED_BENEFIT,
+        "[[NO_SPLIT]]淘宝闪购满20减5[[/NO_SPLIT]]",
+    )
+
+    assert validate_copy(custom_copy, campaign).is_valid is True
+    assert validate_copy(custom_copy).is_valid is False
+
+
+def test_multiple_and_no_benefit_campaigns_are_supported() -> None:
+    campaign = CampaignSpec(
+        benefit_points=(
+            BenefitPoint(id="first", text="活动利益点甲", priority=1),
+            BenefitPoint(id="second", text="活动利益点乙", priority=2),
+        )
+    )
+    copy = (
+        "下班准备回家时想顺手买点日用品，这款收纳袋适合把桌面零碎集中放好，"
+        "[[NO_SPLIT]]活动利益点甲[[/NO_SPLIT]]和"
+        "[[NO_SPLIT]]活动利益点乙[[/NO_SPLIT]]都能用，"
+        "拿回家放在柜子旁，需要整理时直接取出来，平时找东西也少翻几个抽屉。"
+    )
+    no_benefit_copy = (
+        "换季收拾衣柜时，散在抽屉里的小物件总要重新归类。这款收纳袋可以把同类东西集中"
+        "放在一起，整理完直接放进柜子，之后需要时按袋取出，不用每次把整个抽屉重新翻一遍，"
+        "找起来也更清楚。"
+    )
+
+    assert validate_copy(copy, campaign).is_valid is True
+    assert validate_copy(no_benefit_copy, CampaignSpec()).is_valid is True
+    assert wrap_campaign_benefits("活动利益点甲", campaign).startswith("[[NO_SPLIT]]")
+
+
+def test_malformed_no_split_tags_are_rejected() -> None:
+    malformed = VALID_COPY.replace("[[/NO_SPLIT]]", "")
+
+    assert any(
+        issue.code is IssueCode.MALFORMED_NO_SPLIT_MARKER
+        for issue in validate_copy(malformed).issues
+    )
 
 
 def test_previous_benefit_wording_is_rejected() -> None:

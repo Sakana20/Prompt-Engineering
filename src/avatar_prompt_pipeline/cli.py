@@ -5,13 +5,47 @@ import json
 from collections.abc import Sequence
 
 from .io import serialize_package, write_package
-from .models import BriefValidationError, ProductBrief
+from .models import BriefValidationError, CampaignSpec, ProductBrief
+from .presets import TAOBAO_DEFAULT_CAMPAIGN, campaign_from_benefits
 from .service import compose_prompt_package
 from .validation import validate_copy
 
 
+def _add_campaign_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--preset",
+        choices=("taobao-instant-commerce-default", "none"),
+        default="taobao-instant-commerce-default",
+        help="活动预设；none 表示不自动加入利益点",
+    )
+    parser.add_argument("--platform", default="", help="平台名称")
+    parser.add_argument("--campaign-name", default="", help="活动名称")
+    parser.add_argument(
+        "--benefit-point",
+        action="append",
+        default=[],
+        help="已确认利益点，可重复传入；提供后覆盖预设利益点",
+    )
+
+
+def _campaign_from_args(args: argparse.Namespace) -> CampaignSpec:
+    benefit_points = tuple(str(value) for value in args.benefit_point)
+    if benefit_points:
+        return campaign_from_benefits(
+            benefit_points,
+            platform=str(args.platform),
+            campaign_name=str(args.campaign_name),
+        )
+    if args.preset == "none":
+        return CampaignSpec(
+            platform=str(args.platform),
+            campaign_name=str(args.campaign_name),
+        )
+    return TAOBAO_DEFAULT_CAMPAIGN
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="淘宝闪购数字人 Prompt 编排工具")
+    parser = argparse.ArgumentParser(description="通用商品数字人 Prompt 编排工具")
     commands = parser.add_subparsers(dest="command", required=True)
     compose = commands.add_parser("compose", help="根据商品资料生成 Prompt 包")
     compose.add_argument("--category", required=True, help="商品品类")
@@ -23,15 +57,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--forbidden-claim", action="append", default=[], help="禁止使用的信息，可重复传入"
     )
     compose.add_argument("--output", help="输出 JSON 路径；省略时打印到标准输出")
+    _add_campaign_arguments(compose)
     validate = commands.add_parser("validate-copy", help="校验一段已生成口播")
     validate.add_argument("text", help="待校验口播正文")
+    _add_campaign_arguments(validate)
     return parser
 
 
 def run(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    campaign = _campaign_from_args(args)
     if args.command == "validate-copy":
-        report = validate_copy(args.text)
+        report = validate_copy(args.text, campaign)
         print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
         return 0 if report.is_valid else 1
     if args.command != "compose":
@@ -45,7 +82,7 @@ def run(argv: Sequence[str] | None = None) -> int:
         )
     except BriefValidationError as exc:
         raise SystemExit(str(exc)) from exc
-    package = compose_prompt_package(brief)
+    package = compose_prompt_package(brief, campaign)
     if args.output:
         destination = write_package(args.output, package)
         print(f"Prompt 包已写入：{destination}")

@@ -58,8 +58,9 @@ LLM provider。
 
 ### Skill 验证
 
-每次修改 `taobao-avatar-video/` 后运行官方 `quick_validate.py`。测试还应检查 Skill 名称、
-frontmatter、UI 元数据及全部必需 reference 文件，避免开发仓库正常但分发目录残缺。
+每次修改 `prompt-engineering/` 后运行官方 `quick_validate.py`。测试还应检查 Skill 名称、
+frontmatter、UI 元数据及全部必需
+reference 文件，避免开发仓库正常但分发目录残缺。
 
 ### 测试资料归档
 

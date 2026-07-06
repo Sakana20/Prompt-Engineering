@@ -38,8 +38,8 @@ def main() -> int:
         else ["uv", "run", "avatar-prompts", *forwarded]
     )
     if args.debug:
-        print(f"[taobao-avatar-video] cwd={args.project_root}")
-        print(f"[taobao-avatar-video] command={command!r}")
+        print(f"[prompt-engineering] cwd={args.project_root}")
+        print(f"[prompt-engineering] command={command!r}")
     completed = subprocess.run(command, cwd=args.project_root, check=False)
     return completed.returncode
 

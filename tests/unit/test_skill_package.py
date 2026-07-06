@@ -1,17 +1,18 @@
 import json
 from pathlib import Path
 
-SKILL_ROOT = Path(__file__).parents[2] / "taobao-avatar-video"
+SKILL_ROOT = Path(__file__).parents[2] / "prompt-engineering"
 
 
 def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
 
-    assert skill.startswith("---\nname: taobao-avatar-video\n")
+    assert skill.startswith("---\nname: prompt-engineering\n")
     assert "description:" in skill.split("---", maxsplit=2)[1]
     assert "Do not call another LLM." in skill
     assert (SKILL_ROOT / "agents" / "openai.yaml").is_file()
     assert (SKILL_ROOT / "references" / "copywriting-rules.md").is_file()
+    assert (SKILL_ROOT / "references" / "campaign-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "avatar-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "runtime.md").is_file()
@@ -25,7 +26,8 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
     metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
 
-    assert 'default_prompt: "使用 $taobao-avatar-video ' in metadata
+    assert 'default_prompt: "使用 $prompt-engineering ' in metadata
+    assert "商品和利益点" in metadata
 
 
 def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None:
@@ -50,9 +52,20 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "product_name",
         "selling_point",
         "forbidden_claim",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
         "output",
     }
-    assert set(validate) == {"command", "text"}
+    assert set(validate) == {
+        "command",
+        "text",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
+    }
     assert set(schema["$defs"]["launcher"]["properties"]) == {
         "project_root",
         "debug",
@@ -84,3 +97,19 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
         "oceanengine_csv_output_directory",
     } <= properties.keys()
     assert properties["output_root"]["default"].endswith("/Codex/Prompt Engineering")
+
+
+def test_single_skill_is_generalized_with_campaign_contract() -> None:
+    skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+    config = json.loads(
+        (SKILL_ROOT / "references" / "skill-config.schema.json").read_text(encoding="utf-8")
+    )
+    cli = json.loads(
+        (SKILL_ROOT / "references" / "cli-parameters.schema.json").read_text(encoding="utf-8")
+    )
+
+    assert skill.startswith("---\nname: prompt-engineering\n")
+    assert "zero to three user-confirmed benefit points" in skill
+    assert "Compatibility defaults" in skill
+    assert config["properties"]["benefit_points"]["maxItems"] == 3
+    assert "benefit_point" in cli["oneOf"][0]["properties"]

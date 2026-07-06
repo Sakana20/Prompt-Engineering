@@ -8,7 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from .models import OceanengineTask
+from .models import CampaignSpec, OceanengineTask
+from .presets import TAOBAO_DEFAULT_CAMPAIGN
 from .validation import strip_no_split_markers, validate_copy
 
 DEFAULT_OUTPUT_ROOT = Path("/Users/sakana/Desktop/Work/Codex/Prompt Engineering")
@@ -62,8 +63,12 @@ def _write_atomic(destination: Path, writer: Callable[[TextIO], None]) -> Path:
     return destination
 
 
-def write_segmentation_manuscript(path: str | Path, marked_script: str) -> Path:
-    report = validate_copy(marked_script)
+def write_segmentation_manuscript(
+    path: str | Path,
+    marked_script: str,
+    campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+) -> Path:
+    report = validate_copy(marked_script, campaign)
     if not report.is_valid:
         issue_codes = ", ".join(issue.code for issue in report.issues)
         raise ValueError(f"带标记稿件未通过口播校验：{issue_codes}")
@@ -75,7 +80,11 @@ def write_segmentation_manuscript(path: str | Path, marked_script: str) -> Path:
     return _write_atomic(Path(path), write)
 
 
-def write_oceanengine_csv(path: str | Path, tasks: Sequence[OceanengineTask]) -> Path:
+def write_oceanengine_csv(
+    path: str | Path,
+    tasks: Sequence[OceanengineTask],
+    campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+) -> Path:
     if not tasks:
         raise ValueError("即创 CSV 至少需要一个任务")
     task_ids = [task.task_id for task in tasks]
@@ -86,7 +95,7 @@ def write_oceanengine_csv(path: str | Path, tasks: Sequence[OceanengineTask]) ->
         csv_writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS)
         csv_writer.writeheader()
         for task in tasks:
-            report = validate_copy(task.marked_script)
+            report = validate_copy(task.marked_script, campaign)
             if not report.is_valid:
                 issue_codes = ", ".join(issue.code for issue in report.issues)
                 raise ValueError(f"任务 {task.task_id} 的口播未通过校验：{issue_codes}")

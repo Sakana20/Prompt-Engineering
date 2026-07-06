@@ -14,6 +14,7 @@ class IssueCode(StrEnum):
     TOO_LONG = "TOO_LONG"
     MISSING_BENEFIT = "MISSING_BENEFIT"
     MISSING_NO_SPLIT_MARKER = "MISSING_NO_SPLIT_MARKER"
+    MALFORMED_NO_SPLIT_MARKER = "MALFORMED_NO_SPLIT_MARKER"
     BANNED_EXPRESSION = "BANNED_EXPRESSION"
     CALL_TO_ACTION = "CALL_TO_ACTION"
     FORMAT_VIOLATION = "FORMAT_VIOLATION"
@@ -69,10 +70,85 @@ class ProductBrief:
 
 
 @dataclass(frozen=True, slots=True)
+class BenefitPoint:
+    id: str
+    text: str
+    required: bool = True
+    exact_match: bool = True
+    no_split: bool = True
+    priority: int = 1
+
+    def __post_init__(self) -> None:
+        benefit_id = _clean(self.id)
+        text = _clean(self.text)
+        if not benefit_id or not text:
+            raise BriefValidationError("利益点 id 和 text 不能为空")
+        if self.priority < 1:
+            raise BriefValidationError("利益点 priority 必须大于等于 1")
+        object.__setattr__(self, "id", benefit_id)
+        object.__setattr__(self, "text", text)
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignSpec:
+    platform: str = ""
+    campaign_name: str = ""
+    benefit_points: tuple[BenefitPoint, ...] = ()
+    forbidden_expressions: tuple[str, ...] = ()
+    required_disclosures: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if len(self.benefit_points) > 3:
+            raise BriefValidationError("单个任务最多支持 3 条利益点")
+        benefit_ids = [benefit.id for benefit in self.benefit_points]
+        if len(benefit_ids) != len(set(benefit_ids)):
+            raise BriefValidationError("利益点 id 必须唯一")
+        object.__setattr__(self, "platform", _clean(self.platform))
+        object.__setattr__(self, "campaign_name", _clean(self.campaign_name))
+        object.__setattr__(
+            self,
+            "benefit_points",
+            tuple(sorted(self.benefit_points, key=lambda benefit: benefit.priority)),
+        )
+        object.__setattr__(
+            self,
+            "forbidden_expressions",
+            tuple(value for item in self.forbidden_expressions if (value := _clean(item))),
+        )
+        object.__setattr__(
+            self,
+            "required_disclosures",
+            tuple(value for item in self.required_disclosures if (value := _clean(item))),
+        )
+
+    def campaign_context(self) -> str:
+        lines = [f"平台：{self.platform or '未指定'}"]
+        if self.campaign_name:
+            lines.append(f"活动：{self.campaign_name}")
+        if not self.benefit_points:
+            lines.append("利益点：无；不得自行创造促销、金额、门槛或优惠")
+        for benefit in self.benefit_points:
+            rendered = (
+                f"[[NO_SPLIT]]{benefit.text}[[/NO_SPLIT]]" if benefit.no_split else benefit.text
+            )
+            requirements = [
+                "必须出现" if benefit.required else "可选",
+                "逐字保留" if benefit.exact_match else "允许自然转述",
+            ]
+            lines.append(f"利益点[{benefit.id}]：{rendered}，要求：{'、'.join(requirements)}")
+        if self.forbidden_expressions:
+            lines.append("活动禁用表达：" + "；".join(self.forbidden_expressions))
+        if self.required_disclosures:
+            lines.append("必须披露：" + "；".join(self.required_disclosures))
+        return "\n".join(lines)
+
+
+@dataclass(frozen=True, slots=True)
 class PromptPackage:
     schema_version: str
     template_version: str
     brief: ProductBrief
+    campaign: CampaignSpec
     copywriting_prompt: str
     avatar_prompt_template: str
     review_required: bool

@@ -16,6 +16,34 @@ def test_compose_cli_prints_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert result == 0
     assert output["brief"]["category"] == "雨靴"
     assert output["brief"]["selling_points"] == ["中筒款式"]
+    assert output["campaign"]["benefit_points"][0]["text"] == REQUIRED_BENEFIT
+
+
+@pytest.mark.e2e
+def test_compose_cli_accepts_custom_and_no_benefit_campaigns(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result = run(
+        [
+            "compose",
+            "--category",
+            "雨伞",
+            "--platform",
+            "淘宝闪购",
+            "--benefit-point",
+            "淘宝闪购满20减5",
+        ]
+    )
+    custom: dict[str, Any] = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert custom["campaign"]["benefit_points"][0]["text"] == "淘宝闪购满20减5"
+
+    result = run(["compose", "--category", "雨伞", "--preset", "none"])
+    no_benefit: dict[str, Any] = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert no_benefit["campaign"]["benefit_points"] == []
 
 
 @pytest.mark.e2e

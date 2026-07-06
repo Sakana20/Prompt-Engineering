@@ -1,9 +1,15 @@
-# Taobao Avatar Video Codex Skill
+# Commerce Avatar Content
 
-这是 `taobao-avatar-video` Codex Skill 的开发仓库。Codex 直接分析商品资料、生成淘宝
-闪购口播与数字人 Prompt，并为 `Auto Oceanengine 26.6.22` 准备可审计任务包。
+这是通用商品数字人内容项目。Codex 直接分析商品与活动资料，生成商品口播、数字人
+Prompt、字幕稿和任务 CSV。项目分发为一个通用化 Codex Skill，保留淘宝闪购默认利益点
+作为兼容预设。
 
-可分发 Skill 位于 [taobao-avatar-video](taobao-avatar-video/)：
+可分发 Skill：
+
+- [prompt-engineering](prompt-engineering/)：通用商品数字人内容入口，支持 0–3 条利益点、
+  无利益点任务，以及 `taobao-instant-commerce-default` 兼容预设。
+
+Skill 包含：
 
 1. `SKILL.md` 定义触发条件与执行流程；
 2. `references/` 保存已验证文案规则、数字人规则和即创契约；
@@ -11,10 +17,14 @@
 4. `scripts/run_cli.py` 透明保留全部现有 CLI 参数。
 5. JSON Schema 描述 CLI 参数与 Skill 配置、批处理、插件、调试和输出格式。
 
+利益点来自用户输入或已确认预设。CLI 使用 `--benefit-point` 覆盖默认利益点，使用
+`--preset none` 创建无利益点任务；不得自行创造促销、金额或门槛。
+
 不接入其他 LLM 或模型 API。仓库中的 Python 只承担确定性编排、校验、序列化和产物
 写出，不负责语义生成。写入下游、导入任务和付费视频生成仍是独立授权边界。
 
-生成态口播使用 `[[NO_SPLIT]]…[[/NO_SPLIT]]` 包裹固定利益点，标签不计入口播字数。
+生成态口播按活动契约使用 `[[NO_SPLIT]]…[[/NO_SPLIT]]` 包裹指定利益点，标签不计入口播
+字数。
 口播定位为“商品导向的生活化分享”：场景约占 20%，商品与选择理由约占 50%，利益点和
 具体购买体验约占 30%，避免写成完整生活故事。
 所有产物按 `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/`
@@ -69,12 +79,12 @@ uv run pytest
 
 ```bash
 uv run python /Users/sakana/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
-  taobao-avatar-video
+  prompt-engineering
 ```
 
 Skill CLI 透明入口：
 
 ```bash
-python taobao-avatar-video/scripts/run_cli.py -- compose --category 西瓜
-python taobao-avatar-video/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
+python prompt-engineering/scripts/run_cli.py -- compose --category 西瓜
+python prompt-engineering/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
 ```

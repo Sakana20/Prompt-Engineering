@@ -2,9 +2,18 @@
 
 ## 当前状态
 
+### Phase 7：商品与活动通用化（已完成）
+
+- 增加 `CampaignSpec`、`BenefitPoint` 和通用活动上下文；
+- 支持 0–3 条利益点、替换利益点、多利益点和无利益点；
+- 校验器按活动契约检查精确措辞、标签和禁词豁免；
+- CLI 新增 `--preset`、`--platform`、`--campaign-name`、`--benefit-point`；
+- 将 `prompt-engineering` 升级为通用化 Skill，并保留当前淘宝默认利益点兼容行为；
+- 双文件和 Oceanengine 输出边界保持不变。
+
 ### Phase 0：项目初始化（已完成）
 
-- `taobao-avatar-video` Codex Skill 目录、`SKILL.md` 与 UI 元数据；
+- `prompt-engineering` Codex Skill 目录、`SKILL.md` 与 UI 元数据；
 - 文案规则、数字人规则和即创 CSV 契约 references；
 - `uv` Python 3.12+ 项目与 `src` 布局；
 - 已验证文案 Prompt、数字人 Prompt 版本化资源；
@@ -18,7 +27,7 @@
 ### Phase 1：Skill 生成合约与本地校验（已完成）
 
 - 已定义 `GeneratedScript`、`AvatarVideoPrompt`、验证问题和风险报告；
-- 已校验 80–120 字、固定利益点、禁词、行动引导和单段正文格式；
+- 已校验 80–120 字、活动利益点、禁词、行动引导和单段正文格式；
 - 已实现去空白字符计数，并明确其是字符规则而非真实口播时长；
 - 已实现重复文案和二元字符 Jaccard 高相似检测；
 - 已添加雨靴脱敏 golden case 和 CLI 端到端测试；
@@ -88,7 +97,7 @@
 - 为 CLI、启动器和 Skill 配置逐项提供 JSON Schema；
 - 保留配置、批处理、Codex 插件声明、安全调试输出；
 - 保留 text、JSON、CSV、Markdown、segmentation_manuscript 输出约定；
-- 通过官方 Skill 校验后安装到 `$CODEX_HOME/skills/taobao-avatar-video`。
+- 通过官方 Skill 校验后安装到 `$CODEX_HOME/skills/prompt-engineering`。
 
 ## 未决策项
 

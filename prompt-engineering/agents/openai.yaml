@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Engineering"
+  short_description: "从商品、利益点和活动资料生成口播、数字人提示词与任务包"
+  default_prompt: "使用 $prompt-engineering 根据我提供的商品和利益点生成口播、数字人 Prompt 和任务文件。"

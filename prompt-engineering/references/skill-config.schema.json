@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://local.codex/taobao-avatar-video/skill-config.schema.json",
+  "$id": "https://local.codex/prompt-engineering/skill-config.schema.json",
   "title": "Taobao Avatar Video Skill configuration",
   "type": "object",
   "additionalProperties": false,
@@ -13,6 +13,40 @@
       "default": []
     },
     "forbidden_claims": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "preset": {
+      "enum": ["taobao-instant-commerce-default", "none"],
+      "default": "taobao-instant-commerce-default"
+    },
+    "platform": {"type": "string", "default": ""},
+    "campaign_name": {"type": "string", "default": ""},
+    "benefit_points": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "text": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean", "default": true},
+          "exact_match": {"type": "boolean", "default": true},
+          "no_split": {"type": "boolean", "default": true},
+          "priority": {"type": "integer", "minimum": 1, "default": 1}
+        }
+      },
+      "default": []
+    },
+    "campaign_forbidden_expressions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": []
+    },
+    "required_disclosures": {
       "type": "array",
       "items": {"type": "string", "minLength": 1},
       "default": []
