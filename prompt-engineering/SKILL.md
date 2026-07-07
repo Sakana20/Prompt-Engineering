@@ -42,7 +42,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    - when no benefit is supplied and no preset is selected, do not invent promotions, amounts,
      thresholds, or platform benefits.
 6. Validate every copy before continuing:
-   - reject banned words and click/purchase calls to action;
+   - reject banned words and only the click/purchase calls to action configured for the active
+     validation config;
    - use only confirmed product facts;
    - output natural prose, not a title, list, explanation, or Markdown.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` with
