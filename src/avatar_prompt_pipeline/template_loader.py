@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-07-03-generic-campaign-v1"
+TEMPLATE_VERSION = "2026-07-13-generic-campaign-v3"
 
 
 def load_template(name: str) -> str:

@@ -35,7 +35,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-07-03-generic-campaign-v1"
+    assert package.template_version == "2026-07-13-generic-campaign-v3"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
@@ -85,6 +85,7 @@ def test_render_avatar_prompt_injects_script() -> None:
     assert "下班回家，最高12元无门槛红包，门口的雨靴还沾着一点雨水。" in rendered
     assert "[[NO_SPLIT]]" not in rendered
     assert "竖屏 9:16" in rendered
+    assert "固定使用中景；不允许使用半身景别。" in rendered
 
 
 def test_render_avatar_prompt_rejects_empty_script() -> None:
