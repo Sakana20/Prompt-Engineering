@@ -52,6 +52,10 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
             "female": "温暖闺蜜",
             "male": "温润男声",
         },
+        "voice_ids": {
+            "温暖闺蜜": "Chinese (Mandarin)_Warm_Bestie",
+            "温润男声": "Chinese (Mandarin)_Gentleman",
+        },
     },
     "nodes": {
         "image": {

@@ -351,7 +351,7 @@ class LibtvOmniHumanTask:
     title: str
     notes: str
     voice_label: str = "温暖闺蜜"
-    voice_id: str = ""
+    voice_id: str = "Chinese (Mandarin)_Warm_Bestie"
     aspect_ratio: str = "9:16"
 
 

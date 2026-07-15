@@ -117,7 +117,7 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
             "image_prompt": "年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
             "audio_prompt": MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", ""),
             "voice_label": "温暖闺蜜",
-            "voice_id": "",
+            "voice_id": "Chinese (Mandarin)_Warm_Bestie",
             "aspect_ratio": "9:16",
         }
     ]
@@ -134,6 +134,10 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
         "female": "温暖闺蜜",
         "male": "温润男声",
     }
+    assert interface_config["defaults"]["voice_ids"]["温暖闺蜜"] == (
+        "Chinese (Mandarin)_Warm_Bestie"
+    )
+    assert interface_config["defaults"]["voice_ids"]["温润男声"] == ("Chinese (Mandarin)_Gentleman")
     assert interface_config["nodes"]["video"]["model"] == "OmniHuman 1.5"
     assert interface_config["execution_boundary"]["run_nodes"] is False
 

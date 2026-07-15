@@ -17,8 +17,17 @@
 男声默认：温润男声
 ```
 
-这两个值是任务包中的 `voice_label`，不是 LibTV TTS schema 的精确 `voice_id`。具体
-`voice_id` 必须由执行器或后续配置映射表确认；未确认前不得把模型默认音色描述为业务默认值。
+`温暖闺蜜` 已确认 LibTV/TTS `voice_id`：
+
+```text
+Chinese (Mandarin)_Warm_Bestie
+```
+
+`温润男声` 已确认 LibTV/TTS `voice_id`：
+
+```text
+Chinese (Mandarin)_Gentleman
+```
 
 ## 试跑结论
 
@@ -77,7 +86,7 @@ jierou-01-audio
   model: Minimax-speech-2.8-turbo
   prompt: CSV.script
   voice_label: 温暖闺蜜
-  voice_id: 待确认
+  voice_id: Chinese (Mandarin)_Warm_Bestie
   speed: 1
   voicePitch: 0
   vol: 1
@@ -208,6 +217,10 @@ Markdown 用于人审和单条试跑记录。
     "voice_labels": {
       "female": "温暖闺蜜",
       "male": "温润男声"
+    },
+    "voice_ids": {
+      "温暖闺蜜": "Chinese (Mandarin)_Warm_Bestie",
+      "温润男声": "Chinese (Mandarin)_Gentleman"
     }
   },
   "nodes": {
@@ -272,6 +285,7 @@ Markdown 用于人审和单条试跑记录。
 | `task_package.csv` | 与该接口配置配套的任务行 CSV |
 | `defaults.target_*` | 成片验收目标；当前固定 `720x1280` |
 | `defaults.voice_labels` | 业务默认音色；女声 `温暖闺蜜`，男声 `温润男声` |
+| `defaults.voice_ids` | 已确认的 LibTV/TTS 音色 ID；`温暖闺蜜` 为 `Chinese (Mandarin)_Warm_Bestie`，`温润男声` 为 `Chinese (Mandarin)_Gentleman` |
 | `nodes.*.name_template` | 执行器根据 `task_id` 生成 LibTV 节点名 |
 | `nodes.*.model` | 当前接口使用的模型名 |
 | `nodes.*.params` | 可直接写入对应 LibTV 模型 schema 的参数 |
@@ -324,14 +338,14 @@ image_prompt,audio_prompt,voice_label,voice_id,aspect_ratio
 | `image_prompt` | 从静态人物首帧属性派生，不含口型、眨眼、运镜等时序指令 |
 | `audio_prompt` | 纯口播文案，不含 `[[NO_SPLIT]]` |
 | `voice_label` | 用户语义音色；女声默认 `温暖闺蜜`，男声默认 `温润男声` |
-| `voice_id` | LibTV/TTS schema 可识别的音色 ID；未知时留空 |
+| `voice_id` | LibTV/TTS schema 可识别的音色 ID；默认女声为 `Chinese (Mandarin)_Warm_Bestie`，未知时留空 |
 | `aspect_ratio` | 任务意图比例，默认 `9:16`；具体模型参数仍由 interface JSON 决定 |
 
 示例行：
 
 ```csv
 task_id,title,notes,image_prompt,audio_prompt,voice_label,voice_id,aspect_ratio
-jierou-01,洁柔抽纸 1,洁柔抽纸+1,"23岁亚洲女生，圆脸，清透肤色，黑色中长发低马尾，浅蓝衬衫配米白针织马甲，坐在自然光办公室工位前，桌面有洁柔抽纸、电脑和水杯，正面半身，人物居中，轻微微笑，手机固定竖屏9:16，真实生活记录感，自然光，真实肤质，无字幕，无Logo，无水印，无直播间，无广告棚。","下午在工位吃点小零食，桌面和手边总会需要纸巾。我这次放的是洁柔抽纸，抽放在电脑旁不占地方，擦手、擦桌面都顺手。看到淘宝闪购最高12元无门槛红包，我就顺手补了一提，办公室用起来少翻包找纸。",温暖闺蜜,,9:16
+jierou-01,洁柔抽纸 1,洁柔抽纸+1,"23岁亚洲女生，圆脸，清透肤色，黑色中长发低马尾，浅蓝衬衫配米白针织马甲，坐在自然光办公室工位前，桌面有洁柔抽纸、电脑和水杯，正面半身，人物居中，轻微微笑，手机固定竖屏9:16，真实生活记录感，自然光，真实肤质，无字幕，无Logo，无水印，无直播间，无广告棚。","下午在工位吃点小零食，桌面和手边总会需要纸巾。我这次放的是洁柔抽纸，抽放在电脑旁不占地方，擦手、擦桌面都顺手。看到淘宝闪购最高12元无门槛红包，我就顺手补了一提，办公室用起来少翻包找纸。",温暖闺蜜,Chinese (Mandarin)_Warm_Bestie,9:16
 ```
 
 ## 推荐 Markdown 计划格式
@@ -448,21 +462,21 @@ CSV 中的：
 voice=温暖闺蜜
 ```
 
-目前只是语义标签，不是 LibTV TTS schema 的精确 `voice_id`。如果要稳定批量，应该在
-LibTV 音频模型 schema 中确认可用音色，并建立映射表。实现时不得回退到旧的
-`明朗女声` 或“默认年轻女声”口径。
+`温暖闺蜜` 仍是业务语义标签，但它已经有确认的 LibTV/TTS `voice_id`。实现时不得回退到
+旧的 `明朗女声` 或“默认年轻女声”口径。
 
 默认语义音色统一为：
 
 ```text
-女声 -> 温暖闺蜜 -> 待确认的 female voiceId
-男声 -> 温润男声 -> 待确认的 male voiceId
+女声 -> 温暖闺蜜 -> Chinese (Mandarin)_Warm_Bestie
+男声 -> 温润男声 -> Chinese (Mandarin)_Gentleman
 ```
 
 任务包导出规则：
 
 - `voice_label` 必填，默认按性别写入 `温暖闺蜜` 或 `温润男声`；
-- `voice_id` 可为空，表示后续执行器需要查表或人工确认；
+- `温暖闺蜜` 的 `voice_id` 必填为 `Chinese (Mandarin)_Warm_Bestie`；
+- `温润男声` 的 `voice_id` 必填为 `Chinese (Mandarin)_Gentleman`；
 - 当用户显式指定其他音色时，必须同时保留原始用户音色意图和映射结果，避免静默替换；
 - 未确认 `voice_id` 时，不得在文档、CSV 或计划里声称已经锁定具体 TTS 音色。
 

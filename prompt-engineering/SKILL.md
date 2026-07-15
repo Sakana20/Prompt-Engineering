@@ -106,10 +106,11 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
     `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.libtv.plan.md`
     for human review.
   The default semantic voice labels are `温暖闺蜜` for female voices and `温润男声` for male
-  voices. The target acceptance resolution is `720x1280`, but OmniHuman 1.5 currently exposes
-  only `ratio=auto` and `resolution=auto`; therefore resolution must be checked after generation.
-  This output must not create a LibTV canvas, create nodes, run `libtv node --run`, or submit paid
-  generation.
+  voices; `温暖闺蜜` maps to `Chinese (Mandarin)_Warm_Bestie`, and `温润男声` maps to
+  `Chinese (Mandarin)_Gentleman`. The target acceptance resolution is `720x1280`, but OmniHuman
+  1.5 currently exposes only `ratio=auto` and `resolution=auto`; therefore resolution must be
+  checked after generation. This output must not create a LibTV canvas, create nodes, run
+  `libtv node --run`, or submit paid generation.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or
