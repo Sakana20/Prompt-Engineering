@@ -84,6 +84,14 @@ def validate_copy(
             )
         )
     expression_scope = strip_no_split_markers(cleaned)
+    if campaign.platform and campaign.platform not in cleaned:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_PLATFORM,
+                "缺少活动平台名",
+                campaign.platform,
+            )
+        )
     for phrase in campaign.no_split_phrases:
         marked = f"{NO_SPLIT_OPEN}{phrase}{NO_SPLIT_CLOSE}"
         if marked not in cleaned:

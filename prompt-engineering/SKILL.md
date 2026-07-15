@@ -39,6 +39,7 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    - every user-confirmed `required` benefit must appear;
    - every `exact_match` benefit must preserve the original wording exactly;
    - every `no_split` benefit must be wrapped as `[[NO_SPLIT]]利益点原文[[/NO_SPLIT]]`;
+   - when a platform is supplied, its name must appear exactly in every copy;
    - when no benefit is supplied and no preset is selected, do not invent promotions, amounts,
      thresholds, or platform benefits.
 6. Validate every copy before continuing:

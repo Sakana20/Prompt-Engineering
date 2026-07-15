@@ -22,9 +22,9 @@ from avatar_prompt_pipeline.validation import (
 
 VALID_COPY = (
     "下班赶上大雨，走到小区门口鞋子已经湿了一圈，临时买东西时我总怕选错款。"
-    "[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]"
-    "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关也不占地方，"
-    "红包结算时直接抵扣，雨天补一双省心不少。"
+    "淘宝闪购[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]"
+    "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关不占地方，"
+    "雨天补一双省心不少。"
 )
 
 
@@ -75,6 +75,7 @@ def test_custom_benefit_replaces_hard_coded_validation_contract() -> None:
 
 def test_exact_benefit_can_be_embedded_in_taobao_context() -> None:
     campaign = CampaignSpec(
+        platform="淘宝闪购",
         benefit_points=(BenefitPoint(id="custom", text="最高25元无门槛红包"),),
     )
     copy = (
@@ -88,6 +89,7 @@ def test_exact_benefit_can_be_embedded_in_taobao_context() -> None:
 
 def test_call_to_action_rules_come_from_validation_config() -> None:
     campaign = CampaignSpec(
+        platform="淘宝闪购",
         benefit_points=(BenefitPoint(id="custom", text="最高25元无门槛红包"),),
     )
     promo_validation = ValidationConfig(call_to_actions=("直播间", "立即购买"))
@@ -104,6 +106,7 @@ def test_call_to_action_rules_come_from_validation_config() -> None:
 
 def test_project_no_split_phrase_must_wrap_combined_benefit_text() -> None:
     campaign = CampaignSpec(
+        platform="淘宝闪购",
         benefit_points=(
             BenefitPoint(
                 id="primary-benefit",
@@ -165,6 +168,26 @@ def test_multiple_and_no_benefit_campaigns_are_supported() -> None:
     assert validate_copy(copy, campaign).is_valid is True
     assert validate_copy(no_benefit_copy, CampaignSpec()).is_valid is True
     assert wrap_campaign_benefits("活动利益点甲", campaign).startswith("[[NO_SPLIT]]")
+
+
+def test_configured_platform_is_required_in_copy() -> None:
+    campaign = CampaignSpec(
+        platform="淘宝闪购",
+        benefit_points=(
+            BenefitPoint(id="primary-benefit", text="最高25元无门槛红包", no_split=False),
+        ),
+    )
+    copy_without_platform = (
+        "早八想喝咖啡，看到附近门店还能送到家，"
+        "现在有最高25元无门槛红包可以用。"
+        "点好热拿铁后直接等配送，路上不用绕去门店，"
+        "到工位就能喝上，上午开会前也不耽误时间，"
+        "临时想喝一杯也不用打乱手头安排。"
+    )
+
+    report = validate_copy(copy_without_platform, campaign, ValidationConfig(call_to_actions=()))
+
+    assert any(issue.code is IssueCode.MISSING_PLATFORM for issue in report.issues)
 
 
 def test_malformed_no_split_tags_are_rejected() -> None:

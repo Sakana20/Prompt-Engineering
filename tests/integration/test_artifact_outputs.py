@@ -20,7 +20,7 @@ from avatar_prompt_pipeline.models import LibtvOmniHumanTask, OceanengineTask
 
 MARKED_SCRIPT = (
     "午后收拾完桌面，打开冰箱才发现果盘已经空了。我看到"
-    "[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]，"
+    "淘宝闪购[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]，"
     "就买了个哈密瓜。送到后切几块装进盘里，坐在沙发上慢慢吃，"
     "剩下的用保鲜盒收好，晚上家里人回来还能一起分。"
 )

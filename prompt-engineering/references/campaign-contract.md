@@ -1,6 +1,7 @@
 # 活动利益点契约
 
 - 每个任务支持 0–3 条用户确认的利益点。
+- 配置了 `platform` 时，每条口播必须逐字出现平台名；淘宝闪购项目不得省略“淘宝闪购”。
 - 每条利益点包含 `id`、`text`、`required`、`exact_match`、`no_split` 和 `priority`。
 - `required=true` 时必须表达；`exact_match=true` 时逐字保留。
 - `no_split=true` 时输出 `[[NO_SPLIT]]利益点原文[[/NO_SPLIT]]`。
