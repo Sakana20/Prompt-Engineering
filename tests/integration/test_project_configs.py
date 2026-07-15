@@ -25,6 +25,7 @@ def test_repository_project_configs_are_loadable() -> None:
         assert config.campaign.benefit_points[0].id == "primary-benefit"
         assert config.language_style.name
         assert config.language_style.tone
+        assert any("眼睛必须直视镜头" in rule for rule in config.language_style.extra_rules)
 
 
 @pytest.mark.integration

@@ -1,15 +1,22 @@
 import csv
+import json
 from pathlib import Path
 
 import pytest
 
 from avatar_prompt_pipeline.artifacts import (
+    default_libtv_omnihuman_csv_path,
+    default_libtv_omnihuman_interface_path,
+    default_libtv_omnihuman_plan_path,
     default_manuscript_path,
     default_oceanengine_csv_path,
+    write_libtv_omnihuman_csv,
+    write_libtv_omnihuman_interface_config,
+    write_libtv_omnihuman_plan,
     write_oceanengine_csv,
     write_segmentation_manuscript,
 )
-from avatar_prompt_pipeline.models import OceanengineTask
+from avatar_prompt_pipeline.models import LibtvOmniHumanTask, OceanengineTask
 
 MARKED_SCRIPT = (
     "午后收拾完桌面，打开冰箱才发现果盘已经空了。我看到"
@@ -27,6 +34,18 @@ def test_default_artifact_paths_use_date_and_task_hierarchy() -> None:
     assert default_oceanengine_csv_path("hami-melon-batch", date="20260702") == Path(
         "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
         "hami-melon-batch/hami-melon-batch.csv"
+    )
+    assert default_libtv_omnihuman_csv_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.libtv.csv"
+    )
+    assert default_libtv_omnihuman_interface_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.libtv.interface.json"
+    )
+    assert default_libtv_omnihuman_plan_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.libtv.plan.md"
     )
 
 
@@ -69,3 +88,58 @@ def test_artifact_writers_refuse_to_overwrite_existing_files(tmp_path: Path) -> 
 
     with pytest.raises(FileExistsError, match="拒绝覆盖"):
         write_segmentation_manuscript(manuscript_path, MARKED_SCRIPT)
+
+
+@pytest.mark.integration
+def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None:
+    csv_path = tmp_path / "libtv" / "hami-melon-batch.libtv.csv"
+    interface_path = tmp_path / "libtv" / "hami-melon-batch.libtv.interface.json"
+    plan_path = tmp_path / "libtv" / "hami-melon-batch.libtv.plan.md"
+    task = LibtvOmniHumanTask(
+        task_id="HM-001",
+        image_prompt="年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+        marked_script=MARKED_SCRIPT,
+        title="哈密瓜居家水果场景",
+        notes="哈密瓜+1",
+    )
+
+    written_csv = write_libtv_omnihuman_csv(csv_path, [task])
+    assert not interface_path.exists()
+    assert not plan_path.exists()
+
+    with written_csv.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows == [
+        {
+            "task_id": "HM-001",
+            "title": "哈密瓜居家水果场景",
+            "notes": "哈密瓜+1",
+            "image_prompt": "年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+            "audio_prompt": MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", ""),
+            "voice_label": "温暖闺蜜",
+            "voice_id": "",
+            "aspect_ratio": "9:16",
+        }
+    ]
+
+    written_interface = write_libtv_omnihuman_interface_config(interface_path)
+    interface_config = json.loads(written_interface.read_text(encoding="utf-8"))
+    assert interface_config["interface"] == "libtv_omnihuman"
+    assert interface_config["task_package"] == {
+        "csv": "hami-melon-batch.libtv.csv",
+        "plan": "hami-melon-batch.libtv.plan.md",
+    }
+    assert interface_config["defaults"]["target_resolution"] == "720x1280"
+    assert interface_config["defaults"]["voice_labels"] == {
+        "female": "温暖闺蜜",
+        "male": "温润男声",
+    }
+    assert interface_config["nodes"]["video"]["model"] == "OmniHuman 1.5"
+    assert interface_config["execution_boundary"]["run_nodes"] is False
+
+    written_plan = write_libtv_omnihuman_plan(plan_path, [task])
+    plan = written_plan.read_text(encoding="utf-8")
+    assert "接口配置：`<task>.libtv.interface.json`" in plan
+    assert "node: HM-001-image" in plan
+    assert "voice_label: 温暖闺蜜" in plan
+    assert "[[NO_SPLIT]]" not in plan

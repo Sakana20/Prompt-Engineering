@@ -65,6 +65,11 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
    literal placeholder “品类”; for example use `西瓜+1` or `雨伞+1`.
+   When the user requests a LibTV OmniHuman package, treat it as a separate output adapter:
+   derive `image_prompt` from visible first-frame attributes, derive `audio_prompt` from the
+   accepted plain script, and write a per-row LibTV CSV plus a separate interface configuration
+   JSON. Do not put LibTV model names, node templates, resolution targets, or execution settings
+   into the per-row CSV; those belong in `<task>.libtv.interface.json`.
 10. Preview the copy, avatar prompt, static person prompt, product facts, and campaign facts used.
    Require explicit approval
    before any paid video submission.
@@ -87,6 +92,24 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
   The date directory uses local `YYYYMMDD`; both files for one task share the same task directory.
   Do not copy into the Oceanengine project or run preflight unless the user separately requests
   that workflow.
+- **LibTV OmniHuman package:** create three independent handoffs from accepted copy/avatar
+  results:
+  - one UTF-8
+    `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.libtv.csv`
+    containing per-row task data only (`task_id`, `title`, `notes`, `image_prompt`,
+    `audio_prompt`, `voice_label`, `voice_id`, `aspect_ratio`);
+  - one UTF-8
+    `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.libtv.interface.json`
+    containing the LibTV interface, model, node, parameter, naming, voice default, and acceptance
+    configuration;
+  - one UTF-8
+    `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/<task>.libtv.plan.md`
+    for human review.
+  The default semantic voice labels are `温暖闺蜜` for female voices and `温润男声` for male
+  voices. The target acceptance resolution is `720x1280`, but OmniHuman 1.5 currently exposes
+  only `ratio=auto` and `resolution=auto`; therefore resolution must be checked after generation.
+  This output must not create a LibTV canvas, create nodes, run `libtv node --run`, or submit paid
+  generation.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or
@@ -111,7 +134,8 @@ Compatibility defaults:
 
 For batches, keep a one-to-one mapping among source facts, copy, avatar prompt, `task_id`, and output
 row. Preserve the full avatar prompt in the audit record even though the current Oceanengine chain
-only consumes the static `person_prompt` and `script`.
+only consumes the static `person_prompt` and `script`, and the current LibTV chain consumes
+`image_prompt`, `audio_prompt`, and the separate interface configuration.
 
 ## Safety Boundary
 

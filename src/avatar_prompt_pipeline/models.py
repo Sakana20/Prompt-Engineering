@@ -344,6 +344,18 @@ class OceanengineTask:
 
 
 @dataclass(frozen=True, slots=True)
+class LibtvOmniHumanTask:
+    task_id: str
+    image_prompt: str
+    marked_script: str
+    title: str
+    notes: str
+    voice_label: str = "温暖闺蜜"
+    voice_id: str = ""
+    aspect_ratio: str = "9:16"
+
+
+@dataclass(frozen=True, slots=True)
 class VisualProfile:
     identity_key: str
     outfit_key: str

@@ -2,6 +2,20 @@
 
 ## 当前状态
 
+### Phase 8：LibTV OmniHuman 输出适配器（进行中）
+
+- 新增 `libtv_omnihuman_package` 输出模式；
+- 保持现有 Oceanengine CSV、SmartSplit 字幕稿和默认 `compose` 行为不变；
+- 新增三件套产物：
+  - `<task>.libtv.csv`：只保存逐条任务数据；
+  - `<task>.libtv.interface.json`：保存 LibTV 接口、模型、节点、参数、命名、音色默认值和验收配置；
+  - `<task>.libtv.plan.md`：保存人审计划；
+- 首版不创建 LibTV 画布、不创建节点、不运行 `libtv node --run`，付费生成仍需用户单独确认；
+- 默认语义音色：女声 `温暖闺蜜`，男声 `温润男声`；
+- 目标验收分辨率为 `720x1280`，作为产物验收目标而非 OmniHuman 可直接写入参数。
+
+验收：LibTV 三件套 writer 可独立调用、拒绝覆盖、CSV 去除 `NO_SPLIT` 标签、interface JSON 明确执行边界。
+
 ### Phase 7：商品与活动通用化（已完成）
 
 - 增加 `CampaignSpec`、`BenefitPoint` 和通用活动上下文；
