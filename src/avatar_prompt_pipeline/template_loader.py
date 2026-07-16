@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-07-15-require-platform-v4"
+TEMPLATE_VERSION = "2026-07-16-avatar-eye-contact-v6"
 
 
 def load_template(name: str) -> str:
