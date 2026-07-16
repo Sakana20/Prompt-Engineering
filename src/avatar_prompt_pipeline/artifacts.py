@@ -10,7 +10,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from .models import CampaignSpec, LibtvOmniHumanTask, OceanengineTask
+from .models import (
+    DEFAULT_LIBTV_FEMALE_VOICE_ID,
+    DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
+    DEFAULT_LIBTV_MALE_VOICE_ID,
+    DEFAULT_LIBTV_MALE_VOICE_LABEL,
+    CampaignSpec,
+    LibtvOmniHumanTask,
+    OceanengineTask,
+)
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
 from .validation import strip_no_split_markers, validate_copy
 
@@ -49,12 +57,12 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
         "target_height": 1280,
         "target_resolution": "720x1280",
         "voice_labels": {
-            "female": "温暖闺蜜",
-            "male": "温润男声",
+            "female": DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
+            "male": DEFAULT_LIBTV_MALE_VOICE_LABEL,
         },
         "voice_ids": {
-            "温暖闺蜜": "Chinese (Mandarin)_Warm_Bestie",
-            "温润男声": "Chinese (Mandarin)_Gentleman",
+            DEFAULT_LIBTV_FEMALE_VOICE_LABEL: DEFAULT_LIBTV_FEMALE_VOICE_ID,
+            DEFAULT_LIBTV_MALE_VOICE_LABEL: DEFAULT_LIBTV_MALE_VOICE_ID,
         },
     },
     "nodes": {

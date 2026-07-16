@@ -4,6 +4,15 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import Any
 
+DEFAULT_LIBTV_FEMALE_VOICE_LABEL = "温暖闺蜜"
+DEFAULT_LIBTV_FEMALE_VOICE_ID = "Chinese (Mandarin)_Warm_Bestie"
+DEFAULT_LIBTV_MALE_VOICE_LABEL = "温润男声"
+DEFAULT_LIBTV_MALE_VOICE_ID = "Chinese (Mandarin)_Gentleman"
+LIBTV_VOICE_IDS_BY_LABEL = {
+    DEFAULT_LIBTV_FEMALE_VOICE_LABEL: DEFAULT_LIBTV_FEMALE_VOICE_ID,
+    DEFAULT_LIBTV_MALE_VOICE_LABEL: DEFAULT_LIBTV_MALE_VOICE_ID,
+}
+
 
 class BriefValidationError(ValueError):
     """Raised when a product brief cannot safely drive prompt generation."""
@@ -351,9 +360,16 @@ class LibtvOmniHumanTask:
     marked_script: str
     title: str
     notes: str
-    voice_label: str = "温暖闺蜜"
-    voice_id: str = "Chinese (Mandarin)_Warm_Bestie"
+    voice_label: str = DEFAULT_LIBTV_FEMALE_VOICE_LABEL
+    voice_id: str = DEFAULT_LIBTV_FEMALE_VOICE_ID
     aspect_ratio: str = "9:16"
+
+    def __post_init__(self) -> None:
+        voice_label = _clean(self.voice_label) or DEFAULT_LIBTV_FEMALE_VOICE_LABEL
+        voice_id = _clean(self.voice_id) or LIBTV_VOICE_IDS_BY_LABEL.get(voice_label, "")
+        object.__setattr__(self, "voice_label", voice_label)
+        object.__setattr__(self, "voice_id", voice_id)
+        object.__setattr__(self, "aspect_ratio", _clean(self.aspect_ratio) or "9:16")
 
 
 @dataclass(frozen=True, slots=True)

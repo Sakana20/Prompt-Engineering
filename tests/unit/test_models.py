@@ -1,9 +1,13 @@
 import pytest
 
 from avatar_prompt_pipeline.models import (
+    DEFAULT_LIBTV_FEMALE_VOICE_ID,
+    DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
+    DEFAULT_LIBTV_MALE_VOICE_ID,
     BenefitPoint,
     BriefValidationError,
     CampaignSpec,
+    LibtvOmniHumanTask,
     ProductBrief,
 )
 
@@ -55,3 +59,30 @@ def test_campaign_supports_no_benefit_and_rejects_more_than_three() -> None:
                 BenefitPoint(id=str(index), text=f"利益点{index}") for index in range(4)
             )
         )
+
+
+def test_libtv_task_normalizes_default_voice_fields() -> None:
+    default_task = LibtvOmniHumanTask(
+        task_id="task-1",
+        image_prompt="年轻亚洲女生坐在餐桌旁。",
+        marked_script="淘宝闪购最高12元无门槛红包。",
+        title="测试任务",
+        notes="测试+1",
+        voice_label=" ",
+        voice_id=" ",
+        aspect_ratio=" ",
+    )
+    male_task = LibtvOmniHumanTask(
+        task_id="task-2",
+        image_prompt="年轻亚洲男生坐在餐桌旁。",
+        marked_script="淘宝闪购最高12元无门槛红包。",
+        title="测试任务",
+        notes="测试+2",
+        voice_label=" 温润男声 ",
+        voice_id=" ",
+    )
+
+    assert default_task.voice_label == DEFAULT_LIBTV_FEMALE_VOICE_LABEL
+    assert default_task.voice_id == DEFAULT_LIBTV_FEMALE_VOICE_ID
+    assert default_task.aspect_ratio == "9:16"
+    assert male_task.voice_id == DEFAULT_LIBTV_MALE_VOICE_ID

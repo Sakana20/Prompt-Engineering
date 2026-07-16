@@ -147,3 +147,29 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
     assert "node: HM-001-image" in plan
     assert "voice_label: 温暖闺蜜" in plan
     assert "[[NO_SPLIT]]" not in plan
+
+
+@pytest.mark.integration
+def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path) -> None:
+    csv_path = tmp_path / "libtv" / "hami-melon-batch.libtv.csv"
+    plan_path = tmp_path / "libtv" / "hami-melon-batch.libtv.plan.md"
+    task = LibtvOmniHumanTask(
+        task_id="HM-001",
+        image_prompt="年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+        marked_script=MARKED_SCRIPT,
+        title="哈密瓜居家水果场景",
+        notes="哈密瓜+1",
+        voice_label="",
+        voice_id="",
+    )
+
+    written_csv = write_libtv_omnihuman_csv(csv_path, [task])
+    written_plan = write_libtv_omnihuman_plan(plan_path, [task])
+
+    with written_csv.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["voice_label"] == "温暖闺蜜"
+    assert row["voice_id"] == "Chinese (Mandarin)_Warm_Bestie"
+    plan = written_plan.read_text(encoding="utf-8")
+    assert "- voice_label: 温暖闺蜜" in plan
+    assert "- voice_id: Chinese (Mandarin)_Warm_Bestie" in plan
