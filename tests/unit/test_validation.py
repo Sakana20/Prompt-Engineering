@@ -272,8 +272,14 @@ def test_visual_diversity_rejects_empty_keys() -> None:
 
 
 def test_visual_prompt_requires_direct_eye_contact() -> None:
-    valid_prompt = "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，竖屏9:16。"
-    invalid_prompt = "年轻亚洲女生坐在餐桌旁，商品不由人物手持，身体朝向镜头，竖屏9:16。"
+    valid_prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
+    )
+    invalid_prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，商品不由人物手持，"
+        "人物不看商品、不接触商品，身体朝向镜头，竖屏9:16。"
+    )
 
     assert validate_visual_prompt(valid_prompt) == ()
     issues = validate_visual_prompt(invalid_prompt)
@@ -281,9 +287,13 @@ def test_visual_prompt_requires_direct_eye_contact() -> None:
 
 
 def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
-    missing_constraint = "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面摆放商品，竖屏9:16。"
+    missing_constraint = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "人物不看商品、不接触商品，桌面摆放商品，竖屏9:16。"
+    )
     handheld_product = (
-        "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，人物手持商品，竖屏9:16。"
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，人物手持商品，竖屏9:16。"
     )
 
     missing_issues = validate_visual_prompt(missing_constraint)
@@ -291,3 +301,26 @@ def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
 
     assert any(issue.code is IssueCode.MISSING_NO_HANDHELD_PRODUCT for issue in missing_issues)
     assert any(issue.code is IssueCode.HANDHELD_PRODUCT for issue in handheld_issues)
+
+
+def test_visual_prompt_requires_talking_head_frame_and_background_scene() -> None:
+    prompt = (
+        "年轻亚洲女生在玄关准备通勤，正面眼睛直视镜头，商品不由人物手持，"
+        "人物不看商品、不接触商品，竖屏9:16。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.MISSING_TALKING_HEAD_FRAME in codes
+    assert IssueCode.MISSING_BACKGROUND_ONLY_SCENE in codes
+
+
+def test_visual_prompt_requires_no_product_gaze_or_contact() -> None:
+    prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，竖屏9:16。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.MISSING_NO_PRODUCT_GAZE_OR_CONTACT in codes

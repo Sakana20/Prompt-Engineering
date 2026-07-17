@@ -39,5 +39,8 @@ def test_watermelon_batch_matches_prompt_and_copy_contract() -> None:
     assert validate_batch_diversity([row["script"] for row in rows]) == ()
     assert validate_visual_diversity(VISUAL_PROFILES) == ()
     assert all("保持相同" not in row["person_prompt"] for row in rows)
+    assert all("数字人口播首帧" in row["person_prompt"] for row in rows)
+    assert all("场景只作为背景" in row["person_prompt"] for row in rows)
     assert all("直视镜头" in row["person_prompt"] for row in rows)
     assert all("商品不由人物手持" in row["person_prompt"] for row in rows)
+    assert all("人物不看商品、不接触商品" in row["person_prompt"] for row in rows)

@@ -50,6 +50,26 @@ HANDHELD_PRODUCT_PATTERNS = (
     "递近镜头展示商品",
     "持续展示包装",
 )
+TALKING_HEAD_FRAME_PHRASES = (
+    "数字人口播首帧",
+    "口播首帧",
+    "正面口播首帧",
+)
+BACKGROUND_ONLY_SCENE_PHRASES = (
+    "场景只作为背景",
+    "场景仅作为背景",
+    "作为背景",
+    "背景前",
+)
+NO_PRODUCT_GAZE_OR_CONTACT_PHRASES = (
+    "人物不看商品",
+    "不看商品",
+)
+NO_PRODUCT_CONTACT_PHRASES = (
+    "不接触商品",
+    "人物不接触商品",
+    "不触碰商品",
+)
 
 
 def strip_no_split_markers(text: str) -> str:
@@ -244,12 +264,38 @@ def validate_visual_diversity(
 def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
     cleaned = prompt.replace("\x00", "").strip()
     issues: list[ValidationIssue] = []
+    if not any(phrase in cleaned for phrase in TALKING_HEAD_FRAME_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_TALKING_HEAD_FRAME,
+                "人物 Prompt 必须明确是数字人口播首帧",
+                "数字人口播首帧",
+            )
+        )
+    if not any(phrase in cleaned for phrase in BACKGROUND_ONLY_SCENE_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_BACKGROUND_ONLY_SCENE,
+                "人物 Prompt 必须明确场景只作为背景",
+                "场景只作为背景",
+            )
+        )
     if "直视镜头" not in cleaned:
         issues.append(
             ValidationIssue(
                 IssueCode.MISSING_EYE_CONTACT,
                 "人物 Prompt 必须明确包含直视镜头",
                 "直视镜头",
+            )
+        )
+    if not any(phrase in cleaned for phrase in NO_PRODUCT_GAZE_OR_CONTACT_PHRASES) or not any(
+        phrase in cleaned for phrase in NO_PRODUCT_CONTACT_PHRASES
+    ):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_NO_PRODUCT_GAZE_OR_CONTACT,
+                "人物 Prompt 必须明确人物不看商品且不接触商品",
+                "人物不看商品、不接触商品",
             )
         )
     if not any(phrase in cleaned for phrase in NO_HANDHELD_PRODUCT_PHRASES):

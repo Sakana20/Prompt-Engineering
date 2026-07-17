@@ -61,9 +61,10 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 9. When the user requests an Oceanengine task package, read
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
-   instructions into that image prompt. Every static `person_prompt` must explicitly say the
-   person is looking directly at the camera, using `直视镜头`, and must explicitly state
-   `商品不由人物手持`.
+   instructions into that image prompt. Every static `person_prompt` must explicitly define the
+   frame as `数字人口播首帧`, say the person is looking directly at the camera using `直视镜头`,
+   state `商品不由人物手持`, state `人物不看商品、不接触商品`, and say the scene is only
+   background using `场景只作为背景`.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -71,10 +72,11 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    When the user requests a LibTV OmniHuman package, treat it as a separate output adapter:
    derive `image_prompt` from visible first-frame attributes, derive `audio_prompt` from the
    accepted plain script, and write a per-row LibTV CSV plus a separate interface configuration
-   JSON. Every `image_prompt` must explicitly say the person is looking directly at the camera,
-   using `直视镜头`, and must explicitly state `商品不由人物手持`. Do not put LibTV model names,
-   node templates, resolution targets, or execution settings into the per-row CSV; those belong
-   in `<task>.libtv.interface.json`.
+   JSON. Every `image_prompt` must explicitly define the frame as `数字人口播首帧`, say the person
+   is looking directly at the camera using `直视镜头`, state `商品不由人物手持`, state
+   `人物不看商品、不接触商品`, and say the scene is only background using `场景只作为背景`. Do
+   not put LibTV model names, node templates, resolution targets, or execution settings into the
+   per-row CSV; those belong in `<task>.libtv.interface.json`.
 10. Preview the copy, avatar prompt, static person prompt, product facts, and campaign facts used.
    Require explicit approval
    before any paid video submission.

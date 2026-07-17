@@ -56,7 +56,7 @@ def test_manuscript_and_oceanengine_csv_are_independent_artifacts(tmp_path: Path
     task = OceanengineTask(
         task_id="HM-001",
         person_prompt=(
-            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+            "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
         ),
         marked_script=MARKED_SCRIPT,
         aspect_ratio="9:16",
@@ -100,7 +100,7 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
     task = LibtvOmniHumanTask(
         task_id="HM-001",
         image_prompt=(
-            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+            "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
         ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
@@ -119,8 +119,8 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
             "title": "哈密瓜居家水果场景",
             "notes": "哈密瓜+1",
             "image_prompt": (
-                "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，"
-                "商品不由人物手持，竖屏9:16。"
+                "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+                "桌面放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
             ),
             "audio_prompt": MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", ""),
             "voice_label": "温暖闺蜜",
@@ -169,7 +169,7 @@ def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path)
     task = LibtvOmniHumanTask(
         task_id="HM-001",
         image_prompt=(
-            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+            "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
         ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
@@ -213,7 +213,7 @@ def test_task_writers_reject_prompts_with_handheld_product(tmp_path: Path) -> No
     task = LibtvOmniHumanTask(
         task_id="HM-001",
         image_prompt=(
-            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，人物手持商品，竖屏9:16。"
+            "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，商品不由人物手持，人物不看商品、不接触商品，人物手持商品，竖屏9:16。"
         ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
