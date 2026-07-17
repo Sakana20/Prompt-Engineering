@@ -16,6 +16,7 @@ from avatar_prompt_pipeline.validation import (
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
+    validate_visual_prompt,
     wrap_campaign_benefits,
     wrap_required_benefit,
 )
@@ -268,3 +269,25 @@ def test_visual_diversity_reports_reused_person_and_outfit() -> None:
 def test_visual_diversity_rejects_empty_keys() -> None:
     with pytest.raises(ValueError, match="不能为空"):
         validate_visual_diversity([VisualProfile("", "蓝色连衣裙")])
+
+
+def test_visual_prompt_requires_direct_eye_contact() -> None:
+    valid_prompt = "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，竖屏9:16。"
+    invalid_prompt = "年轻亚洲女生坐在餐桌旁，商品不由人物手持，身体朝向镜头，竖屏9:16。"
+
+    assert validate_visual_prompt(valid_prompt) == ()
+    issues = validate_visual_prompt(invalid_prompt)
+    assert any(issue.code is IssueCode.MISSING_EYE_CONTACT for issue in issues)
+
+
+def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
+    missing_constraint = "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面摆放商品，竖屏9:16。"
+    handheld_product = (
+        "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，人物手持商品，竖屏9:16。"
+    )
+
+    missing_issues = validate_visual_prompt(missing_constraint)
+    handheld_issues = validate_visual_prompt(handheld_product)
+
+    assert any(issue.code is IssueCode.MISSING_NO_HANDHELD_PRODUCT for issue in missing_issues)
+    assert any(issue.code is IssueCode.HANDHELD_PRODUCT for issue in handheld_issues)

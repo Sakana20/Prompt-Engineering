@@ -55,7 +55,9 @@ def test_manuscript_and_oceanengine_csv_are_independent_artifacts(tmp_path: Path
     csv_path = tmp_path / "oceanengine" / "hami-melon-batch.csv"
     task = OceanengineTask(
         task_id="HM-001",
-        person_prompt="年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+        person_prompt=(
+            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+        ),
         marked_script=MARKED_SCRIPT,
         aspect_ratio="9:16",
         voice="明朗女声",
@@ -97,7 +99,9 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
     plan_path = tmp_path / "libtv" / "hami-melon-batch.libtv.plan.md"
     task = LibtvOmniHumanTask(
         task_id="HM-001",
-        image_prompt="年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+        image_prompt=(
+            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+        ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
         notes="哈密瓜+1",
@@ -114,7 +118,10 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
             "task_id": "HM-001",
             "title": "哈密瓜居家水果场景",
             "notes": "哈密瓜+1",
-            "image_prompt": "年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+            "image_prompt": (
+                "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，"
+                "商品不由人物手持，竖屏9:16。"
+            ),
             "audio_prompt": MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", ""),
             "voice_label": "温暖闺蜜",
             "voice_id": "Chinese (Mandarin)_Warm_Bestie",
@@ -161,7 +168,9 @@ def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path)
     plan_path = tmp_path / "libtv" / "hami-melon-batch.libtv.plan.md"
     task = LibtvOmniHumanTask(
         task_id="HM-001",
-        image_prompt="年轻亚洲女生坐在餐桌旁，桌面放着哈密瓜，竖屏9:16。",
+        image_prompt=(
+            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，桌面放着哈密瓜，商品不由人物手持，竖屏9:16。"
+        ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
         notes="哈密瓜+1",
@@ -179,3 +188,37 @@ def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path)
     plan = written_plan.read_text(encoding="utf-8")
     assert "- voice_label: 温暖闺蜜" in plan
     assert "- voice_id: Chinese (Mandarin)_Warm_Bestie" in plan
+
+
+@pytest.mark.integration
+def test_task_writers_reject_prompts_without_direct_eye_contact(tmp_path: Path) -> None:
+    csv_path = tmp_path / "oceanengine" / "hami-melon-batch.csv"
+    task = OceanengineTask(
+        task_id="HM-001",
+        person_prompt="年轻亚洲女生坐在餐桌旁，身体朝向镜头，桌面放着哈密瓜，竖屏9:16。",
+        marked_script=MARKED_SCRIPT,
+        aspect_ratio="9:16",
+        voice="明朗女声",
+        title="哈密瓜居家水果场景",
+        notes="哈密瓜+1",
+    )
+
+    with pytest.raises(ValueError, match="MISSING_EYE_CONTACT"):
+        write_oceanengine_csv(csv_path, [task])
+
+
+@pytest.mark.integration
+def test_task_writers_reject_prompts_with_handheld_product(tmp_path: Path) -> None:
+    csv_path = tmp_path / "libtv" / "hami-melon-batch.libtv.csv"
+    task = LibtvOmniHumanTask(
+        task_id="HM-001",
+        image_prompt=(
+            "年轻亚洲女生坐在餐桌旁，正面眼睛直视镜头，商品不由人物手持，人物手持商品，竖屏9:16。"
+        ),
+        marked_script=MARKED_SCRIPT,
+        title="哈密瓜居家水果场景",
+        notes="哈密瓜+1",
+    )
+
+    with pytest.raises(ValueError, match="HANDHELD_PRODUCT"):
+        write_libtv_omnihuman_csv(csv_path, [task])

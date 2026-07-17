@@ -61,7 +61,9 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 9. When the user requests an Oceanengine task package, read
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
-   instructions into that image prompt.
+   instructions into that image prompt. Every static `person_prompt` must explicitly say the
+   person is looking directly at the camera, using `直视镜头`, and must explicitly state
+   `商品不由人物手持`.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -69,8 +71,10 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    When the user requests a LibTV OmniHuman package, treat it as a separate output adapter:
    derive `image_prompt` from visible first-frame attributes, derive `audio_prompt` from the
    accepted plain script, and write a per-row LibTV CSV plus a separate interface configuration
-   JSON. Do not put LibTV model names, node templates, resolution targets, or execution settings
-   into the per-row CSV; those belong in `<task>.libtv.interface.json`.
+   JSON. Every `image_prompt` must explicitly say the person is looking directly at the camera,
+   using `直视镜头`, and must explicitly state `商品不由人物手持`. Do not put LibTV model names,
+   node templates, resolution targets, or execution settings into the per-row CSV; those belong
+   in `<task>.libtv.interface.json`.
 10. Preview the copy, avatar prompt, static person prompt, product facts, and campaign facts used.
    Require explicit approval
    before any paid video submission.
@@ -108,10 +112,11 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
     for human review.
   The default semantic voice labels are `温暖闺蜜` for female voices and `温润男声` for male
   voices; `温暖闺蜜` maps to `Chinese (Mandarin)_Warm_Bestie`, and `温润男声` maps to
-  `Chinese (Mandarin)_Gentleman`. The target acceptance resolution is `720x1280`, but OmniHuman
-  1.5 currently exposes only `ratio=auto` and `resolution=auto`; therefore resolution must be
-  checked after generation. This output must not create a LibTV canvas, create nodes, run
-  `libtv node --run`, or submit paid generation.
+  `Chinese (Mandarin)_Gentleman`. The default audio constraints are speed `1.2` and volume `8`;
+  write volume to the LibTV audio node as schema field `vol`. The target acceptance resolution is
+  `720x1280`, but OmniHuman 1.5 currently exposes only `ratio=auto` and `resolution=auto`;
+  therefore resolution must be checked after generation. This output must not create a LibTV
+  canvas, create nodes, run `libtv node --run`, or submit paid generation.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or

@@ -23,6 +23,33 @@ MAX_COPY_CHARACTERS = DEFAULT_VALIDATION_CONFIG.max_characters
 BANNED_EXPRESSIONS = DEFAULT_VALIDATION_CONFIG.banned_expressions
 CALLS_TO_ACTION = DEFAULT_VALIDATION_CONFIG.call_to_actions
 FORMAT_PREFIXES = DEFAULT_VALIDATION_CONFIG.format_prefixes
+NO_HANDHELD_PRODUCT_PHRASES = (
+    "不手持商品",
+    "人物不手持商品",
+    "不要手持商品",
+    "禁止手持商品",
+    "商品不由人物手持",
+    "商品不被人物手持",
+    "不拿起商品",
+    "不要拿起商品",
+    "无手持商品",
+)
+HANDHELD_PRODUCT_PATTERNS = (
+    "人物手持商品",
+    "人物手持",
+    "手持商品",
+    "手持包装",
+    "拿着商品",
+    "拿着包装",
+    "拿起商品",
+    "拿起包装",
+    "手里拿着",
+    "手上拿着",
+    "手拿商品",
+    "手拿包装",
+    "递近镜头展示商品",
+    "持续展示包装",
+)
 
 
 def strip_no_split_markers(text: str) -> str:
@@ -211,4 +238,38 @@ def validate_visual_diversity(
             )
         else:
             seen_outfits[outfit] = index
+    return tuple(issues)
+
+
+def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
+    cleaned = prompt.replace("\x00", "").strip()
+    issues: list[ValidationIssue] = []
+    if "直视镜头" not in cleaned:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_EYE_CONTACT,
+                "人物 Prompt 必须明确包含直视镜头",
+                "直视镜头",
+            )
+        )
+    if not any(phrase in cleaned for phrase in NO_HANDHELD_PRODUCT_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_NO_HANDHELD_PRODUCT,
+                "人物 Prompt 必须明确包含不手持商品约束",
+                "不手持商品",
+            )
+        )
+    handheld_scope = cleaned
+    for allowed_phrase in NO_HANDHELD_PRODUCT_PHRASES:
+        handheld_scope = handheld_scope.replace(allowed_phrase, "")
+    for pattern in HANDHELD_PRODUCT_PATTERNS:
+        if pattern in handheld_scope:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.HANDHELD_PRODUCT,
+                    "人物 Prompt 不能让人物手持商品",
+                    pattern,
+                )
+            )
     return tuple(issues)

@@ -22,7 +22,7 @@ from .models import (
     OceanengineTask,
 )
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
-from .validation import strip_no_split_markers, validate_copy
+from .validation import strip_no_split_markers, validate_copy, validate_visual_prompt
 
 DEFAULT_OUTPUT_ROOT = Path("/Users/sakana/Desktop/Work/Codex/Prompt Engineering")
 
@@ -191,6 +191,13 @@ def libtv_omnihuman_interface_config(task_name: str) -> dict[str, object]:
     return config
 
 
+def _raise_for_visual_prompt_issues(task_id: str, prompt: str) -> None:
+    issues = validate_visual_prompt(prompt)
+    if issues:
+        issue_codes = ", ".join(issue.code for issue in issues)
+        raise ValueError(f"任务 {task_id} 的人物 Prompt 未通过校验：{issue_codes}")
+
+
 def write_segmentation_manuscript(
     path: str | Path,
     marked_script: str,
@@ -223,6 +230,7 @@ def write_libtv_omnihuman_csv(
         csv_writer = csv.DictWriter(handle, fieldnames=LIBTV_OMNIHUMAN_CSV_FIELDS)
         csv_writer.writeheader()
         for task in tasks:
+            _raise_for_visual_prompt_issues(task.task_id, task.image_prompt)
             report = validate_copy(task.marked_script, campaign)
             if not report.is_valid:
                 issue_codes = ", ".join(issue.code for issue in report.issues)
@@ -310,6 +318,7 @@ def write_oceanengine_csv(
         csv_writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS)
         csv_writer.writeheader()
         for task in tasks:
+            _raise_for_visual_prompt_issues(task.task_id, task.person_prompt)
             report = validate_copy(task.marked_script, campaign)
             if not report.is_valid:
                 issue_codes = ", ".join(issue.code for issue in report.issues)

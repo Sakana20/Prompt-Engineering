@@ -24,6 +24,7 @@ from .validation import (
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
+    validate_visual_prompt,
     wrap_campaign_benefits,
     wrap_required_benefit,
 )
@@ -46,6 +47,7 @@ __all__ = [
     "validate_batch_diversity",
     "validate_copy",
     "validate_visual_diversity",
+    "validate_visual_prompt",
     "wrap_campaign_benefits",
     "wrap_required_benefit",
     "write_oceanengine_csv",
