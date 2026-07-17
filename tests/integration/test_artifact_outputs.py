@@ -138,6 +138,12 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
         "Chinese (Mandarin)_Warm_Bestie"
     )
     assert interface_config["defaults"]["voice_ids"]["温润男声"] == ("Chinese (Mandarin)_Gentleman")
+    assert interface_config["defaults"]["voice_constraints"] == {
+        "speed": 1.2,
+        "volume": 8,
+    }
+    assert interface_config["nodes"]["audio"]["params"]["speed"] == 1.2
+    assert interface_config["nodes"]["audio"]["params"]["vol"] == 8
     assert interface_config["nodes"]["video"]["model"] == "OmniHuman 1.5"
     assert interface_config["execution_boundary"]["run_nodes"] is False
 

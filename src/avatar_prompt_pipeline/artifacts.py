@@ -15,6 +15,8 @@ from .models import (
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
     DEFAULT_LIBTV_MALE_VOICE_ID,
     DEFAULT_LIBTV_MALE_VOICE_LABEL,
+    DEFAULT_LIBTV_VOICE_SPEED,
+    DEFAULT_LIBTV_VOICE_VOLUME,
     CampaignSpec,
     LibtvOmniHumanTask,
     OceanengineTask,
@@ -64,6 +66,10 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
             DEFAULT_LIBTV_FEMALE_VOICE_LABEL: DEFAULT_LIBTV_FEMALE_VOICE_ID,
             DEFAULT_LIBTV_MALE_VOICE_LABEL: DEFAULT_LIBTV_MALE_VOICE_ID,
         },
+        "voice_constraints": {
+            "speed": DEFAULT_LIBTV_VOICE_SPEED,
+            "volume": DEFAULT_LIBTV_VOICE_VOLUME,
+        },
     },
     "nodes": {
         "image": {
@@ -82,9 +88,9 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
             "type": "audio",
             "model": "Minimax-speech-2.8-turbo",
             "params": {
-                "speed": 1,
+                "speed": DEFAULT_LIBTV_VOICE_SPEED,
                 "voicePitch": 0,
-                "vol": 1,
+                "vol": DEFAULT_LIBTV_VOICE_VOLUME,
             },
             "prompt_field": "audio_prompt",
             "voice_label_field": "voice_label",

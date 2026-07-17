@@ -87,9 +87,9 @@ jierou-01-audio
   prompt: CSV.script
   voice_label: 温暖闺蜜
   voice_id: Chinese (Mandarin)_Warm_Bestie
-  speed: 1
+  speed: 1.2
   voicePitch: 0
-  vol: 1
+  vol: 8
 
 jierou-01-omnihuman-video
   type: video
@@ -240,9 +240,9 @@ Markdown 用于人审和单条试跑记录。
       "type": "audio",
       "model": "Minimax-speech-2.8-turbo",
       "params": {
-        "speed": 1,
+        "speed": 1.2,
         "voicePitch": 0,
-        "vol": 1
+        "vol": 8
       },
       "prompt_field": "audio_prompt",
       "voice_label_field": "voice_label",
@@ -286,6 +286,7 @@ Markdown 用于人审和单条试跑记录。
 | `defaults.target_*` | 成片验收目标；当前固定 `720x1280` |
 | `defaults.voice_labels` | 业务默认音色；女声 `温暖闺蜜`，男声 `温润男声` |
 | `defaults.voice_ids` | 已确认的 LibTV/TTS 音色 ID；`温暖闺蜜` 为 `Chinese (Mandarin)_Warm_Bestie`，`温润男声` 为 `Chinese (Mandarin)_Gentleman` |
+| `defaults.voice_constraints` | 默认音频约束；语速 `speed=1.2`，音量 `volume=8`，写入音频节点时音量参数使用 LibTV schema 字段 `vol` |
 | `nodes.*.name_template` | 执行器根据 `task_id` 生成 LibTV 节点名 |
 | `nodes.*.model` | 当前接口使用的模型名 |
 | `nodes.*.params` | 可直接写入对应 LibTV 模型 schema 的参数 |

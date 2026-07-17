@@ -12,6 +12,7 @@
   - `<task>.libtv.plan.md`：保存人审计划；
 - 首版不创建 LibTV 画布、不创建节点、不运行 `libtv node --run`，付费生成仍需用户单独确认；
 - 默认语义音色：女声 `温暖闺蜜`，男声 `温润男声`；
+- 默认音频约束：语速 `speed=1.2`，音量 `volume=8`（LibTV 音频节点字段为 `vol`）；
 - 目标验收分辨率为 `720x1280`，作为产物验收目标而非 OmniHuman 可直接写入参数。
 
 验收：LibTV 三件套 writer 可独立调用、拒绝覆盖、CSV 去除 `NO_SPLIT` 标签、interface JSON 明确执行边界。

@@ -134,8 +134,9 @@ LibTV OmniHuman 任务包由三份文件组成：
 
 默认语义音色为女声 `温暖闺蜜`、男声 `温润男声`。其中 `温暖闺蜜` 的 LibTV/TTS
 `voice_id` 为 `Chinese (Mandarin)_Warm_Bestie`，`温润男声` 的 `voice_id` 为
-`Chinese (Mandarin)_Gentleman`。目标成片规格为 `720x1280`，但这是验收目标，不是
-OmniHuman 1.5 当前可直接写入的 `resolution` 参数。
+`Chinese (Mandarin)_Gentleman`。默认音频约束为 `speed=1.2`、音量 `volume=8`，写入
+LibTV 音频节点时音量使用 schema 字段 `vol`。目标成片规格为 `720x1280`，但这是验收目标，
+不是 OmniHuman 1.5 当前可直接写入的 `resolution` 参数。
 
 ### 多人物与服装差异
 
