@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Generate auditable copywriting and avatar prompt packages for Auto Oceanengine."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pymediainfo>=7.0.1",
+    "websockets>=16.1.1",
+]
 
 [project.scripts]
 avatar-prompts = "avatar_prompt_pipeline.cli:main"

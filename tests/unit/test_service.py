@@ -35,7 +35,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-07-17-talking-head-first-frame-v7"
+    assert package.template_version == "2026-07-22-talking-head-first-frame-v8"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
