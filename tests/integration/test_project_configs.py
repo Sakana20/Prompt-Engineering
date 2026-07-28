@@ -42,13 +42,17 @@ def test_taobao_redpacket_project_configs_forbid_each_other() -> None:
     assert twelve.language_style.name == "need-first-infeed-conversational"
     assert "真实生活需求" in twelve.language_style.tone
     assert "红包只是让这次购买更顺手" in twelve.language_style.tone
-    assert "先讲自己的处境，再自然提到淘宝闪购" in twelve.language_style.point_of_view
+    assert "先讲自己的处境，再用完整保护段自然带出淘宝闪购" in (twelve.language_style.point_of_view)
     assert "每条开头都要换一种钩子" in twelve.language_style.sentence_style
     assert any("生活需求占主要原因" in rule for rule in twelve.language_style.emphasis)
     assert any("不同人群、生活事件和表达方式" in rule for rule in twelve.language_style.emphasis)
     assert any("平台必须后置为解决方案" in rule for rule in twelve.language_style.extra_rules)
+    assert any("保护段前后不要再次写淘宝闪购" in rule for rule in twelve.language_style.extra_rules)
+    assert any("自由组织" in rule for rule in twelve.language_style.extra_rules)
     assert any("红包成为唯一购买理由" in rule for rule in twelve.language_style.extra_rules)
     assert "我在淘宝闪购看" in twelve.language_style.avoid_phrases
+    assert "用淘宝闪购补" in twelve.language_style.avoid_phrases
+    assert "用淘宝闪购买" in twelve.language_style.avoid_phrases
     assert "看到红包就买了" in twelve.language_style.avoid_phrases
     assert twenty_five.campaign.benefit_points[0].text == "最高25元无门槛红包"
     assert twenty_five.brief.category == "咖啡奶茶炸鸡等淘宝闪购商品"
