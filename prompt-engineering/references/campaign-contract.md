@@ -16,5 +16,7 @@
 
 兼容预设 `taobao-instant-commerce-default` 当前包含：
 `最高12元无门槛红包`。
+该预设的项目级保护片段为 `淘宝闪购有最高12元无门槛红包`；利益点仍必须逐字出现，
+但 `NO_SPLIT` 标签包裹完整片段，而不是只包裹红包文案。
 该预设从 `configs/projects/taobao-12-no-threshold-redpacket.json` 读取，避免代码与项目配置
 维护两份 12 元口径。

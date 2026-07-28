@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 DEFAULT_PROJECT_ROOT = Path("/Users/sakana/Desktop/Work/Codex/Prompt Engineering")
+DEFAULT_ENV = "/Users/sakana/PyEnv/prompt-engineering"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,10 +38,14 @@ def main() -> int:
         if args.python_executable
         else ["uv", "run", "avatar-prompts", *forwarded]
     )
+    env = os.environ.copy()
+    if not args.python_executable:
+        env.setdefault("UV_PROJECT_ENVIRONMENT", DEFAULT_ENV)
     if args.debug:
         print(f"[prompt-engineering] cwd={args.project_root}")
+        print(f"[prompt-engineering] env={env.get('UV_PROJECT_ENVIRONMENT')}")
         print(f"[prompt-engineering] command={command!r}")
-    completed = subprocess.run(command, cwd=args.project_root, check=False)
+    completed = subprocess.run(command, cwd=args.project_root, env=env, check=False)
     return completed.returncode
 
 

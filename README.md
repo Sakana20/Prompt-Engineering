@@ -46,9 +46,10 @@ Skill 包含：
 
 ## 环境
 
-项目使用 Python 3.12+ 和 `uv`：
+项目使用 Python 3.12+ 和 `uv`，固定环境为 `/Users/sakana/PyEnv/prompt-engineering`：
 
 ```bash
+export UV_PROJECT_ENVIRONMENT=/Users/sakana/PyEnv/prompt-engineering
 uv sync --dev
 uv run avatar-prompts compose --category 雨靴 \
   --product-name 浅卡其色中筒雨靴 \

@@ -9,8 +9,13 @@ uv sync --dev
 uv run avatar-prompts --help
 ```
 
-如需使用独立环境，优先放在 `/Users/sakana/PyEnv`，通过
-`UV_PROJECT_ENVIRONMENT=/Users/sakana/PyEnv/<name>` 指定，不使用全局 pip。
+本项目固定使用 `/Users/sakana/PyEnv/prompt-engineering`：
+
+```bash
+export UV_PROJECT_ENVIRONMENT=/Users/sakana/PyEnv/prompt-engineering
+```
+
+不要使用项目本地 `.venv`、系统 Python 或全局 pip。
 
 ## 常用命令
 

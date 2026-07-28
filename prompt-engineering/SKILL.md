@@ -130,6 +130,9 @@ Compatibility defaults:
 
 - If the user asks for 淘宝闪购 without specifying another benefit, use preset
   `taobao-instant-commerce-default`, whose benefit is `最高12元无门槛红包`.
+  This preset uses the project-level protected phrase `淘宝闪购有最高12元无门槛红包`; the benefit
+  remains required and exact-match, but the `NO_SPLIT` marker wraps the full phrase rather than
+  only the redpacket wording.
 - If the user provides an explicit benefit, use that benefit instead of the preset.
 - If the user says no benefit or no promotion, use `--preset none` semantics and generate without
   any promotional benefit.

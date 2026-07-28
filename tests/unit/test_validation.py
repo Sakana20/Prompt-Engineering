@@ -7,6 +7,7 @@ from avatar_prompt_pipeline.models import (
     ValidationConfig,
     VisualProfile,
 )
+from avatar_prompt_pipeline.presets import TAOBAO_DEFAULT_CAMPAIGN
 from avatar_prompt_pipeline.validation import (
     MARKED_REQUIRED_BENEFIT,
     REQUIRED_BENEFIT,
@@ -18,12 +19,11 @@ from avatar_prompt_pipeline.validation import (
     validate_visual_diversity,
     validate_visual_prompt,
     wrap_campaign_benefits,
-    wrap_required_benefit,
 )
 
 VALID_COPY = (
     "下班赶上大雨，走到小区门口鞋子已经湿了一圈，临时买东西时我总怕选错款。"
-    "淘宝闪购[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]"
+    "[[NO_SPLIT]]淘宝闪购有最高12元无门槛红包[[/NO_SPLIT]]"
     "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关不占地方，"
     "雨天补一双省心不少。"
 )
@@ -55,18 +55,18 @@ def test_unwrapped_benefit_is_rejected() -> None:
     assert any(issue.code is IssueCode.MISSING_NO_SPLIT_MARKER for issue in report.issues)
 
 
-def test_benefit_marker_helpers_are_idempotent_and_lossless() -> None:
+def test_campaign_marker_helpers_are_idempotent_and_lossless() -> None:
     unwrapped = strip_no_split_markers(VALID_COPY)
 
-    assert wrap_required_benefit(unwrapped) == VALID_COPY
-    assert wrap_required_benefit(VALID_COPY) == VALID_COPY
+    assert wrap_campaign_benefits(unwrapped, campaign=TAOBAO_DEFAULT_CAMPAIGN) == VALID_COPY
+    assert wrap_campaign_benefits(VALID_COPY, campaign=TAOBAO_DEFAULT_CAMPAIGN) == VALID_COPY
     assert strip_no_split_markers(VALID_COPY) == unwrapped
 
 
 def test_custom_benefit_replaces_hard_coded_validation_contract() -> None:
     campaign = CampaignSpec(benefit_points=(BenefitPoint(id="custom", text="淘宝闪购满20减5"),))
     custom_copy = VALID_COPY.replace(
-        MARKED_REQUIRED_BENEFIT,
+        "[[NO_SPLIT]]淘宝闪购有最高12元无门槛红包[[/NO_SPLIT]]",
         "[[NO_SPLIT]]淘宝闪购满20减5[[/NO_SPLIT]]",
     )
 
