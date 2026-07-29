@@ -50,6 +50,48 @@ HANDHELD_PRODUCT_PATTERNS = (
     "递近镜头展示商品",
     "持续展示包装",
 )
+PROHIBITED_BODY_ACTION_PATTERNS = (
+    "眨眼",
+    "点头",
+    "手势",
+    "挥手",
+    "重心变化",
+    "身体重心",
+)
+LOGO_SCOPE_PHRASES = (
+    "非商品区域无logo",
+    "非商品区域无 logo",
+    "其他地方不得包含logo",
+    "其他地方不得包含 logo",
+)
+PROHIBITED_NON_PRODUCT_LOGO_PATTERNS = (
+    "背景logo",
+    "背景 logo",
+    "墙面logo",
+    "墙面 logo",
+    "衣服logo",
+    "衣服 logo",
+    "服装logo",
+    "服装 logo",
+    "人物logo",
+    "人物 logo",
+    "道具logo",
+    "道具 logo",
+)
+NO_SUBTITLES_PHRASES = (
+    "无字幕",
+    "没有字幕",
+    "不得出现字幕",
+    "不出现字幕",
+)
+PROHIBITED_SUBTITLE_PATTERNS = (
+    "添加字幕",
+    "带字幕",
+    "字幕条",
+    "字幕文本",
+    "屏幕字幕",
+    "画面字幕",
+)
 TALKING_HEAD_FRAME_PHRASES = (
     "数字人口播首帧",
     "口播首帧",
@@ -315,6 +357,52 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                 ValidationIssue(
                     IssueCode.HANDHELD_PRODUCT,
                     "人物 Prompt 不能让人物手持商品",
+                    pattern,
+                )
+            )
+    if not any(phrase in cleaned for phrase in LOGO_SCOPE_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_LOGO_SCOPE,
+                "人物 Prompt 必须明确仅商品可包含 logo，非商品区域无 logo",
+                "非商品区域无logo",
+            )
+        )
+    for pattern in PROHIBITED_NON_PRODUCT_LOGO_PATTERNS:
+        if pattern in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_NON_PRODUCT_LOGO,
+                    "人物 Prompt 不能在商品之外的位置包含 logo",
+                    pattern,
+                )
+            )
+    if not any(phrase in cleaned for phrase in NO_SUBTITLES_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_NO_SUBTITLES,
+                "人物 Prompt 必须明确无字幕",
+                "无字幕",
+            )
+        )
+    subtitle_scope = cleaned
+    for allowed_phrase in NO_SUBTITLES_PHRASES:
+        subtitle_scope = subtitle_scope.replace(allowed_phrase, "")
+    for pattern in PROHIBITED_SUBTITLE_PATTERNS:
+        if pattern in subtitle_scope:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_SUBTITLES,
+                    "人物 Prompt 不能出现字幕",
+                    pattern,
+                )
+            )
+    for pattern in PROHIBITED_BODY_ACTION_PATTERNS:
+        if pattern in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_BODY_ACTION,
+                    "人物 Prompt 仅允许自然微笑，不能包含眨眼、点头、手势或重心变化",
                     pattern,
                 )
             )

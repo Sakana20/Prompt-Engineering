@@ -274,7 +274,7 @@ def test_visual_diversity_rejects_empty_keys() -> None:
 def test_visual_prompt_requires_direct_eye_contact() -> None:
     valid_prompt = (
         "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕，竖屏9:16。"
     )
     invalid_prompt = (
         "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，商品不由人物手持，"
@@ -324,3 +324,40 @@ def test_visual_prompt_requires_no_product_gaze_or_contact() -> None:
     codes = {issue.code for issue in validate_visual_prompt(prompt)}
 
     assert IssueCode.MISSING_NO_PRODUCT_GAZE_OR_CONTACT in codes
+
+
+def test_visual_prompt_rejects_prohibited_body_actions() -> None:
+    prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "自然微笑，轻微点头并做少量手势，商品不由人物手持，人物不看商品、不接触商品，"
+        "竖屏9:16。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.PROHIBITED_BODY_ACTION in codes
+
+
+def test_visual_prompt_requires_logo_scope_and_no_subtitles() -> None:
+    prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.MISSING_LOGO_SCOPE in codes
+    assert IssueCode.MISSING_NO_SUBTITLES in codes
+
+
+def test_visual_prompt_rejects_non_product_logo_and_subtitles() -> None:
+    prompt = (
+        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕，"
+        "背景logo清晰，画面字幕位于底部，竖屏9:16。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.PROHIBITED_NON_PRODUCT_LOGO in codes
+    assert IssueCode.PROHIBITED_SUBTITLES in codes
