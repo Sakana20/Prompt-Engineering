@@ -27,6 +27,11 @@ VALID_COPY = (
     "这双雨靴是清爽的浅卡其色，中筒款日常穿着利落，放在玄关不占地方，"
     "雨天补一双省心不少。"
 )
+VALID_VISUAL_PROMPT = (
+    "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+    "场景只作为背景，正面眼睛直视镜头，商品不由人物手持，人物不看商品、不接触商品，"
+    "非商品区域无logo，无字幕。"
+)
 
 
 def test_valid_copy_passes_all_deterministic_rules() -> None:
@@ -272,13 +277,11 @@ def test_visual_diversity_rejects_empty_keys() -> None:
 
 
 def test_visual_prompt_requires_direct_eye_contact() -> None:
-    valid_prompt = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕，竖屏9:16。"
-    )
+    valid_prompt = VALID_VISUAL_PROMPT
     invalid_prompt = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，商品不由人物手持，"
-        "人物不看商品、不接触商品，身体朝向镜头，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，商品不由人物手持，人物不看商品、不接触商品，身体朝向镜头，"
+        "非商品区域无logo，无字幕。"
     )
 
     assert validate_visual_prompt(valid_prompt) == ()
@@ -288,12 +291,14 @@ def test_visual_prompt_requires_direct_eye_contact() -> None:
 
 def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
     missing_constraint = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "人物不看商品、不接触商品，桌面摆放商品，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，人物不看商品、不接触商品，桌面摆放商品，"
+        "非商品区域无logo，无字幕。"
     )
     handheld_product = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "商品不由人物手持，人物不看商品、不接触商品，人物手持商品，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，商品不由人物手持，人物不看商品、不接触商品，"
+        "人物手持商品，非商品区域无logo，无字幕。"
     )
 
     missing_issues = validate_visual_prompt(missing_constraint)
@@ -305,8 +310,8 @@ def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
 
 def test_visual_prompt_requires_talking_head_frame_and_background_scene() -> None:
     prompt = (
-        "年轻亚洲女生在玄关准备通勤，正面眼睛直视镜头，商品不由人物手持，"
-        "人物不看商品、不接触商品，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，年轻亚洲女生在玄关准备通勤，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
     )
 
     codes = {issue.code for issue in validate_visual_prompt(prompt)}
@@ -317,8 +322,8 @@ def test_visual_prompt_requires_talking_head_frame_and_background_scene() -> Non
 
 def test_visual_prompt_requires_no_product_gaze_or_contact() -> None:
     prompt = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "商品不由人物手持，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，商品不由人物手持，非商品区域无logo，无字幕。"
     )
 
     codes = {issue.code for issue in validate_visual_prompt(prompt)}
@@ -328,9 +333,9 @@ def test_visual_prompt_requires_no_product_gaze_or_contact() -> None:
 
 def test_visual_prompt_rejects_prohibited_body_actions() -> None:
     prompt = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "自然微笑，轻微点头并做少量手势，商品不由人物手持，人物不看商品、不接触商品，"
-        "竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，自然微笑，轻微点头并做少量手势，"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
     )
 
     codes = {issue.code for issue in validate_visual_prompt(prompt)}
@@ -340,8 +345,8 @@ def test_visual_prompt_rejects_prohibited_body_actions() -> None:
 
 def test_visual_prompt_requires_logo_scope_and_no_subtitles() -> None:
     prompt = (
-        "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
-        "商品不由人物手持，人物不看商品、不接触商品，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，商品不由人物手持，人物不看商品、不接触商品。"
     )
 
     codes = {issue.code for issue in validate_visual_prompt(prompt)}
@@ -350,11 +355,39 @@ def test_visual_prompt_requires_logo_scope_and_no_subtitles() -> None:
     assert IssueCode.MISSING_NO_SUBTITLES in codes
 
 
-def test_visual_prompt_rejects_non_product_logo_and_subtitles() -> None:
+def test_visual_prompt_rejects_overlong_prompt() -> None:
+    prompt = (
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，商品不由人物手持，人物不看商品、不接触商品，"
+        "非商品区域无logo，无字幕。"
+        "真实摄影，手机实拍，生活记录，自然光，暖色调，真实曝光，真实白平衡，真实肤色，"
+        "轻微背景虚化，保留真实皮肤纹理，不过度磨皮，不过度锐化，不过度美颜，HDR，8K，"
+        "电影级真实摄影但没有商业广告摆拍感，干净通透。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.VISUAL_PROMPT_TOO_LONG in codes
+
+
+def test_visual_prompt_requires_frontloaded_frame_style() -> None:
     prompt = (
         "数字人口播首帧，年轻亚洲女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，"
         "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕，"
-        "背景logo清晰，画面字幕位于底部，竖屏9:16。"
+        "竖屏9:16，固定中景，手机实拍。"
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.MISSING_FRONTLOADED_FRAME_STYLE in codes
+
+
+def test_visual_prompt_rejects_non_product_logo_and_subtitles() -> None:
+    prompt = (
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻亚洲女生坐在餐桌旁，"
+        "场景只作为背景，正面眼睛直视镜头，"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕，"
+        "背景logo清晰，画面字幕位于底部。"
     )
 
     codes = {issue.code for issue in validate_visual_prompt(prompt)}

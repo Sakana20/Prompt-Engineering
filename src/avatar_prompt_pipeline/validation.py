@@ -23,6 +23,9 @@ MAX_COPY_CHARACTERS = DEFAULT_VALIDATION_CONFIG.max_characters
 BANNED_EXPRESSIONS = DEFAULT_VALIDATION_CONFIG.banned_expressions
 CALLS_TO_ACTION = DEFAULT_VALIDATION_CONFIG.call_to_actions
 FORMAT_PREFIXES = DEFAULT_VALIDATION_CONFIG.format_prefixes
+MAX_VISUAL_PROMPT_CHARACTERS = 180
+FRONTLOADED_FRAME_STYLE = "竖屏9:16，固定中景，手机实拍"
+FRONTLOADED_FRAME_STYLE_WINDOW = 25
 NO_HANDHELD_PRODUCT_PHRASES = (
     "不手持商品",
     "人物不手持商品",
@@ -305,7 +308,24 @@ def validate_visual_diversity(
 
 def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
     cleaned = prompt.replace("\x00", "").strip()
+    visual_count = len(re.sub(r"\s+", "", cleaned))
     issues: list[ValidationIssue] = []
+    if visual_count > MAX_VISUAL_PROMPT_CHARACTERS:
+        issues.append(
+            ValidationIssue(
+                IssueCode.VISUAL_PROMPT_TOO_LONG,
+                f"人物 Prompt 超过 {MAX_VISUAL_PROMPT_CHARACTERS} 字",
+                str(visual_count),
+            )
+        )
+    if FRONTLOADED_FRAME_STYLE not in cleaned[:FRONTLOADED_FRAME_STYLE_WINDOW]:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_FRONTLOADED_FRAME_STYLE,
+                "人物 Prompt 必须在开头前置竖屏9:16、固定中景和手机实拍",
+                FRONTLOADED_FRAME_STYLE,
+            )
+        )
     if not any(phrase in cleaned for phrase in TALKING_HEAD_FRAME_PHRASES):
         issues.append(
             ValidationIssue(

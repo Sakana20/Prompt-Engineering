@@ -35,7 +35,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-07-22-talking-head-first-frame-v8"
+    assert package.template_version == "2026-07-29-short-first-frame-v9"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
@@ -86,14 +86,17 @@ def test_render_avatar_prompt_injects_script() -> None:
     assert "下班回家，最高12元无门槛红包，门口的雨靴还沾着一点雨水。" in rendered
     assert "[[NO_SPLIT]]" not in rendered
     assert "22-24 岁亚洲女生" in rendered
-    assert "画面类型必须优先定义为数字人口播首帧" in rendered
-    assert "场景必须符合文案逻辑，但场景只作为背景" in rendered
-    assert "禁止手持商品" in rendered
+    assert "开头必须先写“竖屏9:16，固定中景，手机实拍，数字人口播首帧”" in rendered
+    assert "目标长度 120-180 个中文字符" in rendered
+    assert "主流日常审美" in rendered
+    assert "通勤、休闲、甜酷、简约或轻运动风" in rendered
+    assert "场景只作为背景" in rendered
+    assert "商品不由人物手持" in rendered
     assert "人物不看商品" in rendered
-    assert "人物不接触商品" in rendered
-    assert "说话时眼睛必须全程直视镜头" in rendered
-    assert "竖屏 9:16" in rendered
-    assert "固定使用中景；不允许使用半身景别。" in rendered
+    assert "不接触商品" in rendered
+    assert "非商品区域无logo" in rendered
+    assert "无字幕" in rendered
+    assert "竖屏9:16" in rendered
 
 
 def test_render_avatar_prompt_rejects_empty_script() -> None:

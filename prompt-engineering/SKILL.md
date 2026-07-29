@@ -54,17 +54,21 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
    Give every prompt a different person and a different outfit. Vary face shape, visible facial
    features, hairstyle, hair color, and clothing combination while keeping the overall account
-   aesthetic young, natural, clean, and approachable.
+   aesthetic young, natural, clean, and approachable. Vary outfits across mainstream daily styles
+   such as commute, casual, sweet-cool, minimal, and light sporty; avoid exposed, tacky, exaggerated,
+   or large-logo clothing.
 8. Before export, list an `identity_key` and `outfit_key` for every prompt and verify both are unique
    within the batch. Never use continuity wording such as “same person”, “same face”, “固定人物”,
    or “保持脸部特征一致”.
 9. When the user requests an Oceanengine task package, read
    [oceanengine-contract.md](references/oceanengine-contract.md). Derive a static
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
-   instructions into that image prompt. Every static `person_prompt` must explicitly define the
-   frame as `数字人口播首帧`, say the person is looking directly at the camera using `直视镜头`,
-   state `商品不由人物手持`, state `人物不看商品、不接触商品`, and say the scene is only
-   background using `场景只作为背景`. It must also state `非商品区域无logo` and `无字幕`.
+   instructions into that image prompt. Keep every static `person_prompt` to 120-180 Chinese
+   characters. It must begin with `竖屏9:16，固定中景，手机实拍，数字人口播首帧`,
+   say the person is looking directly at the camera using `直视镜头`, state
+   `商品不由人物手持`, state `人物不看商品、不接触商品`, and say the scene is only background
+   using `场景只作为背景`.
+   It must also state `非商品区域无logo` and `无字幕`.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -72,11 +76,13 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    When the user requests a LibTV OmniHuman package, treat it as a separate output adapter:
    derive `image_prompt` from visible first-frame attributes, derive `audio_prompt` from the
    accepted plain script, and write a per-row LibTV CSV plus a separate interface configuration
-   JSON. Every `image_prompt` must explicitly define the frame as `数字人口播首帧`, say the person
-   is looking directly at the camera using `直视镜头`, state `商品不由人物手持`, state
+   JSON. Keep every `image_prompt` to 120-180 Chinese characters. Every `image_prompt` must
+   begin with `竖屏9:16，固定中景，手机实拍，数字人口播首帧`, say the person is looking
+   directly at the camera using `直视镜头`, state `商品不由人物手持`, state
    `人物不看商品、不接触商品`, and say the scene is only background using `场景只作为背景`.
-   It must also state `非商品区域无logo` and `无字幕`. Do not put LibTV model names, node templates, resolution targets, or execution settings into the
-   per-row CSV; those belong in `<task>.libtv.interface.json`.
+   It must also state `非商品区域无logo` and `无字幕`. Do not put LibTV model names,
+   node templates, resolution targets, or execution settings into the per-row CSV; those belong
+   in `<task>.libtv.interface.json`.
 10. Preview the copy, avatar prompt, static person prompt, product facts, and campaign facts used.
    Require explicit approval
    before any paid video submission.
