@@ -113,6 +113,16 @@ Codex 是唯一语义生成器。Skill 必须向 Codex 提供事实边界、生�
 - 保留上游 Prompt 包与任务 ID 的映射；
 - 在付费提交前人工确认。
 
+### 本地审核台
+
+`tools/skill_reviewer/` 提供一个只读人工审核界面。前端负责 CSV 解析、搜索、行详情展示、
+自动高亮和 `localStorage` 配置保存；本地 Python 标准库服务承担静态文件托管、每日目录
+扫描和 SQLite 状态读取。默认扫描
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex`，列表只展示 CSV，并用
+`notes` 字段前缀聚合成人工可读批次名；匹配到同目录 SQLite 时，按 `task_id` 把
+`jobs.status` 合并成行状态徽标。审核台不写回 CSV 或数据库，不调用 Auto Oceanengine，
+不执行导入、生成或付费提交。
+
 ### LibTV OmniHuman
 
 LibTV 是新增输出适配器，不替换 Auto Oceanengine。首版只生成可审阅任务包，不创建画布、

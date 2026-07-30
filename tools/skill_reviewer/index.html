@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skill CSV / Database Reviewer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317191e'/%3E%3Cpath d='M8 10h16M8 16h16M8 22h10' stroke='%236ee7b7' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <header class="brand-block">
+          <div class="brand-mark">CSV</div>
+          <div>
+            <h1>Skill 审核台</h1>
+            <p>CSV 审核与状态预览</p>
+          </div>
+        </header>
+
+        <section class="panel compact">
+          <div class="panel-title-row">
+            <h2>每日文件</h2>
+            <button id="refresh-sources" type="button">刷新</button>
+          </div>
+          <div id="source-root" class="source-root">/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材/Codex</div>
+          <div id="daily-source-list" class="daily-source-list">
+            <div class="status-line">正在扫描目录...</div>
+          </div>
+        </section>
+
+        <section class="panel compact">
+          <h2>选择导入</h2>
+          <label class="drop-zone" for="file-input">
+            <input id="file-input" type="file" accept=".csv,text/csv" />
+            <span>选择 CSV</span>
+            <small>手动导入仅展示 CSV；每日列表会自动读取对应数据库状态。</small>
+          </label>
+          <div id="source-status" class="status-line">等待导入文件</div>
+        </section>
+
+        <section id="db-panel" class="panel compact hidden">
+          <h2>数据库表</h2>
+          <select id="table-select" class="field"></select>
+          <div class="pager">
+            <button id="prev-page" type="button">上一页</button>
+            <button id="next-page" type="button">下一页</button>
+          </div>
+        </section>
+
+        <section class="panel compact">
+          <h2>筛选</h2>
+          <input id="search-input" class="field" type="search" placeholder="搜索 task_id / 文案 / prompt" />
+          <label class="switch-row">
+            <input id="highlight-toggle" type="checkbox" checked />
+            <span>开启自动高亮</span>
+          </label>
+          <label class="switch-row">
+            <input id="dense-toggle" type="checkbox" checked />
+            <span>紧凑列表</span>
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>高亮颜色</h2>
+            <button id="reset-settings" type="button">重置</button>
+          </div>
+          <div id="category-controls" class="category-controls"></div>
+        </section>
+
+        <section class="panel">
+          <h2>自定义高亮</h2>
+          <form id="custom-form" class="custom-form">
+            <input id="custom-term" class="field" type="text" placeholder="词语或短句" />
+            <select id="custom-category" class="field"></select>
+            <button type="submit">添加</button>
+          </form>
+          <div id="custom-list" class="custom-list"></div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="toolbar">
+          <div>
+            <div id="dataset-title" class="dataset-title">还没有数据</div>
+            <div id="dataset-meta" class="dataset-meta">导入后会自动识别字段并高亮可审核内容</div>
+          </div>
+          <div class="toolbar-actions">
+            <button id="export-settings" type="button">导出配置</button>
+            <label class="import-settings">
+              导入配置
+              <input id="settings-input" type="file" accept="application/json,.json" />
+            </label>
+          </div>
+        </header>
+
+        <div id="empty-state" class="empty-state">
+          <h2>把任务文件放进来，马上开始审。</h2>
+          <p>支持即创 CSV 和 LibTV CSV；同目录数据库会自动作为状态来源。人物特征、服装、利益点和自定义短语会用不同颜色标记。</p>
+        </div>
+
+        <div id="review-grid" class="review-grid hidden">
+          <section class="rows-panel">
+            <div id="row-list" class="row-list"></div>
+          </section>
+          <section class="detail-panel">
+            <div id="detail-content" class="detail-content"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

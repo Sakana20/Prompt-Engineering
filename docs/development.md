@@ -27,7 +27,15 @@ uv run pytest
 uv run pytest tests/unit
 uv run pytest -m integration
 uv run pytest -m e2e
+uv run python tools/skill_reviewer/server.py
 ```
+
+`tools/skill_reviewer/` 是本地人工审核台。它会扫描
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex` 下的 CSV，并自动匹配同目录
+SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite 只读读取 `jobs.status`，
+按 `task_id` 合并到 CSV 行上。每日列表优先用 CSV `notes` 字段前缀聚合批次名，真实文件名
+作为次级信息展示。高亮颜色和自定义短语保存在浏览器 `localStorage`，不写回 CSV、数据库
+或下游项目。
 
 ## 代码标准
 

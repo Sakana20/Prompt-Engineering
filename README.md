@@ -108,6 +108,32 @@ uv run avatar-prompts validate-copy '完整口播正文' \
 uv run avatar-prompts validate-copy '完整口播正文'
 ```
 
+## 本地审核台
+
+仓库提供一个暗色调网页，用于快速审核 Skill 产出的 CSV 和本地 SQLite 数据库：
+
+```bash
+uv run python tools/skill_reviewer/server.py
+```
+
+也可以直接运行前台脚本，命令行会持续输出访问日志；关闭这个命令行或按 `Ctrl+C` 即可停止：
+
+```bash
+tools/skill_reviewer/run.sh
+```
+
+打开 `http://127.0.0.1:8765` 后，页面会优先扫描每日目录：
+
+```text
+/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex
+```
+
+列表只展示 CSV，并优先用 `notes` 聚合命名，例如 `山竹x10 冰袖x10`，真实文件名放在下方
+小字。同目录中匹配到的 `.db`、`.sqlite` 或 `.sqlite3` 会作为状态来源，按 `task_id`
+显示“未发配”“生成中”“已完成”等状态。手动选择 CSV 导入作为备用。页面会自动高亮服装、
+人物特征、利益点和商品信息；颜色、自定义高亮短语和开关会保存在浏览器 `localStorage`，
+下次打开继续沿用。
+
 ## 质量检查
 
 ```bash
