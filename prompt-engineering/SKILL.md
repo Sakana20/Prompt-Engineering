@@ -52,11 +52,14 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    generating its avatar prompt.
 7. Remove `[[NO_SPLIT]]` tags before generating an avatar video prompt; they are not spoken text.
    Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
-   Give every prompt a different person and a different outfit. Vary face shape, visible facial
-   features, hairstyle, hair color, and clothing combination while keeping the overall account
-   aesthetic young, natural, clean, and approachable. Vary outfits across mainstream daily styles
-   such as commute, casual, sweet-cool, minimal, and light sporty; avoid exposed, tacky, exaggerated,
-   or large-logo clothing.
+   Give every prompt a different Chinese young woman and a different outfit. Vary face shape,
+   visible facial features, hairstyle, hair color, facial-aesthetic direction, and clothing
+   combination while keeping the overall account aesthetic young, natural, clean, and approachable.
+   Facial-aesthetic directions may include sweet, cute, cool-clean, elegant mature-sister,
+   girl-next-door, and fresh mainstream looks, but must never skew toward auntie, middle-aged,
+   elderly, matronly, or old-fashioned looks. Vary outfits across mainstream daily styles such as
+   commute, casual, sweet-cool, minimal, and light sporty; avoid exposed, tacky, exaggerated, or
+   large-logo clothing.
 8. Before export, list an `identity_key` and `outfit_key` for every prompt and verify both are unique
    within the batch. Never use continuity wording such as “same person”, “same face”, “固定人物”,
    or “保持脸部特征一致”.

@@ -115,6 +115,20 @@ NO_PRODUCT_CONTACT_PHRASES = (
     "人物不接触商品",
     "不触碰商品",
 )
+REQUIRED_PERSON_DEMOGRAPHIC_PHRASES = (
+    "中国女生",
+    "中国女性",
+)
+PROHIBITED_PERSON_STYLE_PATTERNS = (
+    "亚洲女生",
+    "亚洲女性",
+    "大妈",
+    "阿姨",
+    "中年女性",
+    "中老年",
+    "老年女性",
+    "老气",
+)
 
 
 def strip_no_split_markers(text: str) -> str:
@@ -350,6 +364,23 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                 "直视镜头",
             )
         )
+    if not any(phrase in cleaned for phrase in REQUIRED_PERSON_DEMOGRAPHIC_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_PERSON_DEMOGRAPHIC,
+                "人物 Prompt 必须明确人物为中国女生",
+                "中国女生",
+            )
+        )
+    for pattern in PROHIBITED_PERSON_STYLE_PATTERNS:
+        if pattern in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_PERSON_STYLE,
+                    "人物 Prompt 不能使用旧地域口径或大妈、阿姨、中老年方向",
+                    pattern,
+                )
+            )
     if not any(phrase in cleaned for phrase in NO_PRODUCT_GAZE_OR_CONTACT_PHRASES) or not any(
         phrase in cleaned for phrase in NO_PRODUCT_CONTACT_PHRASES
     ):

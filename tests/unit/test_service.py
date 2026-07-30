@@ -35,7 +35,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-07-29-short-first-frame-v9"
+    assert package.template_version == "2026-07-30-chinese-young-woman-v10"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
@@ -85,7 +85,10 @@ def test_render_avatar_prompt_injects_script() -> None:
     assert "{{SCRIPT}}" not in rendered
     assert "下班回家，最高12元无门槛红包，门口的雨靴还沾着一点雨水。" in rendered
     assert "[[NO_SPLIT]]" not in rendered
-    assert "22-24 岁亚洲女生" in rendered
+    assert "22-24 岁中国女生" in rendered
+    assert "甜美、可爱、清冷、御姐、邻家、清爽" in rendered
+    assert "禁止大妈、阿姨、中年女性、中老年或老气方向" in rendered
+    assert "亚洲女生、亚洲女性、大妈、阿姨" in rendered
     assert "开头必须先写“竖屏9:16，固定中景，手机实拍，数字人口播首帧”" in rendered
     assert "目标长度 120-180 个中文字符" in rendered
     assert "主流日常审美" in rendered

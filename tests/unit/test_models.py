@@ -64,7 +64,7 @@ def test_campaign_supports_no_benefit_and_rejects_more_than_three() -> None:
 def test_libtv_task_normalizes_default_voice_fields() -> None:
     default_task = LibtvOmniHumanTask(
         task_id="task-1",
-        image_prompt="年轻亚洲女生坐在餐桌旁。",
+        image_prompt="年轻中国女生坐在餐桌旁。",
         marked_script="淘宝闪购最高12元无门槛红包。",
         title="测试任务",
         notes="测试+1",
