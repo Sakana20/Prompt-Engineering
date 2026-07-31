@@ -95,6 +95,37 @@ PROHIBITED_SUBTITLE_PATTERNS = (
     "屏幕字幕",
     "画面字幕",
 )
+FRONT_TABLE_PRODUCT_PLACEMENT_PHRASES = (
+    "人物面前桌上",
+    "人物面前的桌上",
+    "人物面前桌面",
+    "人物面前的桌面",
+    "人物面前台面",
+    "人物面前的台面",
+    "面前桌上",
+    "面前的桌子上",
+    "面前桌面",
+    "面前台面",
+)
+PROHIBITED_BEHIND_PRODUCT_PLACEMENT_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"商品.{0,8}身后",
+        r"身后.{0,8}商品",
+        r"商品.{0,8}背后",
+        r"背后.{0,8}商品",
+        r"商品.{0,8}背景里",
+        r"背景里.{0,8}商品",
+        r"商品.{0,8}背景中",
+        r"背景中.{0,8}商品",
+        r"商品.{0,8}远处",
+        r"远处.{0,8}商品",
+        r"商品.{0,8}侧后方",
+        r"侧后方.{0,8}商品",
+        r"商品.{0,8}画面边缘",
+        r"画面边缘.{0,8}商品",
+    )
+)
 TALKING_HEAD_FRAME_PHRASES = (
     "数字人口播首帧",
     "口播首帧",
@@ -446,6 +477,23 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                     IssueCode.PROHIBITED_SUBTITLES,
                     "人物 Prompt 不能出现字幕",
                     pattern,
+                )
+            )
+    if not any(phrase in cleaned for phrase in FRONT_TABLE_PRODUCT_PLACEMENT_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_FRONT_TABLE_PRODUCT_PLACEMENT,
+                "人物 Prompt 必须明确商品放在人物面前的桌面或台面上",
+                "人物面前桌上",
+            )
+        )
+    for placement_pattern in PROHIBITED_BEHIND_PRODUCT_PLACEMENT_PATTERNS:
+        if placement_pattern.search(cleaned):
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_BEHIND_PRODUCT_PLACEMENT,
+                    "人物 Prompt 不能把商品放在人物身后、背景里、远处或侧后方",
+                    placement_pattern.pattern,
                 )
             )
     for pattern in PROHIBITED_BODY_ACTION_PATTERNS:

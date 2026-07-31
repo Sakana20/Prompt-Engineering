@@ -72,6 +72,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    `商品不由人物手持`, state `人物不看商品、不接触商品`, and say the scene is only background
    using `场景只作为背景`.
    It must also state `非商品区域无logo` and `无字幕`.
+   The product must be placed on the table or countertop in front of the person; never place it
+   behind the person, in the background, far away, or off to the side/back.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -86,6 +88,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    It must also state `非商品区域无logo` and `无字幕`. Do not put LibTV model names,
    node templates, resolution targets, or execution settings into the per-row CSV; those belong
    in `<task>.libtv.interface.json`.
+   The product must be placed on the table or countertop in front of the person; never place it
+   behind the person, in the background, far away, or off to the side/back.
 10. Preview the copy, avatar prompt, static person prompt, product facts, and campaign facts used.
    Require explicit approval
    before any paid video submission.

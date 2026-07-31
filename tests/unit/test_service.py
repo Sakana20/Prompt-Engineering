@@ -94,6 +94,7 @@ def test_render_avatar_prompt_injects_script() -> None:
     assert "主流日常审美" in rendered
     assert "通勤、休闲、甜酷、简约或轻运动风" in rendered
     assert "场景只作为背景" in rendered
+    assert "人物面前桌上放商品" in rendered
     assert "商品不由人物手持" in rendered
     assert "人物不看商品" in rendered
     assert "不接触商品" in rendered
