@@ -43,6 +43,15 @@ const DEFAULT_SETTINGS = {
         "可见", "不由人物手持", "人物不看商品", "人物不接触商品"
       ]
     },
+    referenceImage: {
+      label: "参考图",
+      color: "#fdba74",
+      enabled: true,
+      terms: [
+        "reference_image_uri", "reference_image_url", "reference_image_pid", "参考图",
+        "素材 URI", "签名 URL", "images[]"
+      ]
+    },
     custom: {
       label: "自定义",
       color: "#fb7185",
@@ -301,8 +310,79 @@ function highlight(value) {
 function primaryFields() {
   return [
     "script", "audio_prompt", "marked_script", "person_prompt", "image_prompt",
-    "avatar_prompt", "copywriting_prompt", "title", "notes", "task_id"
+    "avatar_prompt", "copywriting_prompt", "title", "notes", "task_id",
+    "reference_image_uri", "reference_image_url", "reference_image_pid"
   ];
+}
+
+function referenceImageFields(row) {
+  return {
+    uri: textOf(row, "reference_image_uri").trim(),
+    url: textOf(row, "reference_image_url").trim(),
+    pid: textOf(row, "reference_image_pid").trim()
+  };
+}
+
+function hasReferenceImage(row) {
+  const fields = referenceImageFields(row);
+  return Boolean(fields.uri || fields.url || fields.pid);
+}
+
+function referenceImageLabel(row) {
+  if (!state.columns.some((column) => column.startsWith("reference_image_"))) {
+    return "";
+  }
+  return hasReferenceImage(row) ? "参考图" : "默认图";
+}
+
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function renderReferenceImageCard(row) {
+  if (!state.columns.some((column) => column.startsWith("reference_image_"))) {
+    return "";
+  }
+  const fields = referenceImageFields(row);
+  const hasImage = Boolean(fields.uri || fields.url || fields.pid);
+  const canPreview = isHttpUrl(fields.url);
+  const stateText = hasImage ? "已配置参考图" : "未配置参考图";
+  const hint = hasImage
+    ? "人物图片生成会携带参考图约束商品外观。"
+    : "下游会按默认文生图流程生成数字人图片。";
+  return `
+    <section class="reference-card${hasImage ? "" : " muted-card"}">
+      <div class="reference-card-head">
+        <div>
+          <div class="reference-card-title">${escapeHtml(stateText)}</div>
+          <div class="reference-card-hint">${escapeHtml(hint)}</div>
+        </div>
+        <span class="reference-pill">${escapeHtml(hasImage ? "images[]" : "empty")}</span>
+      </div>
+      <div class="reference-card-body">
+        ${
+          canPreview
+            ? `<a class="reference-preview" href="${escapeHtml(fields.url)}" target="_blank" rel="noreferrer">
+                 <img src="${escapeHtml(fields.url)}" alt="参考图预览" loading="lazy" />
+               </a>`
+            : `<div class="reference-preview placeholder">
+                 <span>${escapeHtml(hasImage ? "运行时补取签名 URL" : "无参考图")}</span>
+               </div>`
+        }
+        <div class="reference-meta">
+          <div><span>URI</span><strong>${escapeHtml(fields.uri || "未填写")}</strong></div>
+          <div><span>URL</span><strong>${escapeHtml(fields.url || "未填写")}</strong></div>
+          <div><span>PID</span><strong>${escapeHtml(fields.pid || "未填写")}</strong></div>
+          ${canPreview ? `<a class="reference-link" href="${escapeHtml(fields.url)}" target="_blank" rel="noreferrer">打开参考图</a>` : ""}
+        </div>
+      </div>
+    </section>
+  `;
 }
 
 function rowTitle(row, index) {
@@ -387,6 +467,7 @@ function renderRows() {
             <span>${escapeHtml(rowTitle(row, index))}</span>
             <span class="row-badges">
               <span class="status-badge ${statusTone(rawStatus(row))}">${escapeHtml(statusLabel(rawStatus(row)))}</span>
+              ${referenceImageLabel(row) ? `<span class="reference-badge ${hasReferenceImage(row) ? "active" : "idle"}">${escapeHtml(referenceImageLabel(row))}</span>` : ""}
               <span class="badge">#${index + 1}</span>
             </span>
           </div>
@@ -407,7 +488,7 @@ function renderDetail() {
     ...primaryFields().filter((field) => state.columns.includes(field)),
     ...state.columns.filter((field) => !primaryFields().includes(field))
   ];
-  elements.detailContent.innerHTML = orderedColumns
+  elements.detailContent.innerHTML = renderReferenceImageCard(row) + orderedColumns
     .map((column) => `
       <section class="field-block">
         <div class="field-name">${escapeHtml(column)}</div>

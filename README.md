@@ -151,8 +151,9 @@ tools/skill_reviewer/run.sh
 ```
 
 列表只展示 CSV，并优先使用 `notes` 聚合命名。同目录中匹配到的 `.db`、`.sqlite` 或
-`.sqlite3` 会作为只读状态来源，按 `task_id` 合并展示任务状态。审核台不写回 CSV、
-SQLite 或下游项目。
+`.sqlite3` 会作为只读状态来源，按 `task_id` 合并展示任务状态。Auto Oceanengine CSV 中的
+`reference_image_*` 字段会在列表中显示“参考图/默认图”徽标，并在详情页展示参考图预览、
+素材 URI、签名 URL 和 PID。审核台不写回 CSV、SQLite 或下游项目。
 
 ## Skill 分发
 
