@@ -54,7 +54,7 @@ https://libtv-res.liblib.art/sd-gen-save-img/genius_playground/video/1af68f6443e
 原 CSV 字段：
 
 ```csv
-task_id,person_prompt,script,aspect_ratio,voice,title,notes
+task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,reference_image_url,reference_image_pid
 ```
 
 实际映射：
@@ -68,6 +68,9 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes
 | `voice` | 音色意图 | 映射为任务包 `voice_label`；女声默认 `温暖闺蜜`，男声默认 `温润男声` |
 | `title` | 审阅标题 | 暂不直接写入 LibTV 参数，可用于报告和节点命名 |
 | `notes` | 审计备注 | 暂不直接写入 LibTV 参数，可用于批量日志 |
+| `reference_image_uri` | 即创参考图素材 URI | LibTV 转换暂不消费，保留给 Auto Oceanengine 参考图链路 |
+| `reference_image_url` | 即创参考图签名 URL | LibTV 转换暂不消费，可为空 |
+| `reference_image_pid` | 即创参考图 PID | LibTV 转换暂不消费，可为空 |
 
 第一条试跑对应节点：
 

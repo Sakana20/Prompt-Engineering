@@ -8,6 +8,7 @@ from avatar_prompt_pipeline.models import (
     BriefValidationError,
     CampaignSpec,
     LibtvOmniHumanTask,
+    OceanengineTask,
     ProductBrief,
 )
 
@@ -86,3 +87,19 @@ def test_libtv_task_normalizes_default_voice_fields() -> None:
     assert default_task.voice_id == DEFAULT_LIBTV_FEMALE_VOICE_ID
     assert default_task.aspect_ratio == "9:16"
     assert male_task.voice_id == DEFAULT_LIBTV_MALE_VOICE_ID
+
+
+def test_oceanengine_task_defaults_reference_image_fields() -> None:
+    task = OceanengineTask(
+        task_id="task-1",
+        person_prompt="竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生直视镜头。",
+        marked_script="淘宝闪购最高12元无门槛红包。",
+        aspect_ratio="9:16",
+        voice="明朗女声",
+        title="测试任务",
+        notes="测试+1",
+    )
+
+    assert task.reference_image_uri == ""
+    assert task.reference_image_url == ""
+    assert task.reference_image_pid == ""

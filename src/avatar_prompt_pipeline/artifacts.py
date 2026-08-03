@@ -34,6 +34,9 @@ CSV_FIELDS = (
     "voice",
     "title",
     "notes",
+    "reference_image_uri",
+    "reference_image_url",
+    "reference_image_pid",
 )
 
 LIBTV_OMNIHUMAN_CSV_FIELDS = (
@@ -332,6 +335,9 @@ def write_oceanengine_csv(
                     "voice": task.voice,
                     "title": task.title,
                     "notes": task.notes,
+                    "reference_image_uri": task.reference_image_uri,
+                    "reference_image_url": task.reference_image_url,
+                    "reference_image_pid": task.reference_image_pid,
                 }
             )
 

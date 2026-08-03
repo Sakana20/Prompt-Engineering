@@ -103,7 +103,9 @@ Codex 是唯一语义生成器。Skill 必须向 Codex 提供事实边界、生�
 ### Auto Oceanengine
 
 现有下游 CSV 字段是 `task_id`、`person_prompt`、`script`、`aspect_ratio`、`voice`、
-`title`、`notes`。其 `person_prompt` 用于人物图片生成，不是完整视频 Prompt。
+`title`、`notes`、`reference_image_uri`、`reference_image_url`、`reference_image_pid`。
+其 `person_prompt` 用于人物图片生成，不是完整视频 Prompt；参考图字段为空时保持默认
+文生图流程，提供 `reference_image_uri` 时约束人物图生成中的商品外观。
 
 写入下游前必须：
 

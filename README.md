@@ -1,141 +1,191 @@
-# Commerce Avatar Content
+# Prompt Engineering
 
-这是通用商品数字人内容项目。Codex 直接分析商品与活动资料，生成商品口播、数字人
-Prompt、字幕稿和任务 CSV。项目分发为一个通用化 Codex Skill，保留淘宝闪购默认利益点
-作为兼容预设。
+Prompt Engineering 是商品短视频内容与数字人任务包项目。它负责把用户确认的商品事实、
+活动口径和利益点整理成可审计的口播文案、数字人首帧 Prompt、SmartSplit 字幕稿、
+Auto Oceanengine CSV，以及 LibTV OmniHuman 任务包。
 
-可分发 Skill：
+本项目只做内容生成、确定性校验和文件交接；不登录平台、不提交付费生成、不导入即创任务。
+Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运行。
 
-- [prompt-engineering](prompt-engineering/)：通用商品数字人内容入口，支持 0–3 条利益点、
-  无利益点任务，以及 `taobao-instant-commerce-default` 兼容预设。
+## 当前能力
 
-Skill 包含：
+- 生成 80-100 字中文商品口播，支持通用商品、淘宝闪购默认利益点、无利益点任务，以及
+  一个项目一个 JSON 配置文件的完整活动口径。
+- 校验活动利益点、平台名、禁词、行动引导、`[[NO_SPLIT]]` 标签完整性和批量文案相似度。
+- 为每条口播生成静态数字人首帧 Prompt，并校验人物直视镜头、商品位于人物前方桌面、
+  商品不由人物手持、人物不看商品不接触商品、非商品区域无 logo 和无字幕。
+- 输出 SmartSplit 字幕稿：每个任务一份 `<task_id>.smartsplit.txt`，保留 `[[NO_SPLIT]]`。
+- 输出 Auto Oceanengine CSV：每批次一份 `<task>.csv`，去除 `[[NO_SPLIT]]`，兼容参考图字段。
+- 输出 LibTV OmniHuman 三件套：`<task>.libtv.csv`、`<task>.libtv.interface.json`、
+  `<task>.libtv.plan.md`，只用于人审和后续执行，不创建画布或运行节点。
+- 提供本地审核台，扫描 CSV 并可只读合并同目录 SQLite 中的任务状态。
 
-1. `SKILL.md` 定义触发条件与执行流程；
-2. `references/` 保存已验证文案规则、数字人规则和即创契约；
-3. `agents/openai.yaml` 提供 Codex UI 元数据。
-4. `scripts/run_cli.py` 透明保留全部现有 CLI 参数。
-5. JSON Schema 描述 CLI 参数与 Skill 配置、批处理、插件、调试和输出格式。
+## 输出边界
 
-利益点来自用户输入或已确认预设。CLI 使用 `--benefit-point` 覆盖默认利益点，使用
-`--preset none` 创建无利益点任务；不得自行创造促销、金额或门槛。
-也可以使用一个项目一个 JSON 配置文件的方式固化完整项目口径。配置文件放在
-`configs/projects/`，包含商品资料、
-平台、活动名、利益点、互斥或禁用表达、确认可用信息、校验配置路径、语言风格；适合“淘宝闪购 12 元无门槛红包”和“淘宝闪购
-25 元无门槛红包”这类不能混用的项目。传入 `--config` 后，不再自动加载默认淘宝利益点，
-也不要同时传入 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。
-配置了 `platform` 时，每条口播必须逐字出现平台名；淘宝闪购项目不能省略“淘宝闪购”。
-仓库已提供两个可运行样例，默认品类为“西瓜”；正式项目使用前应复制并改成用户确认的
-真实品类、商品名和卖点。
-其中 `configs/projects/taobao-12-no-threshold-redpacket.json` 同时作为
-`taobao-instant-commerce-default` 兼容预设的数据源。
+默认输出目录：
 
-不接入其他 LLM 或模型 API。仓库中的 Python 只承担确定性编排、校验、序列化和产物
-写出，不负责语义生成。写入下游、导入任务和付费视频生成仍是独立授权边界。
+```text
+/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/
+```
 
-生成态口播按活动契约使用 `[[NO_SPLIT]]…[[/NO_SPLIT]]` 包裹指定利益点，标签不计入口播
-字数。
-口播定位为“商品导向的生活化分享”：场景约占 20%，商品与选择理由约占 50%，利益点和
-具体购买体验约占 30%，避免写成完整生活故事。
-所有产物按 `/Users/sakana/Desktop/Work/Codex/Prompt Engineering/<YYYYMMDD>/<task>/`
-分层。同一任务目录同时保存带标签的 `<task_id>.smartsplit.txt` 和去掉标签的
-`<task>.csv`。两类文件分别生成、互不触发、互不覆盖。
+常见任务包结构：
 
-批量生成时，每条 Prompt 必须使用不同中国女生和不同服装；人物可以不同，长相方向可覆盖
-甜美、可爱、清冷、御姐、邻家和清爽等年轻主流审美，但整体保持年轻、自然、干净、
-生活化，不得出现大妈、阿姨、中年女性或中老年方向。
+```text
+<task>/
+├── <task_id>.smartsplit.txt
+├── <task>.csv
+├── <task>.libtv.csv
+├── <task>.libtv.interface.json
+└── <task>.libtv.plan.md
+```
 
-## 环境
+这些产物彼此独立：写字幕稿不会自动写 CSV，写 CSV 不会导入 Auto Oceanengine，写 LibTV
+任务包不会创建画布、创建节点或运行付费生成。
 
-项目使用 Python 3.12+ 和 `uv`，固定环境为 `/Users/sakana/PyEnv/prompt-engineering`：
+## Auto Oceanengine CSV
+
+`write_oceanengine_csv(...)` 当前固定输出 10 列：
+
+```csv
+task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,reference_image_url,reference_image_pid
+```
+
+字段说明：
+
+| 字段 | 用途 |
+|---|---|
+| `task_id` | 唯一任务 ID，只含字母、数字、短横线和下划线 |
+| `person_prompt` | 静态人物图 Prompt，供即创人物图片生成使用 |
+| `script` | 纯口播文案，不含 `[[NO_SPLIT]]` |
+| `aspect_ratio` | 默认 `9:16` |
+| `voice` | 当前默认 `明朗女声` |
+| `title` | 简短任务标题 |
+| `notes` | `{品类}+{序号}`，例如 `西瓜+1` |
+| `reference_image_uri` | 可选商品参考图素材 URI |
+| `reference_image_url` | 可选签名 URL，可留空由 Auto Oceanengine 运行时补取 |
+| `reference_image_pid` | 可选 PID，无值时留空 |
+
+不提供参考图时，三个 `reference_image_*` 字段写空字符串，下游仍按默认文生图流程生成
+数字人图片；提供 `reference_image_uri` 时，下游会把参考图传入人物图片生成请求的
+`images[]`，用于约束商品外观。
+
+## 项目配置
+
+项目配置文件位于 `configs/projects/`，用于固化完整商品与活动口径。配置中可以声明：
+
+- `category`、商品名和确认卖点；
+- `platform` 和 `campaign_name`；
+- 0-3 条 `benefit_points`；
+- 互斥或禁用表达；
+- 可提及但不强制出现的 `confirmed_claims`；
+- `validation_config_path`；
+- `language_style`。
+
+传入 `--config` 后，CLI 使用配置文件作为完整口径，不再叠加默认淘宝闪购预设，也不要同时
+传入 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。
+
+兼容预设：
+
+- `taobao-instant-commerce-default`：从
+  `configs/projects/taobao-12-no-threshold-redpacket.json` 读取，利益点为
+  `最高12元无门槛红包`。
+- `--preset none`：无利益点任务，不得自行创造促销、金额、门槛或平台权益。
+
+## 常用命令
+
+项目固定使用 Python 3.12+、`uv` 和 `/Users/sakana/PyEnv/prompt-engineering`：
 
 ```bash
 export UV_PROJECT_ENVIRONMENT=/Users/sakana/PyEnv/prompt-engineering
 uv sync --dev
+```
+
+生成基础文案/Prompt 包：
+
+```bash
 uv run avatar-prompts compose --category 雨靴 \
   --product-name 浅卡其色中筒雨靴 \
   --selling-point 浅卡其配色 \
   --selling-point 中筒款式
 ```
 
-也可写入 JSON 文件：
-
-```bash
-uv run avatar-prompts compose --category 雨靴 --output output/rain-boots.json
-```
-
-使用项目配置文件：
-
-```json
-{
-  "project_id": "taobao-25-no-threshold-redpacket",
-  "category": "西瓜",
-  "platform": "淘宝闪购",
-  "campaign_name": "25元无门槛红包项目",
-  "benefit_points": [
-    {
-      "id": "primary-benefit",
-      "text": "最高25元无门槛红包",
-      "required": true,
-      "exact_match": true,
-      "no_split": true,
-      "priority": 1
-    }
-  ],
-  "campaign_forbidden_expressions": ["最高12元无门槛红包"],
-  "confirmed_claims": ["可提及配送到家或外卖到家", "可提及闪购新人福利"],
-  "validation_config_path": "../validation/taobao-25-promo.json",
-  "language_style": {
-    "name": "benefit-forward-promo",
-    "tone": "短视频投流口吻，福利感强，语气可以更兴奋直接，但必须围绕已确认权益表达",
-    "point_of_view": "像刚发现淘宝闪购福利后，直接提醒朋友去领、去看、去下单",
-    "sentence_style": "开头快速点出人群或商品场景，随后连续给出福利点，句子短促有节奏",
-    "emphasis": ["先让用户听清楚本次活动利益点，再回到商品使用场景"],
-    "avoid_phrases": ["薅羊毛", "错过就亏", "赶紧领"],
-    "extra_rules": ["不要暗示活动长期有效"]
-  }
-}
-```
+使用项目配置：
 
 ```bash
 uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
+```
+
+校验口播：
+
+```bash
+uv run avatar-prompts validate-copy '完整口播正文'
 uv run avatar-prompts validate-copy '完整口播正文' \
   --config configs/projects/taobao-25-no-threshold-redpacket.json
 ```
 
-校验 Codex 生成的口播：
+Skill 透明入口：
 
 ```bash
-uv run avatar-prompts validate-copy '完整口播正文'
+python prompt-engineering/scripts/run_cli.py -- compose --category 西瓜
+python prompt-engineering/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
 ```
 
 ## 本地审核台
 
-仓库提供一个暗色调网页，用于快速审核 Skill 产出的 CSV 和本地 SQLite 数据库：
+启动审核台：
 
 ```bash
 uv run python tools/skill_reviewer/server.py
 ```
 
-也可以直接运行前台脚本，命令行会持续输出访问日志；关闭这个命令行或按 `Ctrl+C` 即可停止：
+或运行前台脚本：
 
 ```bash
 tools/skill_reviewer/run.sh
 ```
 
-打开 `http://127.0.0.1:8765` 后，页面会优先扫描每日目录：
+打开 `http://127.0.0.1:8765` 后，页面会优先扫描：
 
 ```text
 /Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex
 ```
 
-列表只展示 CSV，并优先用 `notes` 聚合命名，例如 `山竹x10 冰袖x10`，真实文件名放在下方
-小字。同目录中匹配到的 `.db`、`.sqlite` 或 `.sqlite3` 会作为状态来源，按 `task_id`
-显示“未发配”“生成中”“已完成”等状态。手动选择 CSV 导入作为备用。页面会自动高亮服装、
-人物特征、利益点和商品信息；颜色、自定义高亮短语和开关会保存在浏览器 `localStorage`，
-下次打开继续沿用。
+列表只展示 CSV，并优先使用 `notes` 聚合命名。同目录中匹配到的 `.db`、`.sqlite` 或
+`.sqlite3` 会作为只读状态来源，按 `task_id` 合并展示任务状态。审核台不写回 CSV、
+SQLite 或下游项目。
+
+## Skill 分发
+
+可分发 skill 位于：
+
+```text
+prompt-engineering/
+```
+
+它包含：
+
+- `SKILL.md`：触发条件、执行流程和安全边界；
+- `references/`：文案规则、活动契约、数字人规则、运行时约定和 Oceanengine 契约；
+- `scripts/run_cli.py`：透明转发 CLI 参数；
+- JSON Schema：CLI 参数和 skill 配置；
+- `agents/openai.yaml`：Codex UI 元数据。
+
+已安装 skill 位于：
+
+```text
+/Users/sakana/.codex/skills/prompt-engineering
+```
+
+修改 `prompt-engineering/` 分发目录后运行：
+
+```bash
+uv run python /Users/sakana/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+  prompt-engineering
+```
 
 ## 质量检查
+
+提交前运行：
 
 ```bash
 uv run ruff format --check .
@@ -146,22 +196,17 @@ uv run pytest
 
 ## 文档
 
-- [可行性研究](docs/feasibility-study.md)
 - [架构设计](docs/architecture.md)
 - [实现计划](docs/implementation-plan.md)
 - [开发规范](docs/development.md)
+- [可行性研究](docs/feasibility-study.md)
+- [LibTV OmniHuman 任务包设计笔记](docs/libtv-omnihuman-workflow-notes.md)
 - [“西瓜”品类前向验证](tests/cases/validation-watermelon.md)
 
-## Skill 验证
+## 安全原则
 
-```bash
-uv run python /Users/sakana/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
-  prompt-engineering
-```
-
-Skill CLI 透明入口：
-
-```bash
-python prompt-engineering/scripts/run_cli.py -- compose --category 西瓜
-python prompt-engineering/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
-```
+- Codex 负责语义生成；Python 只做确定性编排、校验、序列化和文件写入。
+- 不接入其他 LLM 或模型 API。
+- 不虚构商品材质、性能、价格、销量、品牌、功效或促销。
+- 不保存 Cookie、Token、验证码、签名、浏览器 profile 或真实业务凭据。
+- 暂存 CSV、预检、导入、付费生成是四个独立授权边界。

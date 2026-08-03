@@ -155,8 +155,8 @@
 ### 5.2 下游任务 CSV
 
 ```csv
-task_id,person_prompt,script,aspect_ratio,voice,title,notes
-RB-20260702-001,"年轻中国女生……","雨季把雨靴放在玄关……",9:16,明朗女声,雨靴雨天通勤,待人工审核
+task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,reference_image_url,reference_image_pid
+RB-20260702-001,"年轻中国女生……","雨季把雨靴放在玄关……",9:16,明朗女声,雨靴雨天通勤,待人工审核,,,
 ```
 
 CSV 按项目日期和任务目录输出，例如：
@@ -375,7 +375,8 @@ script
 | `avatar_video_prompt` | 已验证数字人模板生成的完整视频 Prompt，供归档及其他视频模型使用 |
 | `person_prompt` | 从完整 Prompt 提取的静态人物图 Prompt，供现有即创项目使用 |
 
-目标项目的 CSV 暂不需要增加字段；`avatar_video_prompt` 保留在上游生成记录中即可。
+目标项目 CSV 已增加 `reference_image_uri`、`reference_image_url`、`reference_image_pid`
+三个可选参考图字段；不提供参考图时写空值，`avatar_video_prompt` 仍保留在上游生成记录中即可。
 
 ## 12. 当前最值得先确认的问题
 

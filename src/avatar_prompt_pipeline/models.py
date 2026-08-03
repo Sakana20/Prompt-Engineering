@@ -370,6 +370,9 @@ class OceanengineTask:
     voice: str
     title: str
     notes: str
+    reference_image_uri: str = ""
+    reference_image_url: str = ""
+    reference_image_pid: str = ""
 
 
 @dataclass(frozen=True, slots=True)

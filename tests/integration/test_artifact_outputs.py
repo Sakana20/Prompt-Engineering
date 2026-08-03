@@ -80,7 +80,37 @@ def test_manuscript_and_oceanengine_csv_are_independent_artifacts(tmp_path: Path
         "[[/NO_SPLIT]]", ""
     )
     assert "[[NO_SPLIT]]" not in rows[0]["script"]
+    assert rows[0]["reference_image_uri"] == ""
+    assert rows[0]["reference_image_url"] == ""
+    assert rows[0]["reference_image_pid"] == ""
     assert manuscript_path.read_text(encoding="utf-8") == f"{MARKED_SCRIPT}\n"
+
+
+@pytest.mark.integration
+def test_oceanengine_csv_writes_reference_image_columns(tmp_path: Path) -> None:
+    csv_path = tmp_path / "oceanengine" / "hami-melon-reference.csv"
+    task = OceanengineTask(
+        task_id="HM-REF",
+        person_prompt=(
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+        ),
+        marked_script=MARKED_SCRIPT,
+        aspect_ratio="9:16",
+        voice="明朗女声",
+        title="哈密瓜参考图场景",
+        notes="哈密瓜+1",
+        reference_image_uri="tos-cn/reference",
+        reference_image_url="https://example.invalid/reference.png",
+        reference_image_pid="pid-1",
+    )
+
+    written_csv = write_oceanengine_csv(csv_path, [task])
+
+    with written_csv.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["reference_image_uri"] == "tos-cn/reference"
+    assert row["reference_image_url"] == "https://example.invalid/reference.png"
+    assert row["reference_image_pid"] == "pid-1"
 
 
 @pytest.mark.integration
