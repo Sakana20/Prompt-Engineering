@@ -7,6 +7,13 @@ from .artifacts import (
     write_oceanengine_csv,
     write_segmentation_manuscript,
 )
+from .batch import (
+    GeneratedTaskBatch,
+    GeneratedTaskRecord,
+    load_task_batch,
+    task_batch_template,
+    write_task_batch_template,
+)
 from .models import (
     AvatarVideoPrompt,
     BenefitPoint,
@@ -35,6 +42,8 @@ __all__ = [
     "CampaignSpec",
     "CopyValidationReport",
     "GeneratedScript",
+    "GeneratedTaskBatch",
+    "GeneratedTaskRecord",
     "OceanengineTask",
     "ProductBrief",
     "PromptPackage",
@@ -43,7 +52,9 @@ __all__ = [
     "default_manuscript_path",
     "default_oceanengine_csv_path",
     "default_task_directory",
+    "load_task_batch",
     "strip_no_split_markers",
+    "task_batch_template",
     "validate_batch_diversity",
     "validate_copy",
     "validate_visual_diversity",
@@ -52,4 +63,5 @@ __all__ = [
     "wrap_required_benefit",
     "write_oceanengine_csv",
     "write_segmentation_manuscript",
+    "write_task_batch_template",
 ]

@@ -31,6 +31,7 @@ VALID_VISUAL_PROMPT = (
     "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，"
     "场景只作为背景，正面眼睛直视镜头，人物面前桌上放着商品，商品不由人物手持，"
     "人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+    "自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
 )
 
 
@@ -40,6 +41,25 @@ def test_valid_copy_passes_all_deterministic_rules() -> None:
     assert report.is_valid is True
     assert 80 <= report.character_count <= 100
     assert report.issues == ()
+
+
+def test_copy_requires_campaign_disclosures() -> None:
+    campaign = CampaignSpec(required_disclosures=("活动规则以页面展示为准",))
+
+    report = validate_copy(VALID_COPY, campaign)
+
+    assert any(issue.code is IssueCode.MISSING_DISCLOSURE for issue in report.issues)
+
+
+def test_visual_prompt_rejects_prompt_shorter_than_contract() -> None:
+    prompt = VALID_VISUAL_PROMPT.replace(
+        "自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。",
+        "",
+    )
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.VISUAL_PROMPT_TOO_SHORT in codes
 
 
 def test_required_highest_benefit_does_not_trigger_banned_single_character() -> None:

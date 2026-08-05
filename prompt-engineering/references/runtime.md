@@ -7,6 +7,10 @@
 ```bash
 python scripts/run_cli.py -- compose --category 西瓜
 python scripts/run_cli.py --debug -- validate-copy '口播正文'
+python scripts/run_cli.py -- init-batch --task-name watermelon-batch --category 西瓜 --count 5 --task-prefix WM --output watermelon.tasks.json
+python scripts/run_cli.py -- export-csv --input watermelon.tasks.json --config configs/projects/example.json
+python scripts/run_cli.py -- validate-batch --input generated-task-batch.json --config configs/projects/example.json
+python scripts/run_cli.py -- package --input generated-task-batch.json --format json --format csv --preset none
 ```
 
 `AVATAR_PROMPT_PROJECT` 可覆盖项目根目录。`--project-root` 优先级更高。现有 CLI 参数完整
@@ -42,6 +46,39 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 `confirmed_claims` 是确认可用但不强制每条都写入的活动事实或商品场景；不得从样本文案中
 扩展出未确认品牌、价格、商品范围或配送承诺。
 
+## 生成结果清单
+
+Codex 完成语义生成后，将一对一结果写入符合
+[generated-task-batch.schema.json](generated-task-batch.schema.json) 的 JSON。清单保留
+`marked_script`、完整 `avatar_prompt`、`identity_key`、`outfit_key`、静态
+`person_prompt`，以及可选的 LibTV `image_prompt` 和参考图字段。未提供 `image_prompt`
+时复用 `person_prompt`。`notes` 不由输入清单指定，CLI 始终按真实品类和 1-based 序号生成。
+
+`validate-batch` 校验逐条口播、两类静态画面 Prompt、批次文案相似度，以及人物/服装键
+唯一性。`package` 先执行同一套全批校验并检查所有目标文件均不存在，随后才按重复的
+`--format` 参数写出产物。可选格式为 `json`、`markdown`、
+`segmentation_manuscript`、`csv` 和 `libtv_omnihuman_package`。任何校验失败均不写文件。
+
+Agent 不得自己编写 CSV 生成代码，也不得手工拼接 CSV 行。固定流程是：
+
+```bash
+uv run avatar-prompts init-batch \
+  --task-name watermelon-batch \
+  --category 西瓜 \
+  --count 5 \
+  --task-prefix WM \
+  --output watermelon.tasks.json
+
+# Agent 只填写 watermelon.tasks.json 中的空字段
+uv run avatar-prompts export-csv \
+  --input watermelon.tasks.json \
+  --config configs/projects/taobao-12-no-threshold-redpacket.json
+```
+
+`export-csv` 固定调用仓库的 `write_oceanengine_csv(...)`。CSV 列顺序、标准库转义、
+`NO_SPLIT` 标签移除、`notes={真实品类}+{序号}`、输出层级、UTF-8 原子写入和拒绝覆盖均由
+项目代码负责；Agent 只能填写任务清单，不能复制或改写这些逻辑。
+
 ## 批处理
 
 `count > 1` 或 `batch=true` 时执行批处理。每条记录保持独立的文案、人物、服装、
@@ -75,6 +112,7 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 - 每个任务写一份 `<task_id>.smartsplit.txt`，保留 `[[NO_SPLIT]]`；
 - 每个批次写一份 Oceanengine CSV，`script` 写入前移除控制标签；
 - JSON 保留结构化审计字段，Markdown 用于人工验证记录，text 用于单条直接结果。
+- `libtv_omnihuman_package` 写出 LibTV CSV、interface JSON 和 plan Markdown 三件套。
 
 统一输出层级为：
 

@@ -105,7 +105,7 @@
     "voice": {"type": "string", "default": "明朗女声"},
     "output_formats": {
       "type": "array",
-      "items": {"enum": ["text", "json", "csv", "markdown", "segmentation_manuscript"]},
+      "items": {"enum": ["text", "json", "csv", "markdown", "segmentation_manuscript", "libtv_omnihuman_package"]},
       "minItems": 1,
       "uniqueItems": true,
       "default": ["text"]

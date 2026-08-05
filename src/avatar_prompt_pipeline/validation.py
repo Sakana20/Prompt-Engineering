@@ -24,6 +24,7 @@ BANNED_EXPRESSIONS = DEFAULT_VALIDATION_CONFIG.banned_expressions
 CALLS_TO_ACTION = DEFAULT_VALIDATION_CONFIG.call_to_actions
 FORMAT_PREFIXES = DEFAULT_VALIDATION_CONFIG.format_prefixes
 MAX_VISUAL_PROMPT_CHARACTERS = 180
+MIN_VISUAL_PROMPT_CHARACTERS = 120
 FRONTLOADED_FRAME_STYLE = "竖屏9:16，固定中景，手机实拍"
 FRONTLOADED_FRAME_STYLE_WINDOW = 25
 NO_HANDHELD_PRODUCT_PHRASES = (
@@ -260,6 +261,15 @@ def validate_copy(
             )
         if benefit.text in expression_scope:
             expression_scope = expression_scope.replace(benefit.text, "")
+    for disclosure in campaign.required_disclosures:
+        if disclosure not in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.MISSING_DISCLOSURE,
+                    "缺少必须披露内容",
+                    disclosure,
+                )
+            )
 
     banned_expressions = (*validation_config.banned_expressions, *campaign.forbidden_expressions)
     for expression in banned_expressions:
@@ -355,6 +365,14 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
     cleaned = prompt.replace("\x00", "").strip()
     visual_count = len(re.sub(r"\s+", "", cleaned))
     issues: list[ValidationIssue] = []
+    if visual_count < MIN_VISUAL_PROMPT_CHARACTERS:
+        issues.append(
+            ValidationIssue(
+                IssueCode.VISUAL_PROMPT_TOO_SHORT,
+                f"人物 Prompt 少于 {MIN_VISUAL_PROMPT_CHARACTERS} 字",
+                str(visual_count),
+            )
+        )
     if visual_count > MAX_VISUAL_PROMPT_CHARACTERS:
         issues.append(
             ValidationIssue(

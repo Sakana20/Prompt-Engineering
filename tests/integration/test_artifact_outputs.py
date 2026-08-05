@@ -56,7 +56,7 @@ def test_manuscript_and_oceanengine_csv_are_independent_artifacts(tmp_path: Path
     task = OceanengineTask(
         task_id="HM-001",
         person_prompt=(
-            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
         ),
         marked_script=MARKED_SCRIPT,
         aspect_ratio="9:16",
@@ -92,7 +92,7 @@ def test_oceanengine_csv_writes_reference_image_columns(tmp_path: Path) -> None:
     task = OceanengineTask(
         task_id="HM-REF",
         person_prompt=(
-            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
         ),
         marked_script=MARKED_SCRIPT,
         aspect_ratio="9:16",
@@ -130,7 +130,7 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
     task = LibtvOmniHumanTask(
         task_id="HM-001",
         image_prompt=(
-            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
         ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",
@@ -151,7 +151,8 @@ def test_libtv_omnihuman_package_writers_are_independent(tmp_path: Path) -> None
             "image_prompt": (
                 "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，"
                 "场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，"
-                "人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+                "人物不看商品、不接触商品，非商品区域无logo，无字幕。自然光照明，真实肤色和皮肤纹理，"
+                "人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
             ),
             "audio_prompt": MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", ""),
             "voice_label": "温暖闺蜜",
@@ -200,7 +201,7 @@ def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path)
     task = LibtvOmniHumanTask(
         task_id="HM-001",
         image_prompt=(
-            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
         ),
         marked_script=MARKED_SCRIPT,
         title="哈密瓜居家水果场景",

@@ -16,6 +16,7 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "avatar-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "runtime.md").is_file()
+    assert (SKILL_ROOT / "references" / "generated-task-batch.schema.json").is_file()
     assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
     assert "$smartsplit" not in skill.lower()
     assert "invoke smartsplit" not in skill.lower()
@@ -45,6 +46,10 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
     )
     compose = schema["oneOf"][0]["properties"]
     validate = schema["oneOf"][1]["properties"]
+    validate_batch = schema["oneOf"][2]["properties"]
+    package = schema["oneOf"][3]["properties"]
+    init_batch = schema["oneOf"][4]["properties"]
+    export_csv = schema["oneOf"][5]["properties"]
 
     assert set(compose) == {
         "command",
@@ -62,6 +67,46 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
     assert set(validate) == {
         "command",
         "text",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
+        "config",
+    }
+    assert set(validate_batch) == {
+        "command",
+        "input",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
+        "config",
+    }
+    assert set(package) == {
+        "command",
+        "input",
+        "format",
+        "output_root",
+        "date",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
+        "config",
+    }
+    assert set(init_batch) == {
+        "command",
+        "task_name",
+        "category",
+        "count",
+        "task_prefix",
+        "output",
+    }
+    assert set(export_csv) == {
+        "command",
+        "input",
+        "output_root",
+        "date",
         "preset",
         "platform",
         "campaign_name",
@@ -89,6 +134,7 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
         "csv",
         "markdown",
         "segmentation_manuscript",
+        "libtv_omnihuman_package",
     }
     assert {
         "output_root",

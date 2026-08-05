@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/generated-task-batch.schema.json",
+  "title": "Codex-generated avatar task batch",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_name", "category", "tasks"],
+  "properties": {
+    "schema_version": {"type": "string", "default": "1.0"},
+    "task_name": {"type": "string", "minLength": 1},
+    "category": {"type": "string", "minLength": 1},
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "marked_script",
+          "avatar_prompt",
+          "identity_key",
+          "outfit_key",
+          "person_prompt",
+          "title"
+        ],
+        "properties": {
+          "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+          "marked_script": {"type": "string", "minLength": 1},
+          "avatar_prompt": {"type": "string", "minLength": 1},
+          "identity_key": {"type": "string", "minLength": 1},
+          "outfit_key": {"type": "string", "minLength": 1},
+          "person_prompt": {"type": "string", "minLength": 1},
+          "image_prompt": {
+            "type": "string",
+            "description": "LibTV 首帧 Prompt；省略时复用 person_prompt"
+          },
+          "title": {"type": "string", "minLength": 1},
+          "aspect_ratio": {
+            "type": "string",
+            "enum": ["9:16", "16:9", "1:1"],
+            "default": "9:16"
+          },
+          "voice": {"type": "string", "default": "明朗女声"},
+          "voice_label": {"type": "string", "default": "温暖闺蜜"},
+          "voice_id": {
+            "type": "string",
+            "default": "Chinese (Mandarin)_Warm_Bestie"
+          },
+          "reference_image_uri": {"type": "string", "default": ""},
+          "reference_image_url": {"type": "string", "default": ""},
+          "reference_image_pid": {"type": "string", "default": ""}
+        }
+      }
+    }
+  }
+}

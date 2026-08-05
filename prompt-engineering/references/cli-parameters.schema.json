@@ -82,6 +82,114 @@
           "description": "项目配置 JSON；传入后使用其中的活动校验契约"
         }
       }
+    },
+    {
+      "title": "validate-batch",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "input"],
+      "properties": {
+        "command": {"const": "validate-batch"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "preset": {
+          "enum": ["taobao-instant-commerce-default", "none"],
+          "default": "taobao-instant-commerce-default",
+          "x-cli": "--preset"
+        },
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--benefit-point",
+          "x-repeatable": true
+        },
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+      }
+    },
+    {
+      "title": "package",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "input", "format"],
+      "properties": {
+        "command": {"const": "package"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "format": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["json", "markdown", "segmentation_manuscript", "csv", "libtv_omnihuman_package"]
+          },
+          "x-cli": "--format",
+          "x-repeatable": true
+        },
+        "output_root": {"type": "string", "x-cli": "--output-root"},
+        "date": {"type": ["string", "null"], "pattern": "^[0-9]{8}$", "x-cli": "--date"},
+        "preset": {
+          "enum": ["taobao-instant-commerce-default", "none"],
+          "default": "taobao-instant-commerce-default",
+          "x-cli": "--preset"
+        },
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--benefit-point",
+          "x-repeatable": true
+        },
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+      }
+    },
+    {
+      "title": "init-batch",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "task_name", "category", "output"],
+      "properties": {
+        "command": {"const": "init-batch"},
+        "task_name": {"type": "string", "minLength": 1, "x-cli": "--task-name"},
+        "category": {"type": "string", "minLength": 1, "x-cli": "--category"},
+        "count": {"type": "integer", "minimum": 1, "default": 1, "x-cli": "--count"},
+        "task_prefix": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "default": "TASK",
+          "x-cli": "--task-prefix"
+        },
+        "output": {"type": "string", "minLength": 1, "x-cli": "--output"}
+      }
+    },
+    {
+      "title": "export-csv",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "input"],
+      "properties": {
+        "command": {"const": "export-csv"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "output_root": {"type": "string", "x-cli": "--output-root"},
+        "date": {"type": ["string", "null"], "pattern": "^[0-9]{8}$", "x-cli": "--date"},
+        "preset": {
+          "enum": ["taobao-instant-commerce-default", "none"],
+          "default": "taobao-instant-commerce-default",
+          "x-cli": "--preset"
+        },
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": [],
+          "x-cli": "--benefit-point",
+          "x-repeatable": true
+        },
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+      }
     }
   ],
   "$defs": {

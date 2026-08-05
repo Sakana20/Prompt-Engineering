@@ -2,6 +2,22 @@
 
 ## 当前状态
 
+### Phase 9：Skill 确定性工作流 CLI 固化（已完成）
+
+- 保留 `compose` 与 `validate-copy` 的全部原有行为；
+- 新增严格的生成结果清单 schema，保留文案、完整数字人 Prompt、静态 Prompt、人物键、
+  服装键和下游字段的一对一映射；
+- 新增 `validate-batch`，统一校验逐条内容、画面 Prompt、批次文案差异和人物/服装差异；
+- 新增 `package`，支持审计 JSON、审核 Markdown、SmartSplit、Oceanengine CSV 和 LibTV
+  三件套的显式按需输出；
+- 输出前先完成全批校验与全路径覆盖检查，失败不开始写入；
+- CLI 不调用其他 LLM，不预检、不导入、不创建画布、不提交付费生成。
+- 新增 `init-batch` 与 `export-csv`，把 Agent 职责收窄为填写声明式 JSON；CSV 生成代码、
+  字段、转义、标签清理、notes 和原子落盘全部固化在项目中。
+
+验收：CLI 端到端测试证明选中的格式会独立落盘，未选择的格式不会创建，输出状态明确
+`paid_generation_submitted=false`。
+
 ### Phase 8：LibTV OmniHuman 输出适配器（进行中）
 
 - 新增 `libtv_omnihuman_package` 输出模式；

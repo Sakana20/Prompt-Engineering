@@ -28,6 +28,10 @@ uv run pytest tests/unit
 uv run pytest -m integration
 uv run pytest -m e2e
 uv run python tools/skill_reviewer/server.py
+uv run avatar-prompts validate-batch --input generated-task-batch.json --preset none
+uv run avatar-prompts package --input generated-task-batch.json --format json --preset none
+uv run avatar-prompts init-batch --task-name demo --category 水果 --output demo.tasks.json
+uv run avatar-prompts export-csv --input demo.tasks.json --preset none
 ```
 
 `tools/skill_reviewer/` 是本地人工审核台。它会扫描
@@ -43,6 +47,10 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 - mypy strict，不以无意义 `Any` 或 ignore 逃避建模；
 - 领域对象默认不可变；
 - 外部数据先校验再进入领域层；
+- Codex 生成结果必须先通过 `generated-task-batch.schema.json` 对应的严格 loader，未知字段
+  不得静默丢弃；
+- Agent 只填写 `init-batch` 生成的 JSON，不新增临时 CSV 脚本；所有 CSV 必须通过
+  `export-csv` 或 `package --format csv` 调用项目 writer；
 - 文件路径使用 `pathlib.Path`；
 - 用户内容以 UTF-8 保存；
 - 错误信息说明阶段、原因和可恢复动作；
@@ -68,6 +76,9 @@ LLM provider。
 
 从 CLI 参数进入，验证退出码、标准输出和文件产物。默认不得操作浏览器或即创。
 任何真实 E2E 都必须通过显式环境开关启用，并不得默认触发付费。
+
+`package` E2E 还必须验证：全批校验失败时零写入、目标冲突时拒绝覆盖、只生成显式选择的
+格式、`notes` 使用真实品类与 1-based 序号，以及状态中不声称已提交付费生成。
 
 ### Skill 验证
 

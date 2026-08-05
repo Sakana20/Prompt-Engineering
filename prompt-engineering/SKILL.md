@@ -96,6 +96,17 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 11. Use the target project's own `preflight` before import. Never silently overwrite an existing
     batch file or blindly resubmit an uncertain task.
 
+When handing generated results to the deterministic CLI, write one JSON manifest that conforms to
+`references/generated-task-batch.schema.json`. Run `avatar-prompts validate-batch` before export,
+or use `avatar-prompts package`, which performs the same full-batch validation before writing any
+selected artifact. The CLI does not generate semantic copy or avatar descriptions and does not call
+another model; Codex remains the semantic generator.
+
+For Oceanengine CSV output, never write CSV serialization code or construct CSV rows manually.
+Run `avatar-prompts init-batch` once, fill only the generated JSON fields, then run
+`avatar-prompts export-csv`. Let the project-owned exporter determine columns, notes, tag removal,
+quoting, paths, atomic writes, and overwrite protection.
+
 ## Output Modes
 
 - **Copy only:** return only the finished spoken copy unless the user asks for analysis.
@@ -135,7 +146,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or
-`references/skill-config.schema.json`. Preserve requested configuration files, batching, installed
+`references/skill-config.schema.json`, and validate generated task manifests against
+`references/generated-task-batch.schema.json`. Preserve requested configuration files, batching, installed
 Codex plugins, safe debug output, and all requested output formats. Never remove an existing field,
 command, format, hook, or behavior while packaging or installing this skill.
 

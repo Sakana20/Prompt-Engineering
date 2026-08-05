@@ -6,10 +6,12 @@ import json
 import os
 import tempfile
 from collections.abc import Callable, Sequence
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
+from .batch import GeneratedTaskRecord
 from .models import (
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
@@ -20,9 +22,15 @@ from .models import (
     CampaignSpec,
     LibtvOmniHumanTask,
     OceanengineTask,
+    ValidationConfig,
 )
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
-from .validation import strip_no_split_markers, validate_copy, validate_visual_prompt
+from .validation import (
+    DEFAULT_VALIDATION_CONFIG,
+    strip_no_split_markers,
+    validate_copy,
+    validate_visual_prompt,
+)
 
 DEFAULT_OUTPUT_ROOT = Path("/Users/sakana/Desktop/Work/Codex/Prompt Engineering")
 
@@ -205,8 +213,9 @@ def write_segmentation_manuscript(
     path: str | Path,
     marked_script: str,
     campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+    validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
 ) -> Path:
-    report = validate_copy(marked_script, campaign)
+    report = validate_copy(marked_script, campaign, validation_config)
     if not report.is_valid:
         issue_codes = ", ".join(issue.code for issue in report.issues)
         raise ValueError(f"带标记稿件未通过口播校验：{issue_codes}")
@@ -222,6 +231,7 @@ def write_libtv_omnihuman_csv(
     path: str | Path,
     tasks: Sequence[LibtvOmniHumanTask],
     campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+    validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
 ) -> Path:
     if not tasks:
         raise ValueError("LibTV OmniHuman CSV 至少需要一个任务")
@@ -234,7 +244,7 @@ def write_libtv_omnihuman_csv(
         csv_writer.writeheader()
         for task in tasks:
             _raise_for_visual_prompt_issues(task.task_id, task.image_prompt)
-            report = validate_copy(task.marked_script, campaign)
+            report = validate_copy(task.marked_script, campaign, validation_config)
             if not report.is_valid:
                 issue_codes = ", ".join(issue.code for issue in report.issues)
                 raise ValueError(f"任务 {task.task_id} 的口播未通过校验：{issue_codes}")
@@ -310,6 +320,7 @@ def write_oceanengine_csv(
     path: str | Path,
     tasks: Sequence[OceanengineTask],
     campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+    validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
 ) -> Path:
     if not tasks:
         raise ValueError("即创 CSV 至少需要一个任务")
@@ -322,7 +333,7 @@ def write_oceanengine_csv(
         csv_writer.writeheader()
         for task in tasks:
             _raise_for_visual_prompt_issues(task.task_id, task.person_prompt)
-            report = validate_copy(task.marked_script, campaign)
+            report = validate_copy(task.marked_script, campaign, validation_config)
             if not report.is_valid:
                 issue_codes = ", ".join(issue.code for issue in report.issues)
                 raise ValueError(f"任务 {task.task_id} 的口播未通过校验：{issue_codes}")
@@ -340,5 +351,43 @@ def write_oceanengine_csv(
                     "reference_image_pid": task.reference_image_pid,
                 }
             )
+
+    return _write_atomic(Path(path), write)
+
+
+def write_audit_json(path: str | Path, payload: object) -> Path:
+    def write(handle: TextIO) -> None:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+
+    return _write_atomic(Path(path), write)
+
+
+def write_review_markdown(
+    path: str | Path,
+    *,
+    task_name: str,
+    category: str,
+    campaign: CampaignSpec,
+    tasks: Sequence[GeneratedTaskRecord],
+) -> Path:
+    def write(handle: TextIO) -> None:
+        handle.write(f"# {task_name} 人工审核记录\n\n")
+        handle.write(f"- 品类：{category}\n")
+        handle.write(f"- 平台：{campaign.platform or '未指定'}\n")
+        handle.write(f"- 活动：{campaign.campaign_name or '未指定'}\n")
+        handle.write("- 状态：待人工审核；本文件不授权导入或付费生成\n\n")
+        for index, task in enumerate(tasks, start=1):
+            values = asdict(task)
+            handle.write(f"## {values['task_id']}\n\n")
+            handle.write(f"- notes：{category}+{index}\n")
+            handle.write(f"- identity_key：{values['identity_key']}\n")
+            handle.write(f"- outfit_key：{values['outfit_key']}\n\n")
+            handle.write("### 口播\n\n")
+            handle.write(f"{values['marked_script']}\n\n")
+            handle.write("### 完整数字人 Prompt\n\n")
+            handle.write(f"{values['avatar_prompt']}\n\n")
+            handle.write("### 静态人物 Prompt\n\n")
+            handle.write(f"{values['person_prompt']}\n\n")
 
     return _write_atomic(Path(path), write)

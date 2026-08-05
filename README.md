@@ -130,6 +130,45 @@ python prompt-engineering/scripts/run_cli.py -- compose --category 西瓜
 python prompt-engineering/scripts/run_cli.py --debug -- validate-copy '完整口播正文'
 ```
 
+将 Codex 已生成的语义结果固化为任务产物：
+
+```bash
+uv run avatar-prompts init-batch \
+  --task-name hami-melon-batch \
+  --category 哈密瓜 \
+  --count 5 \
+  --task-prefix HM \
+  --output hami-melon-batch.tasks.json
+
+# Agent 只填写上面的 JSON，不编写 CSV 代码
+uv run avatar-prompts export-csv \
+  --input hami-melon-batch.tasks.json \
+  --config configs/projects/taobao-12-no-threshold-redpacket.json
+
+uv run avatar-prompts validate-batch \
+  --input generated-task-batch.json \
+  --config configs/projects/taobao-25-no-threshold-redpacket.json
+
+uv run avatar-prompts package \
+  --input generated-task-batch.json \
+  --config configs/projects/taobao-25-no-threshold-redpacket.json \
+  --format json \
+  --format markdown \
+  --format segmentation_manuscript \
+  --format csv \
+  --format libtv_omnihuman_package
+```
+
+输入清单格式见
+[`prompt-engineering/references/generated-task-batch.schema.json`](prompt-engineering/references/generated-task-batch.schema.json)。
+`package` 会先完成整批口播、首帧 Prompt、文案相似度、人物键和服装键校验，再检查全部
+目标文件是否存在；任一步失败都不会开始写文件。CLI 不调用 LLM，文案与人物语义仍由
+Codex 生成。输出只进入本项目日期/任务目录，不执行预检、导入或付费生成。
+
+Oceanengine CSV 必须通过 `export-csv` 生成。Agent 不允许自行编写 CSV 序列化代码或手工
+拼接行；字段顺序、引号与换行转义、`NO_SPLIT` 清理、`notes`、原子写入和拒绝覆盖均已
+固化在项目 writer 中。
+
 ## 本地审核台
 
 启动审核台：
@@ -169,6 +208,7 @@ prompt-engineering/
 - `references/`：文案规则、活动契约、数字人规则、运行时约定和 Oceanengine 契约；
 - `scripts/run_cli.py`：透明转发 CLI 参数；
 - JSON Schema：CLI 参数和 skill 配置；
+- 生成结果 JSON Schema：Codex 到确定性 CLI 的交接契约；
 - `agents/openai.yaml`：Codex UI 元数据。
 
 已安装 skill 位于：

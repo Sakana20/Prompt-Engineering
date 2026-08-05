@@ -28,6 +28,12 @@ ProductBrief
 Codex 负责需要语义理解的判断和生成；Python 只处理适合确定性执行的校验、序列化和
 CSV 文件操作，不调用另一个 LLM。
 
+CLI 边界固定为两段：`compose` 生成供 Codex 使用的 Prompt 包；Codex 生成结果后写入
+`generated-task-batch.schema.json` 定义的清单。`validate-batch` 只做整批确定性校验，
+`package` 在同一校验通过后按需输出审计 JSON、审核 Markdown、SmartSplit、Oceanengine
+CSV 或 LibTV 三件套。完整视频 Prompt 与身份/服装键保留在审计产物中，不因下游只消费
+静态 Prompt 而丢失。
+
 ## 领域模型
 
 `ProductBrief` 是所有生成的事实来源：
@@ -79,6 +85,13 @@ CSV 的 `script` 去掉标签。两类 writer 独立调用，任何一方都不�
 
 `prompt-engineering/` 是唯一分发 Skill。用户指定商品和利益点即可生成对应产物；用户只
 给淘宝闪购场景且未指定利益点时，使用默认淘宝闪购利益点预设。
+
+确定性 CLI 不承担自然语言创作。这样既能把 skill 的校验、去重、路径、拒绝覆盖和格式
+适配固化成稳定命令，又不会绕过“Codex 是唯一语义生成器”的项目边界。
+
+Oceanengine CSV 采用固定的“模板—填写—导出”接口。`init-batch` 创建声明式 JSON，Agent
+只填写语义字段；`export-csv` 调用项目 writer 完成所有 CSV 结构与文件操作。Agent 不拥有
+CSV 代码生成职责，因此不会在不同任务中重复实现或漂移字段契约。
 
 对于方向不同或互相冲突的活动口径，使用“一个项目一个配置文件”。项目配置文件保存
 `project_id`、商品资料、平台、活动名、利益点、活动禁用表达、披露要求、确认可用信息、
