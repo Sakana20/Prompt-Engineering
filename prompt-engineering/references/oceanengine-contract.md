@@ -31,13 +31,13 @@
 | `title` | 简短任务标题 |
 | `notes` | 使用 `{用户输入品类}+{序号}`，例如西瓜批次写 `西瓜+1`，雨伞批次写 `雨伞+1` |
 | `reference_image_uri` | 可选；平台素材 URI，用于商品参考图约束人物图生成 |
-| `reference_image_url` | 可选；参考图签名 URL，可留空由 Auto Oceanengine 运行时补取 |
+| `reference_image_url` | 可选；完整签名 URL 输入，Auto Oceanengine 导入时会自动转换为 URI |
 | `reference_image_pid` | 可选；参考图 PID，无值时留空 |
 
 使用标准 CSV 写入处理逗号、中文引号和换行。文件名采用规范化品类、批次和日期，且不得
 覆盖已有文件。不提供参考图时三个 `reference_image_*` 字段写空字符串，下游仍按默认文生图
-流程生成数字人图片；提供 `reference_image_uri` 时，下游会把参考图传入人物图片生成的
-`images[]`。
+流程生成数字人图片；提供 `reference_image_uri` 或仅提供完整 `reference_image_url` 时，
+Auto Oceanengine 会保存稳定 URI、重新签名，并把参考图传入人物图片生成的 `images[]`。
 
 字幕稿与 CSV 导出相互独立。生成态文案中的 `[[NO_SPLIT]]` 标签仅供字幕分句，
 导出 `script` 前必须移除；添加标签本身不得触发 CSV 创建、覆盖、导入或视频生成。

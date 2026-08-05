@@ -61,13 +61,13 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,
 | `voice` | 当前默认 `明朗女声` |
 | `title` | 简短任务标题 |
 | `notes` | `{品类}+{序号}`，例如 `西瓜+1` |
-| `reference_image_uri` | 可选商品参考图素材 URI |
-| `reference_image_url` | 可选签名 URL，可留空由 Auto Oceanengine 运行时补取 |
+| `reference_image_uri` | 可选商品参考图素材 URI，常规稳定输入 |
+| `reference_image_url` | 可选完整签名 URL；Auto Oceanengine 导入时会自动转成 URI 并重新签名 |
 | `reference_image_pid` | 可选 PID，无值时留空 |
 
 不提供参考图时，三个 `reference_image_*` 字段写空字符串，下游仍按默认文生图流程生成
-数字人图片；提供 `reference_image_uri` 时，下游会把参考图传入人物图片生成请求的
-`images[]`，用于约束商品外观。
+数字人图片；提供 `reference_image_uri` 或仅提供完整 `reference_image_url` 时，下游会先
+得到稳定 URI，再重新签名并把参考图传入人物图片生成请求的 `images[]`，用于约束商品外观。
 
 ## 项目配置
 
