@@ -49,7 +49,22 @@
           },
           "reference_image_uri": {"type": "string", "default": ""},
           "reference_image_url": {"type": "string", "default": ""},
-          "reference_image_pid": {"type": "string", "default": ""}
+          "reference_image_pid": {"type": "string", "default": ""},
+          "copy_mode": {
+            "type": "string",
+            "enum": ["source_fill", "human_rewrite"],
+            "description": "文案生成轨道；新批次必须填写"
+          },
+          "source_block_id": {
+            "type": "string",
+            "description": "直接填槽或 AI 改写所使用的真人原文块 ID；新批次必须填写"
+          },
+          "rewrite_anchor_phrases": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "description": "human_rewrite 成稿实际保留的至少两个真人原文字眼",
+            "default": []
+          }
         }
       }
     }

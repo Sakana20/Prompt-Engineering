@@ -41,9 +41,11 @@ def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None
     assert "约占全文 20%" in rules
     assert "商品内容约占全文 50%" in rules
     assert "利益点和购买体验约占全文 30%" in rules
-    assert "选择一个真人" in rules
-    assert "提炼" in rules
-    assert "文风后仿写" in rules
+    assert "奇数" in rules
+    assert "`source_fill`" in rules
+    assert "`human_rewrite`" in rules
+    assert "10 条必须各 5 条" in rules
+    assert "保留至少两个可辨认字眼或短语" in rules
 
 
 def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
@@ -67,7 +69,9 @@ def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
     assert "当前利益点按 `CampaignSpec` 单独插入" in guidance
     assert "必须使用与当前活动完全匹配的校验器" in guidance
     assert "不得改写、润色、扩句、调整原句顺序" in guidance
-    assert "同一批次不得重复 `source_block_id`" in guidance
+    assert "轨道内不得重复 `source_block_id`" in guidance
+    assert "不得先总结风格" in guidance
+    assert "10 条必须是 5 条" in guidance
 
 
 def test_volume_copy_library_preserves_human_source_blocks() -> None:
@@ -99,6 +103,17 @@ def test_volume_copy_library_preserves_human_source_blocks() -> None:
     assert "这天一冷\n只想和好朋友\n窝在家里吃[商品名]聊八卦" in blocks
     assert "只填方括号" in blocks
     assert "不总结文风，也不仿写新句子" in blocks
+
+
+def test_generated_batch_schema_exposes_copy_mix_audit_fields() -> None:
+    schema = json.loads(
+        (SKILL_ROOT / "references" / "generated-task-batch.schema.json").read_text(encoding="utf-8")
+    )
+    task_properties = schema["properties"]["tasks"]["items"]["properties"]
+
+    assert task_properties["copy_mode"]["enum"] == ["source_fill", "human_rewrite"]
+    assert "source_block_id" in task_properties
+    assert "rewrite_anchor_phrases" in task_properties
 
 
 def test_cli_schema_covers_every_existing_cli_parameter() -> None:

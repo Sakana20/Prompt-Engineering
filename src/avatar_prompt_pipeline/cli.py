@@ -31,6 +31,7 @@ from .validation import (
     DEFAULT_VALIDATION_CONFIG,
     validate_batch_diversity,
     validate_copy,
+    validate_copy_mix,
     validate_visual_diversity,
     validate_visual_prompt,
 )
@@ -201,6 +202,9 @@ def _validate_generated_batch(
         task_reports.append(
             {
                 "task_id": task.task_id,
+                "copy_mode": task.copy_mode,
+                "source_block_id": task.source_block_id,
+                "rewrite_anchor_phrases": list(task.rewrite_anchor_phrases),
                 "copy": copy_report.to_dict(),
                 "person_prompt_issues": _issues_to_dict(person_issues),
                 "image_prompt_issues": _issues_to_dict(image_issues),
@@ -208,9 +212,15 @@ def _validate_generated_batch(
             }
         )
     copy_diversity = validate_batch_diversity([task.marked_script for task in batch.tasks])
+    copy_mix = validate_copy_mix(
+        [task.copy_mode for task in batch.tasks],
+        [task.source_block_id for task in batch.tasks],
+        [task.marked_script for task in batch.tasks],
+        [task.rewrite_anchor_phrases for task in batch.tasks],
+    )
     visual_diversity = validate_visual_diversity([task.visual_profile() for task in batch.tasks])
     is_valid = all(bool(report["is_valid"]) for report in task_reports)
-    is_valid = is_valid and not copy_diversity and not visual_diversity
+    is_valid = is_valid and not copy_diversity and not copy_mix and not visual_diversity
     return {
         "schema_version": "1.0",
         "task_name": batch.task_name,
@@ -218,6 +228,7 @@ def _validate_generated_batch(
         "is_valid": is_valid,
         "tasks": task_reports,
         "copy_diversity_issues": _issues_to_dict(copy_diversity),
+        "copy_mix_issues": _issues_to_dict(copy_mix),
         "visual_diversity_issues": _issues_to_dict(visual_diversity),
     }
 

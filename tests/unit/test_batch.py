@@ -99,6 +99,10 @@ def test_task_batch_template_is_fill_only_and_uses_deterministic_ids(tmp_path: P
     assert [task["task_id"] for task in payload["tasks"]] == ["HM-001", "HM-002"]
     assert payload["tasks"][0]["marked_script"] == ""
     assert payload["tasks"][0]["person_prompt"] == ""
+    assert payload["tasks"][0]["copy_mode"] == "source_fill"
+    assert payload["tasks"][1]["copy_mode"] == "human_rewrite"
+    assert payload["tasks"][0]["source_block_id"] == ""
+    assert payload["tasks"][1]["rewrite_anchor_phrases"] == []
     assert "notes" not in payload["tasks"][0]
 
     with pytest.raises(FileExistsError, match="拒绝覆盖"):
@@ -116,3 +120,23 @@ def test_task_batch_template_rejects_invalid_count_and_prefix() -> None:
         task_batch_template(task_name="batch", category="水果", count=0)
     with pytest.raises(TaskBatchError, match="task_prefix"):
         task_batch_template(task_name="batch", category="水果", count=1, task_prefix="水果")
+
+
+def test_task_batch_rejects_non_string_rewrite_anchors() -> None:
+    payload = task_batch_template(task_name="batch", category="水果", count=1)
+    task = payload["tasks"][0]
+    task.update(
+        {
+            "marked_script": "文案",
+            "avatar_prompt": "视频 Prompt",
+            "identity_key": "人物一",
+            "outfit_key": "服装一",
+            "person_prompt": "首帧 Prompt",
+            "title": "任务",
+            "source_block_id": "learn-001",
+            "rewrite_anchor_phrases": [1, 2],
+        }
+    )
+
+    with pytest.raises(TaskBatchError, match="rewrite_anchor_phrases"):
+        task_batch_from_mapping(payload)

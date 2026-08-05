@@ -20,6 +20,7 @@ from avatar_prompt_pipeline.validation import (
     temporal_context,
     validate_batch_diversity,
     validate_copy,
+    validate_copy_mix,
     validate_visual_diversity,
     validate_visual_prompt,
     wrap_campaign_benefits,
@@ -108,6 +109,14 @@ def test_winter_copy_allows_winter_wording() -> None:
     assert not any(issue.code is IssueCode.SEASON_MISMATCH for issue in report.issues)
 
 
+def test_summer_adapted_rewrite_passes_season_rule() -> None:
+    text = VALID_COPY.replace("下班赶上大雨", "盛夏午后想喝点冰的")
+
+    report = validate_copy(text, reference_date=date(2026, 8, 5))
+
+    assert not any(issue.code is IssueCode.SEASON_MISMATCH for issue in report.issues)
+
+
 def test_unconfirmed_current_weather_is_rejected() -> None:
     text = VALID_COPY.replace("下班赶上大雨", "今天下雨")
 
@@ -123,6 +132,71 @@ def test_confirmed_current_weather_is_allowed() -> None:
     report = validate_copy(text, campaign, reference_date=date(2026, 8, 5))
 
     assert not any(issue.code is IssueCode.UNCONFIRMED_CURRENT_WEATHER for issue in report.issues)
+
+
+def test_copy_mix_accepts_exact_five_five_split_for_ten_tasks() -> None:
+    modes = ["source_fill" if index % 2 == 0 else "human_rewrite" for index in range(10)]
+    sources = [f"learn-{index:03d}" for index in range(10)]
+
+    assert validate_copy_mix(modes, sources) == ()
+
+
+def test_copy_mix_rejects_wrong_rewrite_ratio() -> None:
+    modes = ["source_fill"] * 6 + ["human_rewrite"] * 4
+    sources = [f"learn-{index:03d}" for index in range(10)]
+
+    issues = validate_copy_mix(modes, sources)
+
+    assert any(issue.code is IssueCode.COPY_MODE_RATIO_MISMATCH for issue in issues)
+
+
+def test_copy_mix_rejects_missing_mode_and_source() -> None:
+    issues = validate_copy_mix(["source_fill", ""], ["learn-001", ""])
+
+    assert any(issue.code is IssueCode.MISSING_COPY_MODE for issue in issues)
+    assert any(issue.code is IssueCode.MISSING_SOURCE_BLOCK_ID for issue in issues)
+
+
+def test_copy_mix_rejects_duplicate_source_within_same_mode() -> None:
+    issues = validate_copy_mix(
+        ["source_fill", "human_rewrite", "source_fill", "human_rewrite"],
+        ["learn-001", "learn-001", "learn-001", "learn-002"],
+    )
+
+    assert any(issue.code is IssueCode.DUPLICATE_SOURCE_BLOCK for issue in issues)
+
+
+def test_copy_mix_accepts_rewrite_anchors_that_appear_in_script() -> None:
+    issues = validate_copy_mix(
+        ["source_fill", "human_rewrite"],
+        ["learn-001", "learn-002"],
+        ["原文填槽", "谁懂，今天就是想吃这一口，真是太幸福了"],
+        [(), ("谁懂", "太幸福了")],
+    )
+
+    assert issues == ()
+
+
+def test_copy_mix_allows_cross_season_source_with_nonseasonal_anchors() -> None:
+    issues = validate_copy_mix(
+        ["source_fill", "human_rewrite"],
+        ["learn-001-combination", "learn-006-winter"],
+        ["原文填槽", "盛夏吃上一份冰凉甜品，就是快乐的标配，听见挖冰沙的声音就开心"],
+        [(), ("就是快乐的标配", "声音")],
+    )
+
+    assert issues == ()
+
+
+def test_copy_mix_rejects_missing_or_unmatched_rewrite_anchors() -> None:
+    issues = validate_copy_mix(
+        ["source_fill", "human_rewrite"],
+        ["learn-001", "learn-002"],
+        ["原文填槽", "谁懂，今天就是想吃这一口"],
+        [(), ("谁懂", "太幸福了")],
+    )
+
+    assert any(issue.code is IssueCode.INVALID_REWRITE_ANCHORS for issue in issues)
 
 
 def test_visual_prompt_rejects_prompt_shorter_than_contract() -> None:

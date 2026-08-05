@@ -15,6 +15,7 @@ from .models import (
     OceanengineTask,
     VisualProfile,
 )
+from .validation import COPY_MODES
 
 _TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 _ALLOWED_BATCH_KEYS = {"schema_version", "task_name", "category", "tasks"}
@@ -34,6 +35,9 @@ _ALLOWED_TASK_KEYS = {
     "reference_image_uri",
     "reference_image_url",
     "reference_image_pid",
+    "copy_mode",
+    "source_block_id",
+    "rewrite_anchor_phrases",
 }
 
 
@@ -77,6 +81,13 @@ def _expect_string(
     return cleaned
 
 
+def _expect_string_tuple(data: dict[str, Any], field: str) -> tuple[str, ...]:
+    value = data.get(field, [])
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise TaskBatchError(f"{field} 必须是字符串数组")
+    return tuple(cleaned for item in value if (cleaned := _clean(item)))
+
+
 @dataclass(frozen=True, slots=True)
 class GeneratedTaskRecord:
     task_id: str
@@ -94,12 +105,17 @@ class GeneratedTaskRecord:
     reference_image_uri: str = ""
     reference_image_url: str = ""
     reference_image_pid: str = ""
+    copy_mode: str = ""
+    source_block_id: str = ""
+    rewrite_anchor_phrases: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not _TASK_ID_PATTERN.fullmatch(self.task_id):
             raise TaskBatchError("task_id 只能包含字母、数字、短横线和下划线")
         if self.aspect_ratio not in {"9:16", "16:9", "1:1"}:
             raise TaskBatchError("aspect_ratio 必须是 9:16、16:9 或 1:1")
+        if self.copy_mode and self.copy_mode not in COPY_MODES:
+            raise TaskBatchError("copy_mode 只能是 source_fill 或 human_rewrite")
 
     def visual_profile(self) -> VisualProfile:
         return VisualProfile(identity_key=self.identity_key, outfit_key=self.outfit_key)
@@ -176,6 +192,9 @@ def _task_from_mapping(data: dict[str, Any], *, index: int) -> GeneratedTaskReco
         reference_image_uri=_expect_string(data, "reference_image_uri"),
         reference_image_url=_expect_string(data, "reference_image_url"),
         reference_image_pid=_expect_string(data, "reference_image_pid"),
+        copy_mode=_expect_string(data, "copy_mode"),
+        source_block_id=_expect_string(data, "source_block_id"),
+        rewrite_anchor_phrases=_expect_string_tuple(data, "rewrite_anchor_phrases"),
     )
 
 
@@ -222,7 +241,7 @@ def task_batch_template(
         raise TaskBatchError("count 必须大于等于 1")
     if not _TASK_ID_PATTERN.fullmatch(clean_prefix):
         raise TaskBatchError("task_prefix 只能包含字母、数字、短横线和下划线")
-    tasks = []
+    tasks: list[dict[str, Any]] = []
     for index in range(1, count + 1):
         tasks.append(
             {
@@ -240,6 +259,9 @@ def task_batch_template(
                 "reference_image_uri": "",
                 "reference_image_url": "",
                 "reference_image_pid": "",
+                "copy_mode": "source_fill" if index % 2 == 1 else "human_rewrite",
+                "source_block_id": "",
+                "rewrite_anchor_phrases": [],
             }
         )
     return {

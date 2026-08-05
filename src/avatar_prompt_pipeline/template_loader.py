@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-08-05-temporal-source-blocks-v15"
+TEMPLATE_VERSION = "2026-08-05-season-adaptive-rewrite-v17"
 
 
 def load_template(name: str) -> str:

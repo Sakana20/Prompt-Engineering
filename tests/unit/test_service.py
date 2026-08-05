@@ -35,7 +35,11 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "从人工原稿直接保留下来的正文骨架" in package.copywriting_prompt
     assert "什么你说你不饿\uff0f不你就是饿了" in package.copywriting_prompt
     assert "如果人间烟火气有背景音乐" in package.copywriting_prompt
-    assert "不得润色、同义改写、扩句、总结文风后仿写" in package.copywriting_prompt
+    assert "奇数序号为 `source_fill`" in package.copywriting_prompt
+    assert "偶数序号为 `human_rewrite`" in package.copywriting_prompt
+    assert "至少保留其中两个可辨认的字眼或短语" in package.copywriting_prompt
+    assert "不得写回“场景开场—商品承接—体验收束”" in package.copywriting_prompt
+    assert "10 条必须是 5 条" in package.copywriting_prompt
     assert "同一批次不得重复原文块 ID" in package.copywriting_prompt
     assert "当前利益点" in package.copywriting_prompt
     assert "生成候选后必须使用与当前活动完全匹配的校验器检查" in package.copywriting_prompt
@@ -44,11 +48,14 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "当前本地日期：2026-08-05" in package.copywriting_prompt
     assert "当前月份：8月" in package.copywriting_prompt
     assert "按月份划分的当前季节：夏季" in package.copywriting_prompt
-    assert "6\u20138 月不得使用 `learn-006-winter`" in package.copywriting_prompt
+    assert "`source_fill` 直接填槽时，6\u20138 月不得选用" in package.copywriting_prompt
+    assert "`human_rewrite` 可以参考跨季原文块" in package.copywriting_prompt
+    assert "不能机械替换季节词" in package.copywriting_prompt
+    assert "两个非季节性原字眼" in package.copywriting_prompt
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-08-05-temporal-source-blocks-v15"
+    assert package.template_version == "2026-08-05-season-adaptive-rewrite-v17"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

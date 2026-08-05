@@ -179,6 +179,9 @@ CURRENT_WEATHER_PATTERN = re.compile(
     r"(?:今天|现在|这会儿|外面|最近|刚好|刚刚|这两天).{0,4}"
     r"(?:下雨|下雪|刮风|降温|升温|大太阳|大晴天|阴天)"
 )
+COPY_MODE_SOURCE_FILL = "source_fill"
+COPY_MODE_HUMAN_REWRITE = "human_rewrite"
+COPY_MODES = (COPY_MODE_SOURCE_FILL, COPY_MODE_HUMAN_REWRITE)
 
 
 def season_for_month(month: int) -> str:
@@ -410,6 +413,103 @@ def validate_batch_diversity(
                         IssueCode.HIGH_SIMILARITY,
                         f"批次文案相似度过高：{similarity:.2f}",
                         pair,
+                    )
+                )
+    return tuple(issues)
+
+
+def validate_copy_mix(
+    copy_modes: Sequence[str],
+    source_block_ids: Sequence[str],
+    scripts: Sequence[str] | None = None,
+    rewrite_anchor_phrases: Sequence[Sequence[str]] | None = None,
+) -> tuple[ValidationIssue, ...]:
+    if len(copy_modes) != len(source_block_ids):
+        raise ValueError("copy_modes 与 source_block_ids 数量必须一致")
+    if not any(copy_modes):
+        return ()
+    if (scripts is None) != (rewrite_anchor_phrases is None):
+        raise ValueError("scripts 与 rewrite_anchor_phrases 必须同时提供")
+    if scripts is not None and len(scripts) != len(copy_modes):
+        raise ValueError("scripts 与 copy_modes 数量必须一致")
+    if rewrite_anchor_phrases is not None and len(rewrite_anchor_phrases) != len(copy_modes):
+        raise ValueError("rewrite_anchor_phrases 与 copy_modes 数量必须一致")
+
+    issues: list[ValidationIssue] = []
+    missing_mode_indexes = [str(index + 1) for index, mode in enumerate(copy_modes) if not mode]
+    if missing_mode_indexes:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_COPY_MODE,
+                "启用混合生成后，每条任务都必须填写 copy_mode",
+                ",".join(missing_mode_indexes),
+            )
+        )
+    invalid_modes = sorted({mode for mode in copy_modes if mode and mode not in COPY_MODES})
+    if invalid_modes:
+        raise ValueError("copy_mode 只能是 source_fill 或 human_rewrite")
+
+    missing_source_indexes = [
+        str(index + 1)
+        for index, source_block_id in enumerate(source_block_ids)
+        if not source_block_id
+    ]
+    if missing_source_indexes:
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_SOURCE_BLOCK_ID,
+                "混合生成的每条任务都必须填写 source_block_id",
+                ",".join(missing_source_indexes),
+            )
+        )
+
+    expected_rewrites = len(copy_modes) // 2
+    actual_rewrites = sum(mode == COPY_MODE_HUMAN_REWRITE for mode in copy_modes)
+    if actual_rewrites != expected_rewrites:
+        issues.append(
+            ValidationIssue(
+                IssueCode.COPY_MODE_RATIO_MISMATCH,
+                "AI 真人逻辑改写数量必须等于批次数量的一半(奇数批次向下取整)",
+                f"expected={expected_rewrites},actual={actual_rewrites}",
+            )
+        )
+
+    for mode in COPY_MODES:
+        mode_sources = [
+            source_block_id
+            for copy_mode, source_block_id in zip(copy_modes, source_block_ids, strict=True)
+            if copy_mode == mode and source_block_id
+        ]
+        duplicates = sorted(
+            source for source in set(mode_sources) if mode_sources.count(source) > 1
+        )
+        if duplicates:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.DUPLICATE_SOURCE_BLOCK,
+                    f"{mode} 轨道内不得重复 source_block_id",
+                    ",".join(duplicates),
+                )
+            )
+    if scripts is not None and rewrite_anchor_phrases is not None:
+        for index, (mode, script, anchors) in enumerate(
+            zip(copy_modes, scripts, rewrite_anchor_phrases, strict=True)
+        ):
+            if mode != COPY_MODE_HUMAN_REWRITE:
+                continue
+            unique_anchors = tuple(
+                dict.fromkeys(anchor.strip() for anchor in anchors if anchor.strip())
+            )
+            missing_anchors = [anchor for anchor in unique_anchors if anchor not in script]
+            if len(unique_anchors) < 2 or missing_anchors:
+                value = f"task={index + 1},anchors={','.join(unique_anchors)}"
+                if missing_anchors:
+                    value += f",missing={','.join(missing_anchors)}"
+                issues.append(
+                    ValidationIssue(
+                        IssueCode.INVALID_REWRITE_ANCHORS,
+                        "human_rewrite 必须登记至少两个确实出现在成稿中的真人原文字眼",
+                        value,
                     )
                 )
     return tuple(issues)
