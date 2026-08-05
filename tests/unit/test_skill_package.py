@@ -12,6 +12,9 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert "Do not call another LLM." in skill
     assert (SKILL_ROOT / "agents" / "openai.yaml").is_file()
     assert (SKILL_ROOT / "references" / "copywriting-rules.md").is_file()
+    assert (SKILL_ROOT / "references" / "volume-copy-source-blocks.md").is_file()
+    assert not (SKILL_ROOT / "references" / "volume-copy-style.md").exists()
+    assert not (SKILL_ROOT / "references" / "volume-copy-fragments.md").exists()
     assert (SKILL_ROOT / "references" / "campaign-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "avatar-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
@@ -38,6 +41,64 @@ def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None
     assert "约占全文 20%" in rules
     assert "商品内容约占全文 50%" in rules
     assert "利益点和购买体验约占全文 30%" in rules
+    assert "选择一个真人" in rules
+    assert "提炼" in rules
+    assert "文风后仿写" in rules
+
+
+def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
+    guidance = "\n".join(
+        [
+            (SKILL_ROOT / "references" / "volume-copy-source-blocks.md").read_text(
+                encoding="utf-8"
+            ),
+            (
+                SKILL_ROOT.parents[0]
+                / "src"
+                / "avatar_prompt_pipeline"
+                / "templates"
+                / "copywriting_prompt.txt"
+            ).read_text(encoding="utf-8"),
+        ]
+    )
+
+    for sample_benefit in ("最高66元红包", "最高28元红包", "9.9起", "几块钱起"):
+        assert sample_benefit not in guidance
+    assert "当前利益点按 `CampaignSpec` 单独插入" in guidance
+    assert "必须使用与当前活动完全匹配的校验器" in guidance
+    assert "不得改写、润色、扩句、调整原句顺序" in guidance
+    assert "同一批次不得重复 `source_block_id`" in guidance
+
+
+def test_volume_copy_library_preserves_human_source_blocks() -> None:
+    blocks = (SKILL_ROOT / "references" / "volume-copy-source-blocks.md").read_text(
+        encoding="utf-8"
+    )
+    production_prompt = (
+        SKILL_ROOT.parents[0]
+        / "src"
+        / "avatar_prompt_pipeline"
+        / "templates"
+        / "copywriting_prompt.txt"
+    ).read_text(encoding="utf-8")
+    source_ids = {
+        line.split("`", maxsplit=2)[1]
+        for line in blocks.splitlines()
+        if line.startswith("### `learn-")
+    }
+    prompt_ids = {
+        line.split("`", maxsplit=2)[1]
+        for line in production_prompt.splitlines()
+        if line.startswith("- `learn-")
+    }
+
+    assert len(source_ids) >= 10
+    assert prompt_ids == source_ids
+    assert "什么你说你不饿\n不你就是饿了" in blocks
+    assert "如果人间烟火气有背景音乐\n那一定是[已确认食用动作]的声音" in blocks
+    assert "这天一冷\n只想和好朋友\n窝在家里吃[商品名]聊八卦" in blocks
+    assert "只填方括号" in blocks
+    assert "不总结文风，也不仿写新句子" in blocks
 
 
 def test_cli_schema_covers_every_existing_cli_parameter() -> None:

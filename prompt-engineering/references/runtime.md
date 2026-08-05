@@ -128,3 +128,25 @@ uv run avatar-prompts export-csv \
 
 仓库内分别使用 `write_segmentation_manuscript(...)` 和 `write_oceanengine_csv(...)`。
 两个 writer 都采用 UTF-8 原子写入并拒绝覆盖；调用方必须显式选择需要写出的产物。
+
+## 开发后的 Codex 本地同步
+
+每次修改生产代码、CLI、Prompt 模板、Schema 或本 Skill 后，都必须把当前工作区的
+`prompt-engineering/` 同步安装到
+`/Users/sakana/.codex/skills/prompt-engineering`。代码变更完成但本地 Skill 未同步时，任务
+仍未完成。
+
+同步前完成 Ruff、mypy 和完整 pytest；Skill 内容或结构变化时运行 `quick_validate.py`。
+覆盖已安装目录前保留可恢复备份，且安装源必须是当前工作区，不能只依赖尚未包含本地修改
+的远端分支。同步后执行：
+
+```bash
+diff -qr prompt-engineering /Users/sakana/.codex/skills/prompt-engineering
+/usr/bin/python3 \
+  /Users/sakana/.codex/skills/prompt-engineering/scripts/run_cli.py \
+  --python-executable /Users/sakana/PyEnv/prompt-engineering/bin/python \
+  -- --help
+```
+
+目录比对必须无差异，已安装 CLI 必须显示本次新增或修改的命令。最终回复同时报告工程测试、
+Skill 校验、目录比对和 CLI 验证结果。

@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from avatar_prompt_pipeline.models import (
@@ -18,7 +20,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
         forbidden_claims=("绝对防滑",),
     )
 
-    package = compose_prompt_package(brief)
+    package = compose_prompt_package(brief, reference_date=date(2026, 8, 5))
 
     assert "{{PRODUCT_CONTEXT}}" not in package.copywriting_prompt
     assert "商品名称：浅卡其色中筒雨靴" in package.copywriting_prompt
@@ -30,12 +32,23 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "利益点与购买体验约占全文 30%" in package.copywriting_prompt
     assert "不要写成完整生活故事" in package.copywriting_prompt
     assert "不要单独写成播报口号" in package.copywriting_prompt
+    assert "从人工原稿直接保留下来的正文骨架" in package.copywriting_prompt
+    assert "什么你说你不饿\uff0f不你就是饿了" in package.copywriting_prompt
+    assert "如果人间烟火气有背景音乐" in package.copywriting_prompt
+    assert "不得润色、同义改写、扩句、总结文风后仿写" in package.copywriting_prompt
+    assert "同一批次不得重复原文块 ID" in package.copywriting_prompt
+    assert "当前利益点" in package.copywriting_prompt
+    assert "生成候选后必须使用与当前活动完全匹配的校验器检查" in package.copywriting_prompt
     assert "利益点[primary-benefit]" in package.copywriting_prompt
     assert "【语言风格】" in package.copywriting_prompt
+    assert "当前本地日期：2026-08-05" in package.copywriting_prompt
+    assert "当前月份：8月" in package.copywriting_prompt
+    assert "按月份划分的当前季节：夏季" in package.copywriting_prompt
+    assert "6\u20138 月不得使用 `learn-006-winter`" in package.copywriting_prompt
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-07-30-chinese-young-woman-v10"
+    assert package.template_version == "2026-08-05-temporal-source-blocks-v15"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

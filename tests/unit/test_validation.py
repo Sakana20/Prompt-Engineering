@@ -1,3 +1,6 @@
+from dataclasses import replace
+from datetime import date
+
 import pytest
 
 from avatar_prompt_pipeline.models import (
@@ -14,6 +17,7 @@ from avatar_prompt_pipeline.validation import (
     copy_similarity,
     count_spoken_characters,
     strip_no_split_markers,
+    temporal_context,
     validate_batch_diversity,
     validate_copy,
     validate_visual_diversity,
@@ -49,6 +53,76 @@ def test_copy_requires_campaign_disclosures() -> None:
     report = validate_copy(VALID_COPY, campaign)
 
     assert any(issue.code is IssueCode.MISSING_DISCLOSURE for issue in report.issues)
+
+
+def test_copy_rejects_unconfirmed_starting_price_from_style_samples() -> None:
+    report = validate_copy(f"{VALID_COPY}，几块钱起")
+
+    assert any(issue.code is IssueCode.UNCONFIRMED_PROMOTION for issue in report.issues)
+
+
+def test_copy_allows_starting_price_when_current_campaign_confirms_it() -> None:
+    campaign = CampaignSpec(
+        benefit_points=(
+            BenefitPoint(
+                id="current-price",
+                text="9.9元起",
+                no_split=False,
+            ),
+        )
+    )
+    text = VALID_COPY.replace(
+        "[[NO_SPLIT]]淘宝闪购有最高12元无门槛红包[[/NO_SPLIT]]",
+        "9.9元起",
+    )
+
+    report = validate_copy(text, campaign)
+
+    assert not any(issue.code is IssueCode.UNCONFIRMED_PROMOTION for issue in report.issues)
+
+
+@pytest.mark.parametrize(
+    ("month", "expected_season"),
+    [(3, "春季"), (6, "夏季"), (9, "秋季"), (12, "冬季")],
+)
+def test_temporal_context_uses_local_month_seasons(month: int, expected_season: str) -> None:
+    context = temporal_context(date(2026, month, 1))
+
+    assert f"当前月份：{month}月" in context
+    assert f"当前季节：{expected_season}" in context
+
+
+def test_summer_copy_rejects_winter_wording() -> None:
+    text = VALID_COPY.replace("下班赶上大雨", "寒冷的冬天里")
+
+    report = validate_copy(text, reference_date=date(2026, 8, 5))
+
+    assert any(issue.code is IssueCode.SEASON_MISMATCH for issue in report.issues)
+
+
+def test_winter_copy_allows_winter_wording() -> None:
+    text = VALID_COPY.replace("下班赶上大雨", "寒冷的冬天里")
+
+    report = validate_copy(text, reference_date=date(2026, 12, 5))
+
+    assert not any(issue.code is IssueCode.SEASON_MISMATCH for issue in report.issues)
+
+
+def test_unconfirmed_current_weather_is_rejected() -> None:
+    text = VALID_COPY.replace("下班赶上大雨", "今天下雨")
+
+    report = validate_copy(text, reference_date=date(2026, 8, 5))
+
+    assert any(issue.code is IssueCode.UNCONFIRMED_CURRENT_WEATHER for issue in report.issues)
+
+
+def test_confirmed_current_weather_is_allowed() -> None:
+    campaign = replace(TAOBAO_DEFAULT_CAMPAIGN, confirmed_claims=("今天下雨",))
+    text = VALID_COPY.replace("下班赶上大雨", "今天下雨")
+
+    report = validate_copy(text, campaign, reference_date=date(2026, 8, 5))
+
+    assert not any(issue.code is IssueCode.UNCONFIRMED_CURRENT_WEATHER for issue in report.issues)
 
 
 def test_visual_prompt_rejects_prompt_shorter_than_contract() -> None:
@@ -149,6 +223,7 @@ def test_project_no_split_phrase_must_wrap_combined_benefit_text() -> None:
             ),
         ),
         no_split_phrases=("最高25元无门槛红包，还可以叠加九折津贴卡",),
+        confirmed_claims=("0.1元起", "附近门店配送到家"),
     )
     copy = (
         "早八想喝霸王茶姬，淘宝闪购现在发福利，有"

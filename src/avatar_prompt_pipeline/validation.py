@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from datetime import date
 
 from .models import (
     CampaignSpec,
@@ -161,6 +162,47 @@ PROHIBITED_PERSON_STYLE_PATTERNS = (
     "老年女性",
     "老气",
 )
+UNCONFIRMED_STARTING_PRICE_PATTERN = re.compile(r"(?:\d+(?:\.\d+)?元?|几块钱)起")
+SEASON_NAMES = {
+    "spring": "春季",
+    "summer": "夏季",
+    "autumn": "秋季",
+    "winter": "冬季",
+}
+SEASON_TERMS = {
+    "spring": ("春天", "春日", "春季", "开春", "暮春"),
+    "summer": ("夏天", "夏日", "夏季", "盛夏", "炎炎夏日", "酷暑", "大热天", "天气炎热"),
+    "autumn": ("秋天", "秋日", "秋季", "深秋", "入秋"),
+    "winter": ("冬天", "冬日", "冬季", "寒冬", "寒冷", "天一冷", "天气冷", "冷飕飕"),
+}
+CURRENT_WEATHER_PATTERN = re.compile(
+    r"(?:今天|现在|这会儿|外面|最近|刚好|刚刚|这两天).{0,4}"
+    r"(?:下雨|下雪|刮风|降温|升温|大太阳|大晴天|阴天)"
+)
+
+
+def season_for_month(month: int) -> str:
+    if month in (3, 4, 5):
+        return "spring"
+    if month in (6, 7, 8):
+        return "summer"
+    if month in (9, 10, 11):
+        return "autumn"
+    if month in (12, 1, 2):
+        return "winter"
+    raise ValueError("月份必须在 1 到 12 之间")
+
+
+def temporal_context(reference_date: date | None = None) -> str:
+    resolved_date = reference_date or date.today()
+    season = season_for_month(resolved_date.month)
+    return (
+        f"当前本地日期：{resolved_date.isoformat()}\n"
+        f"当前月份：{resolved_date.month}月\n"
+        f"按月份划分的当前季节：{SEASON_NAMES[season]}\n"
+        "不得使用其他季节的场景或明显相反的冷热描述。"
+        "今天下雨、外面降温等实时天气只能来自当前任务明确确认的资料；未提供时不要写。"
+    )
 
 
 def strip_no_split_markers(text: str) -> str:
@@ -194,6 +236,8 @@ def validate_copy(
     text: str,
     campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
     validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
+    *,
+    reference_date: date | None = None,
 ) -> CopyValidationReport:
     cleaned = text.replace("\x00", "").strip()
     count = count_spoken_characters(cleaned)
@@ -270,6 +314,50 @@ def validate_copy(
                     disclosure,
                 )
             )
+    promotion_scope = expression_scope
+    for confirmed_text in (
+        *campaign.no_split_phrases,
+        *campaign.required_disclosures,
+        *campaign.confirmed_claims,
+    ):
+        promotion_scope = promotion_scope.replace(confirmed_text, "")
+    if unconfirmed_promotion := UNCONFIRMED_STARTING_PRICE_PATTERN.search(promotion_scope):
+        issues.append(
+            ValidationIssue(
+                IssueCode.UNCONFIRMED_PROMOTION,
+                "出现当前活动未确认的起步价或低价利益点",
+                unconfirmed_promotion.group(0),
+            )
+        )
+
+    current_season = season_for_month((reference_date or date.today()).month)
+    mismatched_season: str | None = None
+    for season, terms in SEASON_TERMS.items():
+        if season == current_season:
+            continue
+        mismatched_season = next((term for term in terms if term in expression_scope), None)
+        if mismatched_season is not None:
+            break
+    if mismatched_season is not None:
+        issues.append(
+            ValidationIssue(
+                IssueCode.SEASON_MISMATCH,
+                f"季节表达与当前{SEASON_NAMES[current_season]}不符",
+                mismatched_season,
+            )
+        )
+
+    weather_scope = expression_scope
+    for confirmed_text in campaign.confirmed_claims:
+        weather_scope = weather_scope.replace(confirmed_text, "")
+    if unconfirmed_weather := CURRENT_WEATHER_PATTERN.search(weather_scope):
+        issues.append(
+            ValidationIssue(
+                IssueCode.UNCONFIRMED_CURRENT_WEATHER,
+                "出现当前任务未确认的实时天气描述",
+                unconfirmed_weather.group(0),
+            )
+        )
 
     banned_expressions = (*validation_config.banned_expressions, *campaign.forbidden_expressions)
     for expression in banned_expressions:

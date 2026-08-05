@@ -67,6 +67,13 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 Prompt/CSV 边界移除标签。集成测试必须证明字幕稿 writer 与 CSV writer 可以分别调用、
 互不创建对方文件，并且均拒绝覆盖已有文件。
 
+跑量样本只以审核后的真人原文块进入生产流程，不做文风提炼，也不生成仿写片段。测试必须
+保证分发 Skill、原文块库和文案 Prompt 保留选定原句与顺序，只允许填入当前已确认事实；
+同时不得嵌入样本中的具体金额、红包、价格或活动利益点。同一批次不得重复
+`source_block_id`，成稿必须使用当前活动配置执行校验。
+时间语境测试必须传入固定日期，覆盖四季映射、夏季拒绝冬季文案、匹配季节放行，以及未经
+确认的当前天气拒绝、`confirmed_claims` 明确确认后放行。生产运行默认使用本地当天日期。
+
 ### 集成测试
 
 使用 pytest 临时目录验证 JSON、字幕稿和 CSV 原子落盘及双文件合约。不得增加其他
@@ -99,5 +106,22 @@ reference 文件，避免开发仓库正常但分发目录残缺。
 1. 添加或更新测试；
 2. 更新相关文档；
 3. 运行 format、lint、mypy 和完整 pytest；
-4. 检查没有生成物、凭据和用户数据进入版本控制；
-5. 清楚标注哪些能力已实现、哪些仍是计划。
+4. Skill 内容或结构变化时运行 `quick_validate.py`；
+5. 将当前工作区的 `prompt-engineering/` 同步安装到
+   `/Users/sakana/.codex/skills/prompt-engineering`，安装前保留可恢复备份；
+6. 运行目录比对和已安装 CLI 验证：
+
+   ```bash
+   diff -qr prompt-engineering /Users/sakana/.codex/skills/prompt-engineering
+   /usr/bin/python3 \
+     /Users/sakana/.codex/skills/prompt-engineering/scripts/run_cli.py \
+     --python-executable /Users/sakana/PyEnv/prompt-engineering/bin/python \
+     -- --help
+   ```
+
+7. 检查没有生成物、凭据和用户数据进入版本控制；
+8. 清楚标注哪些能力已实现、哪些仍是计划。
+
+代码修改完成但本地已安装 Skill 尚未同步，视为任务未完成。同步源必须是当前工作区，而
+不是可能尚未包含本地修改的远端分支。最终交付说明必须明确报告测试、Skill 校验、目录
+比对和 CLI 验证结果。

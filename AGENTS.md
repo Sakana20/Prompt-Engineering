@@ -49,3 +49,19 @@ uv run pytest
 
 每次变更检查并按需更新 `README.md`、`docs/architecture.md`、
 `docs/implementation-plan.md`、`docs/development.md` 和 `docs/feasibility-study.md`。
+
+## Codex 本地同步（强制）
+
+- 每次修改生产代码、CLI、Prompt 模板、Schema 或 `prompt-engineering/` Skill 后，任务都不算
+  完成，直到仓库最新版已同步安装到
+  `/Users/sakana/.codex/skills/prompt-engineering`。
+- 同步前先完成 Ruff、mypy、pytest；Skill 内容或结构有变化时还必须运行
+  `skill-creator` 的 `quick_validate.py`。
+- 安装源必须是当前工作区的 `prompt-engineering/`，不能只依赖尚未包含本地修改的 GitHub
+  版本。覆盖已安装目录前先创建可恢复备份。
+- 安装后运行
+  `diff -qr prompt-engineering /Users/sakana/.codex/skills/prompt-engineering`；只有无差异才算
+  同步成功。
+- 安装后通过已安装 Skill 的 `scripts/run_cli.py -- --help` 验证本地 CLI，确认新增或修改的
+  命令已经可见。
+- 最终回复必须报告测试、Skill 校验、安装目录比对和 CLI 验证结果；不得只说明仓库已修改。

@@ -13,6 +13,17 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 1. Read [campaign-contract.md](references/campaign-contract.md),
    [copywriting-rules.md](references/copywriting-rules.md), and
    [avatar-rules.md](references/avatar-rules.md).
+   For production-volume copy based on the supplied human-written samples, also read
+   [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md). Select one whole source
+   block as the body skeleton, fill only its bracketed slots with current confirmed facts, preserve
+   its wording and order, and flatten its line breaks only at final output. Do not summarize its
+   style, imitate it with newly written sentences, polish its spoken rough edges, or splice several
+   blocks together. Sample benefits, prices, promotions, CTAs, and unconfirmed product claims are
+   never reusable facts. Before selecting a block, use the current local month: March–May is
+   spring, June–August summer, September–November autumn, and December–February winter. Reject
+   blocks or wording from another season; in particular, never use winter/cold wording in summer.
+   Treat current rain, snow, wind, sunshine, cooling, or warming as unconfirmed unless the current
+   task explicitly supplies that weather fact. Do not repeat a `source_block_id` within a batch.
    For CLI, configuration, batching, plugins, debug output, or output-format requests, also read
    [runtime.md](references/runtime.md) and its linked schemas.
 2. Normalize the user's facts into product facts and a campaign:
@@ -28,13 +39,12 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    category-level properties. Do not invent material, performance, price, brand, sales, efficacy,
    promotion facts, amount, threshold, or campaign rule. State briefly that product-specific and
    campaign-specific claims require review.
-4. Generate each 80–100 Chinese-character spoken copy as product-led conversational sharing.
-   Keep scene setup to one or at most two sentences (about 20%), make the product, selection
-   reason, and one or two confirmed details the core (about 50%). Use the remaining space for the
-   configured benefit and a concrete purchase experience (about 30%); if no benefit is configured,
-   use that space for purchase or usage experience. Do not expand the setup into a complete
-   lifestyle story. For a batch, vary demand, product emphasis, benefit transition, and purchase
-   experience.
+4. For human-source-block mode, fill one compatible block and insert only the current configured
+   campaign wording. The source block overrides the usual 20/50/30 composition heuristic: never
+   reorder or rewrite its lines to satisfy a ratio. If the filled block cannot reach 80–100 Chinese
+   characters without invented facts or new imitation copy, choose another block or request more
+   product facts. For tasks that do not use the supplied human samples, retain the normal
+   product-led 20% scene, 50% product, and 30% campaign/experience composition.
 5. Apply the campaign contract before continuing:
    - every user-confirmed `required` benefit must appear;
    - every `exact_match` benefit must preserve the original wording exactly;
@@ -49,7 +59,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    - output natural prose, not a title, list, explanation, or Markdown.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` with
    matching `--benefit-point` arguments or `--preset none`, and revise any failing copy before
-   generating its avatar prompt.
+   generating its avatar prompt. Sample-inspired copy is not exempt: use the exact current project
+   configuration, and never export a candidate that has not passed validation.
 7. Remove `[[NO_SPLIT]]` tags before generating an avatar video prompt; they are not spoken text.
    Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
    Give every prompt a different Chinese young woman and a different outfit. Vary face shape,

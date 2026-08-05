@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-07-30-chinese-young-woman-v10"
+TEMPLATE_VERSION = "2026-08-05-temporal-source-blocks-v15"
 
 
 def load_template(name: str) -> str:
