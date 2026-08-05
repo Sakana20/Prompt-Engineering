@@ -51,12 +51,15 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 Codex 完成语义生成后，将一对一结果写入符合
 [generated-task-batch.schema.json](generated-task-batch.schema.json) 的 JSON。清单保留
 `marked_script`、完整 `avatar_prompt`、`identity_key`、`outfit_key`、静态
-`person_prompt`、`copy_mode`、`source_block_id`、`rewrite_anchor_phrases`，以及可选的 LibTV
+`person_prompt`、`copy_mode`、`source_block_id`、`source_slot_values`、
+`rewrite_anchor_phrases`，以及可选的 LibTV
 `image_prompt` 和参考图字段。未提供 `image_prompt`
 时复用 `person_prompt`。`notes` 不由输入清单指定，CLI 始终按真实品类和 1-based 序号生成。
 
 `validate-batch` 校验逐条口播、两类静态画面 Prompt、批次文案相似度、50% 双轨比例、
-原文块来源、AI 改写保留字眼及人物/服装键唯一性。10 条必须包含 5 条 `source_fill` 和 5 条
+原文块来源与品类适配、商品插槽值、饮品饱腹逻辑、活动信息误入商品并列结构、
+AI 改写保留字眼及人物/服装键唯一性。新清单的 `source_fill` 必须填写
+`source_slot_values`；旧清单未提供该字段时仍可读。10 条必须包含 5 条 `source_fill` 和 5 条
 `human_rewrite`；奇数批次的改写数为 `floor(N/2)`。`package` 先执行同一套全批校验并检查所有目标文件均不存在，随后才按重复的
 `--format` 参数写出产物。可选格式为 `json`、`markdown`、
 `segmentation_manuscript`、`csv` 和 `libtv_omnihuman_package`。任何校验失败均不写文件。

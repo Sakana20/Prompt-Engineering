@@ -13,6 +13,12 @@ from .models import (
     VisualProfile,
 )
 from .presets import TAOBAO_DEFAULT_BENEFIT, TAOBAO_DEFAULT_CAMPAIGN
+from .source_blocks import (
+    CategoryFamily,
+    category_family,
+    source_block_contract,
+    source_fill_is_compatible,
+)
 
 DEFAULT_VALIDATION_CONFIG = ValidationConfig()
 REQUIRED_BENEFIT = TAOBAO_DEFAULT_BENEFIT
@@ -182,6 +188,27 @@ CURRENT_WEATHER_PATTERN = re.compile(
 COPY_MODE_SOURCE_FILL = "source_fill"
 COPY_MODE_HUMAN_REWRITE = "human_rewrite"
 COPY_MODES = (COPY_MODE_SOURCE_FILL, COPY_MODE_HUMAN_REWRITE)
+BEVERAGE_HUNGER_TERMS = (
+    "你不饿",
+    "你就是饿了",
+    "绝对饿了",
+    "人是铁饭是钢",
+    "一顿不吃",
+    "饿的慌",
+    "吃大餐",
+)
+CAMPAIGN_ROLE_TERMS = (
+    "配送到家",
+    "外卖送到家",
+    "红包",
+    "津贴",
+    "优惠券",
+    "领券",
+    "活动",
+    "平台",
+    "链接",
+    "下单",
+)
 
 
 def season_for_month(month: int) -> str:
@@ -415,6 +442,125 @@ def validate_batch_diversity(
                         pair,
                     )
                 )
+    return tuple(issues)
+
+
+def _campaign_role_terms(campaign: CampaignSpec) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            term
+            for term in (
+                *CAMPAIGN_ROLE_TERMS,
+                campaign.platform,
+                *(benefit.text for benefit in campaign.benefit_points),
+                *campaign.no_split_phrases,
+            )
+            if term
+        )
+    )
+
+
+def validate_source_logic(
+    text: str,
+    *,
+    category: str,
+    copy_mode: str,
+    source_block_id: str,
+    source_slot_values: Sequence[str] | None,
+    campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+) -> tuple[ValidationIssue, ...]:
+    expression_scope = strip_no_split_markers(text.replace("\x00", "").strip())
+    issues: list[ValidationIssue] = []
+    contract = source_block_contract(source_block_id) if source_block_id else None
+    if source_block_id and contract is None:
+        issues.append(
+            ValidationIssue(
+                IssueCode.SOURCE_BLOCK_INCOMPATIBLE,
+                "source_block_id 不在固化真人原文库中",
+                source_block_id,
+            )
+        )
+
+    if (
+        copy_mode == COPY_MODE_SOURCE_FILL
+        and contract is not None
+        and not source_fill_is_compatible(category, contract)
+    ):
+        issues.append(
+            ValidationIssue(
+                IssueCode.SOURCE_BLOCK_INCOMPATIBLE,
+                "当前品类不能直接填槽使用该真人原文块",
+                f"category={category},source={source_block_id}",
+            )
+        )
+
+    if category_family(category) is CategoryFamily.BEVERAGE:
+        mismatched_term = next(
+            (term for term in BEVERAGE_HUNGER_TERMS if term in expression_scope), None
+        )
+        if mismatched_term is not None:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PRODUCT_LOGIC_MISMATCH,
+                    "饮品文案不能使用正餐饱腹逻辑",
+                    mismatched_term,
+                )
+            )
+
+    campaign_terms = _campaign_role_terms(campaign)
+    if copy_mode == COPY_MODE_SOURCE_FILL and source_slot_values is not None:
+        bindings = tuple(
+            dict.fromkeys(value.strip() for value in source_slot_values if value.strip())
+        )
+        minimum_bindings = contract.minimum_source_slot_values if contract is not None else 1
+        missing_bindings = tuple(value for value in bindings if value not in expression_scope)
+        if len(bindings) < minimum_bindings or missing_bindings:
+            detail = f"minimum={minimum_bindings},actual={len(bindings)}"
+            if missing_bindings:
+                detail += f",missing={','.join(missing_bindings)}"
+            issues.append(
+                ValidationIssue(
+                    IssueCode.INVALID_SOURCE_BINDINGS,
+                    "source_fill 必须登记足量且确实出现在成稿中的商品插槽值",
+                    detail,
+                )
+            )
+        invalid_bindings = tuple(
+            value for value in bindings if any(term in value for term in campaign_terms)
+        )
+        if invalid_bindings:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.CAMPAIGN_IN_PRODUCT_SLOT,
+                    "平台、利益点、配送或行动引导不得填入商品插槽",
+                    ",".join(invalid_bindings),
+                )
+            )
+
+    if copy_mode == COPY_MODE_SOURCE_FILL and source_block_id == "learn-001-combination":
+        misplaced_term = next(
+            (
+                term
+                for term in campaign_terms
+                if re.search(
+                    rf"(?:外加|再加|加)[^，。\uFF01\uFF1F]{{0,16}}{re.escape(term)}",
+                    expression_scope,
+                )
+                or re.search(
+                    rf"{re.escape(term)}[^，。\uFF01\uFF1F]{{0,16}}(?:都给你配好了|配好了)",
+                    expression_scope,
+                )
+            ),
+            None,
+        )
+        if misplaced_term is not None:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.CAMPAIGN_IN_PRODUCT_SLOT,
+                    "组合原文块的并列对象只能是商品组成，不能夹入活动信息",
+                    misplaced_term,
+                )
+            )
     return tuple(issues)
 
 

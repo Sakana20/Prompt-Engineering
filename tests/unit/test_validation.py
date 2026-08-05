@@ -21,6 +21,7 @@ from avatar_prompt_pipeline.validation import (
     validate_batch_diversity,
     validate_copy,
     validate_copy_mix,
+    validate_source_logic,
     validate_visual_diversity,
     validate_visual_prompt,
     wrap_campaign_benefits,
@@ -197,6 +198,114 @@ def test_copy_mix_rejects_missing_or_unmatched_rewrite_anchors() -> None:
     )
 
     assert any(issue.code is IssueCode.INVALID_REWRITE_ANCHORS for issue in issues)
+
+
+def test_beverage_rejects_food_only_source_fill_and_hunger_logic() -> None:
+    issues = validate_source_logic(
+        "不是瑞幸咖啡点不起，什么你说你不饿，人是铁饭是钢，一顿不吃饿的慌。",
+        category="瑞幸咖啡",
+        copy_mode="source_fill",
+        source_block_id="learn-005-not-hungry",
+        source_slot_values=("瑞幸咖啡", "早上想喝一杯"),
+    )
+
+    codes = {issue.code for issue in issues}
+    assert IssueCode.SOURCE_BLOCK_INCOMPATIBLE in codes
+    assert IssueCode.PRODUCT_LOGIC_MISMATCH in codes
+
+
+def test_beverage_rewrite_can_reuse_non_category_language_without_hunger_logic() -> None:
+    issues = validate_source_logic(
+        "不是咖啡点不起，而是早上赶时间也想喝上一杯。",
+        category="咖啡",
+        copy_mode="human_rewrite",
+        source_block_id="learn-005-not-hungry",
+        source_slot_values=None,
+    )
+
+    assert issues == ()
+
+
+def test_source_logic_rejects_unknown_source_block_id() -> None:
+    issues = validate_source_logic(
+        "谁懂，今天就是想吃这一口。",
+        category="炸鸡",
+        copy_mode="human_rewrite",
+        source_block_id="learn-999-unknown",
+        source_slot_values=None,
+    )
+
+    assert any(issue.code is IssueCode.SOURCE_BLOCK_INCOMPATIBLE for issue in issues)
+
+
+def test_combination_block_rejects_campaign_facts_in_product_slots() -> None:
+    issues = validate_source_logic(
+        "蜜雪冰城现在奶茶加配送到家再加淘宝闪购外加最高12元无门槛红包都给你配好了。",
+        category="蜜雪冰城奶茶",
+        copy_mode="source_fill",
+        source_block_id="learn-001-combination",
+        source_slot_values=("蜜雪冰城", "奶茶", "配送到家", "淘宝闪购"),
+    )
+
+    assert any(issue.code is IssueCode.CAMPAIGN_IN_PRODUCT_SLOT for issue in issues)
+
+
+def test_combination_block_rejects_campaign_facts_in_coordination_text() -> None:
+    issues = validate_source_logic(
+        "蜜雪冰城现在奶茶加珍珠再加椰果外加配送到家，淘宝闪购有红包。",
+        category="蜜雪冰城奶茶",
+        copy_mode="source_fill",
+        source_block_id="learn-001-combination",
+        source_slot_values=("蜜雪冰城", "奶茶", "珍珠", "椰果"),
+    )
+
+    assert any(issue.code is IssueCode.CAMPAIGN_IN_PRODUCT_SLOT for issue in issues)
+
+
+def test_new_source_fill_rejects_empty_source_slot_values() -> None:
+    issues = validate_source_logic(
+        "谁懂，本来晚上不想吃的，但是点了一份哈密瓜，真的是太幸福了。",
+        category="哈密瓜",
+        copy_mode="source_fill",
+        source_block_id="learn-008-evening",
+        source_slot_values=(),
+    )
+
+    assert any(issue.code is IssueCode.INVALID_SOURCE_BINDINGS for issue in issues)
+
+
+def test_legacy_source_fill_without_source_slot_field_remains_readable() -> None:
+    issues = validate_source_logic(
+        "谁懂，本来晚上不想吃的，但是点了一份哈密瓜，真的是太幸福了。",
+        category="哈密瓜",
+        copy_mode="source_fill",
+        source_block_id="learn-008-evening",
+        source_slot_values=None,
+    )
+
+    assert issues == ()
+
+
+def test_combination_block_accepts_product_components_and_separate_campaign_sentence() -> None:
+    issues = validate_source_logic(
+        "北京烤鸭现在整只烤鸭加椒盐鸭架再加荷叶饼外加甜面酱，"
+        "送到手还是温热的，葱丝黄瓜条都给你配好了。"
+        "淘宝闪购有最高12元无门槛红包。",
+        category="烤鸭套餐",
+        copy_mode="source_fill",
+        source_block_id="learn-001-combination",
+        source_slot_values=(
+            "北京烤鸭",
+            "整只烤鸭",
+            "椒盐鸭架",
+            "荷叶饼",
+            "甜面酱",
+            "送到手还是温热的",
+            "葱丝黄瓜条",
+        ),
+    )
+
+    assert issues == ()
 
 
 def test_visual_prompt_rejects_prompt_shorter_than_contract() -> None:

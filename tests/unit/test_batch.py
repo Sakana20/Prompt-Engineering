@@ -102,6 +102,7 @@ def test_task_batch_template_is_fill_only_and_uses_deterministic_ids(tmp_path: P
     assert payload["tasks"][0]["copy_mode"] == "source_fill"
     assert payload["tasks"][1]["copy_mode"] == "human_rewrite"
     assert payload["tasks"][0]["source_block_id"] == ""
+    assert payload["tasks"][0]["source_slot_values"] == []
     assert payload["tasks"][1]["rewrite_anchor_phrases"] == []
     assert "notes" not in payload["tasks"][0]
 

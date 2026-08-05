@@ -37,6 +37,7 @@ _ALLOWED_TASK_KEYS = {
     "reference_image_pid",
     "copy_mode",
     "source_block_id",
+    "source_slot_values",
     "rewrite_anchor_phrases",
 }
 
@@ -88,6 +89,12 @@ def _expect_string_tuple(data: dict[str, Any], field: str) -> tuple[str, ...]:
     return tuple(cleaned for item in value if (cleaned := _clean(item)))
 
 
+def _expect_optional_string_tuple(data: dict[str, Any], field: str) -> tuple[str, ...] | None:
+    if field not in data:
+        return None
+    return _expect_string_tuple(data, field)
+
+
 @dataclass(frozen=True, slots=True)
 class GeneratedTaskRecord:
     task_id: str
@@ -107,6 +114,7 @@ class GeneratedTaskRecord:
     reference_image_pid: str = ""
     copy_mode: str = ""
     source_block_id: str = ""
+    source_slot_values: tuple[str, ...] | None = None
     rewrite_anchor_phrases: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -194,6 +202,7 @@ def _task_from_mapping(data: dict[str, Any], *, index: int) -> GeneratedTaskReco
         reference_image_pid=_expect_string(data, "reference_image_pid"),
         copy_mode=_expect_string(data, "copy_mode"),
         source_block_id=_expect_string(data, "source_block_id"),
+        source_slot_values=_expect_optional_string_tuple(data, "source_slot_values"),
         rewrite_anchor_phrases=_expect_string_tuple(data, "rewrite_anchor_phrases"),
     )
 
@@ -261,6 +270,7 @@ def task_batch_template(
                 "reference_image_pid": "",
                 "copy_mode": "source_fill" if index % 2 == 1 else "human_rewrite",
                 "source_block_id": "",
+                "source_slot_values": [],
                 "rewrite_anchor_phrases": [],
             }
         )

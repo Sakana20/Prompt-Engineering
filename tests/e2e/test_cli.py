@@ -364,6 +364,7 @@ def test_agent_can_fill_template_and_export_csv_without_writing_code(
             ),
             "title": "哈密瓜居家水果场景",
             "source_block_id": "learn-008-evening",
+            "source_slot_values": ["哈密瓜"],
         }
     )
     template.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

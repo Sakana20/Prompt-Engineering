@@ -52,10 +52,13 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "`human_rewrite` 可以参考跨季原文块" in package.copywriting_prompt
     assert "不能机械替换季节词" in package.copywriting_prompt
     assert "两个非季节性原字眼" in package.copywriting_prompt
+    assert "`source_slot_values`" in package.copywriting_prompt
+    assert "不得为凑 50% 比例强套" in package.copywriting_prompt
+    assert "饮品不得直接填槽使用" in package.copywriting_prompt
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-08-05-season-adaptive-rewrite-v17"
+    assert package.template_version == "2026-08-05-semantic-source-contract-v18"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

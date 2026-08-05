@@ -13,6 +13,7 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "agents" / "openai.yaml").is_file()
     assert (SKILL_ROOT / "references" / "copywriting-rules.md").is_file()
     assert (SKILL_ROOT / "references" / "volume-copy-source-blocks.md").is_file()
+    assert (SKILL_ROOT / "references" / "source-block-contracts.md").is_file()
     assert not (SKILL_ROOT / "references" / "volume-copy-style.md").exists()
     assert not (SKILL_ROOT / "references" / "volume-copy-fragments.md").exists()
     assert (SKILL_ROOT / "references" / "campaign-contract.md").is_file()
@@ -114,6 +115,7 @@ def test_generated_batch_schema_exposes_copy_mix_audit_fields() -> None:
     assert task_properties["copy_mode"]["enum"] == ["source_fill", "human_rewrite"]
     assert "source_block_id" in task_properties
     assert "rewrite_anchor_phrases" in task_properties
+    assert "source_slot_values" in task_properties
 
 
 def test_cli_schema_covers_every_existing_cli_parameter() -> None:

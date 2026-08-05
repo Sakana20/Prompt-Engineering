@@ -14,14 +14,19 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    [copywriting-rules.md](references/copywriting-rules.md), and
    [avatar-rules.md](references/avatar-rules.md).
    For production-volume copy based on the supplied human-written samples, also read
-   [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md). For a batch, assign odd
+   [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md) and
+   [source-block-contracts.md](references/source-block-contracts.md). Classify the product and its
+   consumption need before selecting a block. For a batch, assign odd
    1-based rows to `source_fill` and even rows to `human_rewrite`; this yields exactly five of each
    for ten rows, and `floor(N/2)` rewrites for an odd-sized batch. In `source_fill`, select one whole
    source block, fill only its bracketed slots, preserve its wording and order, and flatten line
    breaks only at final output. In `human_rewrite`, select one concrete source block, retain at
    least two recognizable words or short phrases from it, and rewrite with its abrupt, repetitive,
    conversational logic. Do not first summarize the style or turn it into polished setup-product-
-   experience prose. Record `copy_mode` and `source_block_id` in every new batch task. Sample
+   experience prose. Record `copy_mode` and `source_block_id` in every new batch task. For every
+   `source_fill`, also record each actual bracket substitution in source order as
+   `source_slot_values`; campaign, platform, delivery, benefit, and CTA wording must never enter
+   those values. Sample
    benefits, prices, promotions, CTAs, and unconfirmed product claims are never reusable facts.
    Before selecting a block, use the current local month: March–May is
    spring, June–August summer, September–November autumn, and December–February winter. In
@@ -49,7 +54,11 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    promotion facts, amount, threshold, or campaign rule. State briefly that product-specific and
    campaign-specific claims require review.
 4. In `source_fill`, fill one compatible block and insert only the current configured campaign
-   wording; the source block overrides the usual 20/50/30 heuristic. In `human_rewrite`, change the
+   wording after the complete product passage; never use campaign facts as product components.
+   Food-only blocks cannot be filled with beverages, and combination blocks require confirmed
+   product components. If there are not enough distinct compatible blocks to satisfy the batch
+   ratio, stop and request more human source copy for that category. The source block overrides
+   the usual 20/50/30 heuristic. In `human_rewrite`, change the
    concrete situation and wording while staying visibly close to the selected block's vocabulary,
    pauses, repetition, direct questions, or abrupt turns. Avoid tidy explanatory transitions and
    abstract summaries such as “刚好满足需求”, “这个时候很合适”, “具体体验”, or “选择理由”.
@@ -57,6 +66,9 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    appear verbatim in the final script or batch validation fails. If
    either mode cannot reach 80–100 Chinese characters without invented facts, choose another block
    or request more product facts.
+   Before validation, review product-to-need, noun-to-action, coordination level, and closing
+   reference. A beverage must not retain hunger/meal reasoning, and “add / add another / comes
+   with everything” may coordinate only actual product components.
 5. Apply the campaign contract before continuing:
    - every user-confirmed `required` benefit must appear;
    - every `exact_match` benefit must preserve the original wording exactly;

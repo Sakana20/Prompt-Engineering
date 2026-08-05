@@ -32,6 +32,7 @@ from .validation import (
     validate_batch_diversity,
     validate_copy,
     validate_copy_mix,
+    validate_source_logic,
     validate_visual_diversity,
     validate_visual_prompt,
 )
@@ -197,6 +198,14 @@ def _validate_generated_batch(
     task_reports: list[dict[str, object]] = []
     for task in batch.tasks:
         copy_report = validate_copy(task.marked_script, campaign, validation_config)
+        source_logic_issues = validate_source_logic(
+            task.marked_script,
+            category=batch.category,
+            copy_mode=task.copy_mode,
+            source_block_id=task.source_block_id,
+            source_slot_values=task.source_slot_values,
+            campaign=campaign,
+        )
         person_issues = validate_visual_prompt(task.person_prompt)
         image_issues = validate_visual_prompt(task.image_prompt)
         task_reports.append(
@@ -204,11 +213,20 @@ def _validate_generated_batch(
                 "task_id": task.task_id,
                 "copy_mode": task.copy_mode,
                 "source_block_id": task.source_block_id,
+                "source_slot_values": (
+                    list(task.source_slot_values) if task.source_slot_values is not None else None
+                ),
                 "rewrite_anchor_phrases": list(task.rewrite_anchor_phrases),
                 "copy": copy_report.to_dict(),
+                "source_logic_issues": _issues_to_dict(source_logic_issues),
                 "person_prompt_issues": _issues_to_dict(person_issues),
                 "image_prompt_issues": _issues_to_dict(image_issues),
-                "is_valid": not copy_report.issues and not person_issues and not image_issues,
+                "is_valid": (
+                    not copy_report.issues
+                    and not source_logic_issues
+                    and not person_issues
+                    and not image_issues
+                ),
             }
         )
     copy_diversity = validate_batch_diversity([task.marked_script for task in batch.tasks])

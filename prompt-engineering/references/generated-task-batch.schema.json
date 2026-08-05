@@ -59,6 +59,12 @@
             "type": "string",
             "description": "直接填槽或 AI 改写所使用的真人原文块 ID；新批次必须填写"
           },
+          "source_slot_values": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "description": "source_fill 实际填入原文块方括号的已确认商品事实；不得填平台、配送或利益点",
+            "default": []
+          },
           "rewrite_anchor_phrases": {
             "type": "array",
             "items": {"type": "string", "minLength": 1},
