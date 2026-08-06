@@ -16,14 +16,16 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    For production-volume copy based on the supplied human-written samples, also read
    [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md) and
    [source-block-contracts.md](references/source-block-contracts.md). Classify the product and its
-   consumption need before selecting a block. For a batch, assign odd
-   1-based rows to `source_fill` and even rows to `human_rewrite`; this yields exactly five of each
-   for ten rows, and `floor(N/2)` rewrites for an odd-sized batch. In `source_fill`, select one whole
+   consumption need before selecting a block. For a batch, assign exactly `floor(N/2)` rows to
+   `human_rewrite`. For the remaining rows, use compatible `source_fill` blocks when available and
+   otherwise use `natural_generate`; ten rows therefore always contain five rewrites. In
+   `source_fill`, select one whole
    source block, fill only its bracketed slots, preserve its wording and order, and flatten line
    breaks only at final output. In `human_rewrite`, select one concrete source block, retain at
    least two recognizable words or short phrases from it, and rewrite with its abrupt, repetitive,
    conversational logic. Do not first summarize the style or turn it into polished setup-product-
-   experience prose. Record `copy_mode` and `source_block_id` in every new batch task. For every
+   experience prose. Record `copy_mode` in every new batch task, and record `source_block_id` only
+   for `source_fill` and `human_rewrite`. For every
    `source_fill`, also record each actual bracket substitution in source order as
    `source_slot_values`; campaign, platform, delivery, benefit, and CTA wording must never enter
    those values. Sample
@@ -37,7 +39,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
    must contain no conflicting seasonal wording and must pass the same validator.
    Treat current rain, snow, wind, sunshine, cooling, or warming as unconfirmed unless the current
    task explicitly supplies that weather fact. Within each copy mode, do not repeat a
-   `source_block_id`.
+   `source_block_id`. `natural_generate` has no source block, source slot values, or rewrite
+   anchors.
    For CLI, configuration, batching, plugins, debug output, or output-format requests, also read
    [runtime.md](references/runtime.md) and its linked schemas.
 2. Normalize the user's facts into product facts and a campaign:
@@ -56,8 +59,8 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 4. In `source_fill`, fill one compatible block and insert only the current configured campaign
    wording after the complete product passage; never use campaign facts as product components.
    Food-only blocks cannot be filled with beverages, and combination blocks require confirmed
-   product components. If there are not enough distinct compatible blocks to satisfy the batch
-   ratio, stop and request more human source copy for that category. The source block overrides
+   product components. If compatible blocks or product facts are insufficient, use
+   `natural_generate` for the remaining non-rewrite rows without claiming a human source. The source block overrides
    the usual 20/50/30 heuristic. In `human_rewrite`, change the
    concrete situation and wording while staying visibly close to the selected block's vocabulary,
    pauses, repetition, direct questions, or abrupt turns. Avoid tidy explanatory transitions and

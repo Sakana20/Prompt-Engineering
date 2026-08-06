@@ -123,7 +123,7 @@ class GeneratedTaskRecord:
         if self.aspect_ratio not in {"9:16", "16:9", "1:1"}:
             raise TaskBatchError("aspect_ratio 必须是 9:16、16:9 或 1:1")
         if self.copy_mode and self.copy_mode not in COPY_MODES:
-            raise TaskBatchError("copy_mode 只能是 source_fill 或 human_rewrite")
+            raise TaskBatchError("copy_mode 只能是 source_fill、human_rewrite 或 natural_generate")
 
     def visual_profile(self) -> VisualProfile:
         return VisualProfile(identity_key=self.identity_key, outfit_key=self.outfit_key)
@@ -268,7 +268,7 @@ def task_batch_template(
                 "reference_image_uri": "",
                 "reference_image_url": "",
                 "reference_image_pid": "",
-                "copy_mode": "source_fill" if index % 2 == 1 else "human_rewrite",
+                "copy_mode": "natural_generate" if index % 2 == 1 else "human_rewrite",
                 "source_block_id": "",
                 "source_slot_values": [],
                 "rewrite_anchor_phrases": [],

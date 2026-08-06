@@ -56,11 +56,12 @@ Codex 完成语义生成后，将一对一结果写入符合
 `image_prompt` 和参考图字段。未提供 `image_prompt`
 时复用 `person_prompt`。`notes` 不由输入清单指定，CLI 始终按真实品类和 1-based 序号生成。
 
-`validate-batch` 校验逐条口播、两类静态画面 Prompt、批次文案相似度、50% 双轨比例、
+`validate-batch` 校验逐条口播、两类静态画面 Prompt、批次文案相似度、50% 改写比例、
 原文块来源与品类适配、商品插槽值、饮品饱腹逻辑、活动信息误入商品并列结构、
 AI 改写保留字眼及人物/服装键唯一性。新清单的 `source_fill` 必须填写
-`source_slot_values`；旧清单未提供该字段时仍可读。10 条必须包含 5 条 `source_fill` 和 5 条
-`human_rewrite`；奇数批次的改写数为 `floor(N/2)`。`package` 先执行同一套全批校验并检查所有目标文件均不存在，随后才按重复的
+`source_slot_values`；旧清单未提供该字段时仍可读。10 条必须包含 5 条
+`human_rewrite` 和 5 条 `source_fill`/`natural_generate`；奇数批次的改写数为 `floor(N/2)`。
+`natural_generate` 不登记任何真人来源字段。`package` 先执行同一套全批校验并检查所有目标文件均不存在，随后才按重复的
 `--format` 参数写出产物。可选格式为 `json`、`markdown`、
 `segmentation_manuscript`、`csv` 和 `libtv_omnihuman_package`。任何校验失败均不写文件。
 

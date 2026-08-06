@@ -33,8 +33,9 @@
   `source_slot_values`，也禁止作为“加、再加、外加、配好了”的并列对象。
 - 先完成原文块商品段，再用独立句子衔接当前活动信息。
 
-## 比例与停止条件
+## 比例与降级条件
 
-50% `source_fill` 和 50% `human_rewrite` 仍是批次硬目标。如果当前品类没有足够且不重复的
-兼容直填块，停止生成并说明需要补充该品类的真人原稿。不得使用不兼容块、重复块、
-伪造真人原句或改变比例来绕过。
+`human_rewrite` 始终占 `floor(N/2)`；其余条目优先使用兼容且不重复的 `source_fill`。
+兼容块或已确认商品资料不足时，剩余条目使用 `natural_generate`，不阻断整批生成。
+`natural_generate` 不登记 `source_block_id`、`source_slot_values` 或
+`rewrite_anchor_phrases`，不声称使用了真人原文。

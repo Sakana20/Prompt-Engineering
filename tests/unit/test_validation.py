@@ -142,6 +142,27 @@ def test_copy_mix_accepts_exact_five_five_split_for_ten_tasks() -> None:
     assert validate_copy_mix(modes, sources) == ()
 
 
+def test_copy_mix_accepts_natural_fallback_with_exact_rewrite_half() -> None:
+    modes = ["natural_generate" if index % 2 == 0 else "human_rewrite" for index in range(10)]
+    sources = [
+        "" if mode == "natural_generate" else f"learn-{index:03d}"
+        for index, mode in enumerate(modes)
+    ]
+
+    assert validate_copy_mix(modes, sources) == ()
+
+
+def test_copy_mix_rejects_source_metadata_on_natural_generate() -> None:
+    issues = validate_copy_mix(
+        ["natural_generate", "human_rewrite"],
+        ["learn-001-combination", "learn-002-eating-order"],
+        ["自然生成", "谁懂，真的太幸福了"],
+        [("伪锚点",), ("谁懂", "太幸福了")],
+    )
+
+    assert any(issue.code is IssueCode.UNEXPECTED_SOURCE_METADATA for issue in issues)
+
+
 def test_copy_mix_rejects_wrong_rewrite_ratio() -> None:
     modes = ["source_fill"] * 6 + ["human_rewrite"] * 4
     sources = [f"learn-{index:03d}" for index in range(10)]
@@ -152,7 +173,7 @@ def test_copy_mix_rejects_wrong_rewrite_ratio() -> None:
 
 
 def test_copy_mix_rejects_missing_mode_and_source() -> None:
-    issues = validate_copy_mix(["source_fill", ""], ["learn-001", ""])
+    issues = validate_copy_mix(["source_fill", "", "human_rewrite"], ["learn-001", "", ""])
 
     assert any(issue.code is IssueCode.MISSING_COPY_MODE for issue in issues)
     assert any(issue.code is IssueCode.MISSING_SOURCE_BLOCK_ID for issue in issues)

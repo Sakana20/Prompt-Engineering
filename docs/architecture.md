@@ -73,17 +73,18 @@ CSV 或 LibTV 三件套。完整视频 Prompt 与身份/服装键保留在审计
 3. 在实现计划中记录变更；
 4. 对代表性品类重新验收。
 
-文案模板 `2026-08-05-semantic-source-contract-v18` 定位为“商品导向的生活化分享”：场景或需求用
+文案模板 `2026-08-06-adaptive-three-mode-v19` 定位为“商品导向的生活化分享”：场景或需求用
 1–2 句话快速交代，约占 20%；商品、选择理由和 1–2 个已确认特点约占 50%；利益点与
 具体购买体验约占 30%。场景只为商品服务，不展开成完整生活故事。确定性校验仍负责
 字数、活动利益点、禁词、行动引导和单段格式，表达比例和自然度由 Codex 与人工审核判断。
 
-跑量样本由 `volume-copy-source-blocks.md` 保存审核后的真人原句块。批次采用双轨：奇数
-序号 `source_fill` 保留原句原顺序并只填事实插槽；偶数序号 `human_rewrite` 参考一个具体
+跑量样本由 `volume-copy-source-blocks.md` 保存审核后的真人原句块。批次采用三模式：
+`human_rewrite` 固定占 `floor(N/2)`；其余条目优先 `source_fill`，不兼容时使用
+`natural_generate`。`source_fill` 保留原句原顺序并只填事实插槽；`human_rewrite` 参考一个具体
 原文块，保留至少两个可辨认字眼或短语，并沿用反问、重复、短停顿和口语毛边进行改写。
 `source_fill` 还要先通过 `source-block-contracts.md` 的品类和需求适配，并以
-`source_slot_values` 审计实际填入的商品事实。10 条严格各 5 条，奇数批次的改写数向下取整；
-同轨不重复 `source_block_id`。兼容块不足时停止并要求补充该品类真人原稿，不为比例强套。
+`source_slot_values` 审计实际填入的商品事实。10 条始终有 5 条改写与 5 条非改写；
+同轨不重复 `source_block_id`。`natural_generate` 不登记来源字段，不伪装成真人原文。
 样本中的金额、价格、券、红包、活动、平台
 权益、配送、赠品、行动引导和商品断言不会进入事实层或活动层。生成结果仍必须使用当前 `CampaignSpec` 与
 `ValidationConfig` 校验，未通过时不能进入数字人 Prompt 或任务导出。
@@ -97,7 +98,7 @@ Prompt 编排时按本地日期注入月份与季节，校验器采用 3–5 月
 任务清单通过 `copy_mode` 与 `source_block_id` 保存文案来源，直接填槽以
 `source_slot_values` 保存商品插槽值，AI 改写另以
 `rewrite_anchor_phrases` 登记至少两个实际保留的真人原文字眼；`validate-batch` 和 `package`
-在落盘前校验双轨比例、字段完整性、品类适配、插槽角色、饮品饱腹冲突、字眼命中及同轨来源去重。
+在落盘前校验改写比例、三模式字段边界、品类适配、插槽角色、饮品饱腹冲突、字眼命中及同轨来源去重。
 旧清单没有 `source_slot_values` 时保持可读，新清单留空时不能通过。
 
 生成态利益点使用 `[[NO_SPLIT]]…[[/NO_SPLIT]]` 标注，标签不计入口播字数。产物在此

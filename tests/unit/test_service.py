@@ -35,11 +35,12 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "从人工原稿直接保留下来的正文骨架" in package.copywriting_prompt
     assert "什么你说你不饿\uff0f不你就是饿了" in package.copywriting_prompt
     assert "如果人间烟火气有背景音乐" in package.copywriting_prompt
-    assert "奇数序号为 `source_fill`" in package.copywriting_prompt
-    assert "偶数序号为 `human_rewrite`" in package.copywriting_prompt
+    assert "非改写序号优先为 `source_fill`" in package.copywriting_prompt
+    assert "`human_rewrite` 的数量固定为" in package.copywriting_prompt
+    assert "改用 `natural_generate`" in package.copywriting_prompt
     assert "至少保留其中两个可辨认的字眼或短语" in package.copywriting_prompt
     assert "不得写回“场景开场—商品承接—体验收束”" in package.copywriting_prompt
-    assert "10 条必须是 5 条" in package.copywriting_prompt
+    assert "10 条始终包含 5 条 `human_rewrite`" in package.copywriting_prompt
     assert "同一批次不得重复原文块 ID" in package.copywriting_prompt
     assert "当前利益点" in package.copywriting_prompt
     assert "生成候选后必须使用与当前活动完全匹配的校验器检查" in package.copywriting_prompt
@@ -53,12 +54,12 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "不能机械替换季节词" in package.copywriting_prompt
     assert "两个非季节性原字眼" in package.copywriting_prompt
     assert "`source_slot_values`" in package.copywriting_prompt
-    assert "不得为凑 50% 比例强套" in package.copywriting_prompt
+    assert "不阻断整批生成" in package.copywriting_prompt
     assert "饮品不得直接填槽使用" in package.copywriting_prompt
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-08-05-semantic-source-contract-v18"
+    assert package.template_version == "2026-08-06-adaptive-three-mode-v19"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

@@ -99,7 +99,7 @@ def test_task_batch_template_is_fill_only_and_uses_deterministic_ids(tmp_path: P
     assert [task["task_id"] for task in payload["tasks"]] == ["HM-001", "HM-002"]
     assert payload["tasks"][0]["marked_script"] == ""
     assert payload["tasks"][0]["person_prompt"] == ""
-    assert payload["tasks"][0]["copy_mode"] == "source_fill"
+    assert payload["tasks"][0]["copy_mode"] == "natural_generate"
     assert payload["tasks"][1]["copy_mode"] == "human_rewrite"
     assert payload["tasks"][0]["source_block_id"] == ""
     assert payload["tasks"][0]["source_slot_values"] == []
@@ -121,6 +121,14 @@ def test_task_batch_template_rejects_invalid_count_and_prefix() -> None:
         task_batch_template(task_name="batch", category="水果", count=0)
     with pytest.raises(TaskBatchError, match="task_prefix"):
         task_batch_template(task_name="batch", category="水果", count=1, task_prefix="水果")
+
+
+def test_task_batch_template_uses_five_rewrites_and_five_safe_fallbacks() -> None:
+    payload = task_batch_template(task_name="drink-batch", category="咖啡茶饮", count=10)
+    modes = [task["copy_mode"] for task in payload["tasks"]]
+
+    assert modes.count("human_rewrite") == 5
+    assert modes.count("natural_generate") == 5
 
 
 def test_task_batch_rejects_non_string_rewrite_anchors() -> None:

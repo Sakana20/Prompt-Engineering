@@ -67,8 +67,9 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 Prompt/CSV 边界移除标签。集成测试必须证明字幕稿 writer 与 CSV writer 可以分别调用、
 互不创建对方文件，并且均拒绝覆盖已有文件。
 
-跑量批次必须覆盖 `source_fill` 与 `human_rewrite` 双轨。测试保证 10 条时严格 5/5，奇数
-批次按 `floor(N/2)` 计算 AI 改写数，每条具备 `source_block_id`，且同轨来源不重复。每条
+跑量批次支持 `source_fill`、`human_rewrite` 与 `natural_generate`。测试保证 10 条时
+`human_rewrite` 严格为 5 条，奇数批次按 `floor(N/2)` 计算 AI 改写数。只有来源轨具备
+`source_block_id`，且同轨来源不重复。每条
 AI 改写必须登记至少两个 `rewrite_anchor_phrases`，测试验证所有登记字眼确实存在于成稿。
 新清单的直接填槽任务必须登记 `source_slot_values`；测试覆盖固化原文块 ID、饮品拒绝固体食品
 直填块、饮品拒绝饱腹句、活动信息不得进入商品插槽，以及套餐组成与活动句正确分层时放行。

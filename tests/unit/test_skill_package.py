@@ -42,10 +42,11 @@ def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None
     assert "约占全文 20%" in rules
     assert "商品内容约占全文 50%" in rules
     assert "利益点和购买体验约占全文 30%" in rules
-    assert "奇数" in rules
+    assert "`floor(N/2)`" in rules
     assert "`source_fill`" in rules
     assert "`human_rewrite`" in rules
-    assert "10 条必须各 5 条" in rules
+    assert "`human_rewrite` 固定为 `floor(N/2)`" in rules
+    assert "`natural_generate`" in rules
     assert "保留至少两个可辨认字眼或短语" in rules
 
 
@@ -72,7 +73,7 @@ def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
     assert "不得改写、润色、扩句、调整原句顺序" in guidance
     assert "轨道内不得重复 `source_block_id`" in guidance
     assert "不得先总结风格" in guidance
-    assert "10 条必须是 5 条" in guidance
+    assert "10 条时始终是 5 条 `human_rewrite`" in guidance
 
 
 def test_volume_copy_library_preserves_human_source_blocks() -> None:
@@ -112,7 +113,11 @@ def test_generated_batch_schema_exposes_copy_mix_audit_fields() -> None:
     )
     task_properties = schema["properties"]["tasks"]["items"]["properties"]
 
-    assert task_properties["copy_mode"]["enum"] == ["source_fill", "human_rewrite"]
+    assert task_properties["copy_mode"]["enum"] == [
+        "source_fill",
+        "human_rewrite",
+        "natural_generate",
+    ]
     assert "source_block_id" in task_properties
     assert "rewrite_anchor_phrases" in task_properties
     assert "source_slot_values" in task_properties

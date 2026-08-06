@@ -7,11 +7,14 @@
 
 ## 批次分配
 
-- 新批次的奇数序号使用 `source_fill`，偶数序号使用 `human_rewrite`。
-- 10 条时必须是 5 条 `source_fill`、5 条 `human_rewrite`；奇数批次的改写数量为
-  `floor(N/2)`。
-- 每条在任务清单填写 `copy_mode` 和 `source_block_id`；`human_rewrite` 还必须把至少两个
+- 新批次的偶数序号使用 `human_rewrite`，数量固定为 `floor(N/2)`。
+- 其余序号优先使用兼容 `source_fill`；兼容块或商品资料不足时使用
+  `natural_generate`。10 条时始终是 5 条 `human_rewrite` 和 5 条非改写轨。
+- 每条填写 `copy_mode`；只有 `source_fill` 和 `human_rewrite` 填写
+  `source_block_id`。`human_rewrite` 还必须把至少两个
   实际保留的原文字眼写入 `rewrite_anchor_phrases`，交给 CLI 校验比例、来源和字眼命中。
+- `natural_generate` 不填 `source_block_id`、`source_slot_values` 或
+  `rewrite_anchor_phrases`，不伪装成真人原文来源。
 - 选块前必须先读 [source-block-contracts.md](source-block-contracts.md)，先判断品类和需求，再从兼容块中选择。
 
 ## `source_fill` 使用规则

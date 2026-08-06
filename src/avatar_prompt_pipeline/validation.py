@@ -187,7 +187,12 @@ CURRENT_WEATHER_PATTERN = re.compile(
 )
 COPY_MODE_SOURCE_FILL = "source_fill"
 COPY_MODE_HUMAN_REWRITE = "human_rewrite"
-COPY_MODES = (COPY_MODE_SOURCE_FILL, COPY_MODE_HUMAN_REWRITE)
+COPY_MODE_NATURAL_GENERATE = "natural_generate"
+COPY_MODES = (
+    COPY_MODE_SOURCE_FILL,
+    COPY_MODE_HUMAN_REWRITE,
+    COPY_MODE_NATURAL_GENERATE,
+)
 BEVERAGE_HUNGER_TERMS = (
     "你不饿",
     "你就是饿了",
@@ -508,6 +513,14 @@ def validate_source_logic(
             )
 
     campaign_terms = _campaign_role_terms(campaign)
+    if copy_mode != COPY_MODE_SOURCE_FILL and source_slot_values:
+        issues.append(
+            ValidationIssue(
+                IssueCode.UNEXPECTED_SOURCE_METADATA,
+                "只有 source_fill 可以登记 source_slot_values",
+                copy_mode,
+            )
+        )
     if copy_mode == COPY_MODE_SOURCE_FILL and source_slot_values is not None:
         bindings = tuple(
             dict.fromkeys(value.strip() for value in source_slot_values if value.strip())
@@ -593,18 +606,20 @@ def validate_copy_mix(
         )
     invalid_modes = sorted({mode for mode in copy_modes if mode and mode not in COPY_MODES})
     if invalid_modes:
-        raise ValueError("copy_mode 只能是 source_fill 或 human_rewrite")
+        raise ValueError("copy_mode 只能是 source_fill、human_rewrite 或 natural_generate")
 
     missing_source_indexes = [
         str(index + 1)
-        for index, source_block_id in enumerate(source_block_ids)
-        if not source_block_id
+        for index, (mode, source_block_id) in enumerate(
+            zip(copy_modes, source_block_ids, strict=True)
+        )
+        if mode in {COPY_MODE_SOURCE_FILL, COPY_MODE_HUMAN_REWRITE} and not source_block_id
     ]
     if missing_source_indexes:
         issues.append(
             ValidationIssue(
                 IssueCode.MISSING_SOURCE_BLOCK_ID,
-                "混合生成的每条任务都必须填写 source_block_id",
+                "source_fill 和 human_rewrite 必须填写 source_block_id",
                 ",".join(missing_source_indexes),
             )
         )
@@ -620,7 +635,23 @@ def validate_copy_mix(
             )
         )
 
-    for mode in COPY_MODES:
+    unexpected_natural_sources = [
+        str(index + 1)
+        for index, (mode, source_block_id) in enumerate(
+            zip(copy_modes, source_block_ids, strict=True)
+        )
+        if mode == COPY_MODE_NATURAL_GENERATE and source_block_id
+    ]
+    if unexpected_natural_sources:
+        issues.append(
+            ValidationIssue(
+                IssueCode.UNEXPECTED_SOURCE_METADATA,
+                "natural_generate 不得登记真人原文块来源",
+                ",".join(unexpected_natural_sources),
+            )
+        )
+
+    for mode in (COPY_MODE_SOURCE_FILL, COPY_MODE_HUMAN_REWRITE):
         mode_sources = [
             source_block_id
             for copy_mode, source_block_id in zip(copy_modes, source_block_ids, strict=True)
@@ -641,6 +672,14 @@ def validate_copy_mix(
         for index, (mode, script, anchors) in enumerate(
             zip(copy_modes, scripts, rewrite_anchor_phrases, strict=True)
         ):
+            if mode == COPY_MODE_NATURAL_GENERATE and any(anchor.strip() for anchor in anchors):
+                issues.append(
+                    ValidationIssue(
+                        IssueCode.UNEXPECTED_SOURCE_METADATA,
+                        "natural_generate 不得登记真人改写锚点",
+                        f"task={index + 1}",
+                    )
+                )
             if mode != COPY_MODE_HUMAN_REWRITE:
                 continue
             unique_anchors = tuple(
