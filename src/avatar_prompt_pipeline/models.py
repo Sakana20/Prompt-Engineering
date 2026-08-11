@@ -27,6 +27,7 @@ class IssueCode(StrEnum):
     MISSING_BENEFIT = "MISSING_BENEFIT"
     MISSING_DISCLOSURE = "MISSING_DISCLOSURE"
     UNCONFIRMED_PROMOTION = "UNCONFIRMED_PROMOTION"
+    NUMERIC_REDPACKET_AMOUNT = "NUMERIC_REDPACKET_AMOUNT"
     SEASON_MISMATCH = "SEASON_MISMATCH"
     UNCONFIRMED_CURRENT_WEATHER = "UNCONFIRMED_CURRENT_WEATHER"
     MISSING_COPY_MODE = "MISSING_COPY_MODE"
@@ -241,6 +242,7 @@ class ValidationConfig:
         "直播间",
     )
     format_prefixes: tuple[str, ...] = ("#", "-", "*", "1.", "1、", "①")
+    forbid_numeric_redpacket_amounts: bool = False
 
     def __post_init__(self) -> None:
         if self.min_characters < 1:

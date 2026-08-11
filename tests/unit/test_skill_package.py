@@ -21,6 +21,7 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "runtime.md").is_file()
     assert (SKILL_ROOT / "references" / "generated-task-batch.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "validation-config.schema.json").is_file()
     assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
     assert "$smartsplit" not in skill.lower()
     assert "invoke smartsplit" not in skill.lower()
@@ -233,6 +234,16 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
     assert "validation_config_path" in properties
     assert "language_style" in properties
     assert "avoid_phrases" in properties["language_style"]["properties"]
+
+
+def test_validation_config_schema_exposes_numeric_redpacket_rule() -> None:
+    schema = json.loads(
+        (SKILL_ROOT / "references" / "validation-config.schema.json").read_text(encoding="utf-8")
+    )
+
+    rule = schema["properties"]["forbid_numeric_redpacket_amounts"]
+    assert rule["type"] == "boolean"
+    assert rule["default"] is False
 
 
 def test_single_skill_is_generalized_with_campaign_contract() -> None:

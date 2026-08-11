@@ -1,0 +1,30 @@
+{
+  "min_characters": 80,
+  "max_characters": 100,
+  "banned_expressions": [
+    "最",
+    "绝对",
+    "全网最低",
+    "补贴",
+    "0元购",
+    "免单",
+    "秒杀",
+    "限时疯抢",
+    "比超市便宜",
+    "闭眼入",
+    "快冲",
+    "姐妹们",
+    "家人们",
+    "冲就完了"
+  ],
+  "call_to_actions": [],
+  "format_prefixes": [
+    "#",
+    "-",
+    "*",
+    "1.",
+    "1、",
+    "①"
+  ],
+  "forbid_numeric_redpacket_amounts": true
+}

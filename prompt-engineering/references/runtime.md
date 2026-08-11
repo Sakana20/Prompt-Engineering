@@ -43,6 +43,10 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 禁词、行动引导和格式规则负责。
 `validation_config_path` 指向独立校验配置，校验配置决定字数、禁词、行动引导禁用词和格式
 前缀；不要在项目口径里维护 CTA 许可列表。
+完整校验配置 schema 见 [validation-config.schema.json](validation-config.schema.json)。
+`forbid_numeric_redpacket_amounts=true` 时，成稿不得出现阿拉伯数字或中文数字的红包金额；
+该开关默认关闭，当前由 `configs/validation/taobao-compliance.json` 开启。
+该合规校验配置与 25 元项目一样不设置行动引导禁用词，以便美食外卖投流口播在结尾使用自然引导语。
 `confirmed_claims` 是确认可用但不强制每条都写入的活动事实或商品场景；不得从样本文案中
 扩展出未确认品牌、价格、商品范围或配送承诺。
 

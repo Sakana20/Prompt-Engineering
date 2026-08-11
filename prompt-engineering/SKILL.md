@@ -199,6 +199,14 @@ Compatibility defaults:
 - If the user provides an explicit benefit, use that benefit instead of the preset.
 - If the user says no benefit or no promotion, use `--preset none` semantics and generate without
   any promotional benefit.
+- If the user selects the project configuration
+  `configs/projects/taobao-instant-commerce-compliance.json`, require the exact benefit `大额红包`
+  and use only food-delivery scenarios such as coffee, milk tea, or fried chicken. Follow the
+  benefit-forward promotional style, delivery claims, and natural end CTA of the 25-yuan project;
+  do not use the 12-yuan project's retail/lifestyle structure. `优惠价`、`活动价`、`福利价` and
+  similar fuzzy wording may be used only without a concrete amount. Its validation configuration enables
+  `forbid_numeric_redpacket_amounts`; never write an Arabic-numeral or Chinese-numeral redpacket
+  amount for this project.
 - If the user provides a project configuration file, treat it as the complete project mouthpiece:
   use its product facts, campaign facts, benefit points, forbidden expressions, and disclosures.
   Use its language style to guide tone, viewpoint, sentence rhythm, emphasis, phrases to avoid,

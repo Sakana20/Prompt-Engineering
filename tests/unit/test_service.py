@@ -101,6 +101,15 @@ def test_compose_prompt_package_renders_validation_call_to_actions() -> None:
     assert "禁止出现以下行动引导：直播间、点击视频下方链接" in package.copywriting_prompt
 
 
+def test_compose_prompt_package_renders_numeric_redpacket_compliance_rule() -> None:
+    package = compose_prompt_package(
+        ProductBrief(category="西瓜"),
+        validation_config=ValidationConfig(forbid_numeric_redpacket_amounts=True),
+    )
+
+    assert "禁止出现任何阿拉伯数字或中文数字的红包金额" in package.copywriting_prompt
+
+
 def test_render_avatar_prompt_injects_script() -> None:
     rendered = render_avatar_prompt(
         "下班回家，[[NO_SPLIT]]最高12元无门槛红包[[/NO_SPLIT]]，门口的雨靴还沾着一点雨水。"

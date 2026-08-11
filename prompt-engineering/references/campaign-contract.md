@@ -20,3 +20,10 @@
 但 `NO_SPLIT` 标签包裹完整片段，而不是只包裹红包文案。
 该预设从 `configs/projects/taobao-12-no-threshold-redpacket.json` 读取，避免代码与项目配置
 维护两份 12 元口径。
+
+独立项目配置 `configs/projects/taobao-instant-commerce-compliance.json` 使用
+`大额红包` 作为必填、逐字保留的利益点，优惠价和活动价为可选利益点。
+该项目沿用 25 元项目的美食外卖品类、福利前置投流语气、配送场景和自然行动引导，
+不使用 12 元项目的零售生活化结构。
+该项目可使用“优惠价”“活动价”“福利价”等无具体金额的模糊福利词，但禁止任何阿拉伯数字或
+中文数字的红包金额；成稿必须使用它引用的 `taobao-compliance.json` 校验配置通过检查。

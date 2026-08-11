@@ -169,6 +169,13 @@ PROHIBITED_PERSON_STYLE_PATTERNS = (
     "老气",
 )
 UNCONFIRMED_STARTING_PRICE_PATTERN = re.compile(r"(?:\d+(?:\.\d+)?元?|几块钱)起")
+NUMERIC_REDPACKET_AMOUNT_PATTERN = re.compile(
+    r"(?:\d+(?:\.\d+)?|[零〇一二两三四五六七八九十百千万]+)\s*"
+    r"(?:元|块钱?|圆)[^，。\uFF01\uFF1F；]{0,8}红包|"
+    r"红包[^，。\uFF01\uFF1F；]{0,8}"
+    r"(?:\d+(?:\.\d+)?|[零〇一二两三四五六七八九十百千万]+)\s*"
+    r"(?:元|块钱?|圆)"
+)
 SEASON_NAMES = {
     "spring": "春季",
     "summer": "夏季",
@@ -301,6 +308,7 @@ def validate_copy(
             )
         )
     expression_scope = strip_no_split_markers(cleaned)
+    redpacket_amount_scope = expression_scope
     if campaign.platform and campaign.platform not in cleaned:
         issues.append(
             ValidationIssue(
@@ -362,6 +370,17 @@ def validate_copy(
                 IssueCode.UNCONFIRMED_PROMOTION,
                 "出现当前活动未确认的起步价或低价利益点",
                 unconfirmed_promotion.group(0),
+            )
+        )
+
+    if validation_config.forbid_numeric_redpacket_amounts and (
+        numeric_redpacket := NUMERIC_REDPACKET_AMOUNT_PATTERN.search(redpacket_amount_scope)
+    ):
+        issues.append(
+            ValidationIssue(
+                IssueCode.NUMERIC_REDPACKET_AMOUNT,
+                "当前合规配置禁止出现数字红包金额",
+                numeric_redpacket.group(0),
             )
         )
 

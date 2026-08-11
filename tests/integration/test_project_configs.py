@@ -16,6 +16,7 @@ def test_repository_project_configs_are_loadable() -> None:
     assert {path.name for path in configs} == {
         "taobao-12-no-threshold-redpacket.json",
         "taobao-25-no-threshold-redpacket.json",
+        "taobao-instant-commerce-compliance.json",
     }
     for path in configs:
         config = load_project_config(path)
@@ -93,3 +94,37 @@ def test_taobao_default_preset_is_loaded_from_12_yuan_project_config() -> None:
         TAOBAO_DEFAULT_CONFIG_PATH == PROJECT_CONFIG_ROOT / "taobao-12-no-threshold-redpacket.json"
     )
     assert config.campaign == TAOBAO_DEFAULT_CAMPAIGN
+
+
+@pytest.mark.integration
+def test_taobao_compliance_project_uses_fuzzy_benefit_and_rejects_amounts() -> None:
+    config = load_project_config(PROJECT_CONFIG_ROOT / "taobao-instant-commerce-compliance.json")
+    compliant_copy = (
+        "早八人想喝咖啡的看过来，淘宝闪购现在有大额红包，"
+        "看到附近瑞幸还有活动价，我直接选了杯拿铁。"
+        "外卖送到公司不用绕路，上班前就能喝到，"
+        "想给自己补一杯的，官方链接就在左下角。"
+    )
+
+    compliant_report = validate_copy(compliant_copy, config.campaign, config.validation_config)
+    numeric_report = validate_copy(
+        compliant_copy.replace("大额红包", "二十五元大额红包"),
+        config.campaign,
+        config.validation_config,
+    )
+
+    assert config.campaign.benefit_points[0].text == "大额红包"
+    assert config.brief.category == "咖啡奶茶炸鸡等淘宝闪购美食外卖商品"
+    assert [benefit.text for benefit in config.campaign.benefit_points] == [
+        "大额红包",
+        "优惠价",
+        "活动价",
+    ]
+    assert "可提及配送到家或外卖到家" in config.campaign.confirmed_claims
+    assert config.campaign.no_split_phrases == ()
+    assert config.validation_config.call_to_actions == ()
+    assert config.validation_config.forbid_numeric_redpacket_amounts is True
+    assert config.language_style.name == "benefit-forward-promo"
+    assert any("不得写零售日用品" in item for item in config.language_style.emphasis)
+    assert compliant_report.is_valid is True
+    assert any(issue.code.value == "NUMERIC_REDPACKET_AMOUNT" for issue in numeric_report.issues)

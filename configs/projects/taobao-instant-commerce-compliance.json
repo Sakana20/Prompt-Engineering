@@ -1,0 +1,69 @@
+{
+  "project_id": "taobao-instant-commerce-compliance",
+  "category": "咖啡奶茶炸鸡等淘宝闪购美食外卖商品",
+  "platform": "淘宝闪购",
+  "campaign_name": "淘宝闪购合规",
+  "benefit_points": [
+    {
+      "id": "primary-benefit",
+      "text": "大额红包",
+      "required": true,
+      "exact_match": true,
+      "no_split": false,
+      "priority": 1
+    },
+    {
+      "id": "discount-price-benefit",
+      "text": "优惠价",
+      "required": false,
+      "exact_match": true,
+      "no_split": false,
+      "priority": 2
+    },
+    {
+      "id": "campaign-price-benefit",
+      "text": "活动价",
+      "required": false,
+      "exact_match": true,
+      "no_split": false,
+      "priority": 3
+    }
+  ],
+  "no_split_phrases": [],
+  "campaign_forbidden_expressions": [],
+  "required_disclosures": [],
+  "confirmed_claims": [
+    "可提及瑞幸咖啡、霸王茶姬、奶茶、炸鸡等用户确认的淘宝闪购美食外卖场景",
+    "可提及配送到家或外卖到家",
+    "可提及闪购新人福利",
+    "可使用大额红包、优惠价、活动价、福利价等不带具体金额的模糊福利表达"
+  ],
+  "validation_config_path": "../validation/taobao-compliance.json",
+  "language_style": {
+    "name": "benefit-forward-promo",
+    "tone": "短视频投流口吻，福利感强，语气可以更兴奋直接，但必须围绕已确认权益表达",
+    "point_of_view": "像刚发现淘宝闪购福利后，直接提醒朋友去领、去看、去下单",
+    "sentence_style": "开头快速点出人群或美食外卖场景，随后连续给出模糊福利点，句子短促有节奏",
+    "emphasis": [
+      "必须表达大额红包；优惠价、活动价、福利价是可选模糊利益点，不需要每条都出现",
+      "可以用早八人、公主请喝、是真的这类强开头制造注意力",
+      "商品场景只围绕瑞幸咖啡、霸王茶姬、奶茶、炸鸡等已确认的美食外卖品类展开，不得写零售日用品或普通电商购物场景",
+      "行动引导必须出现，并且要自然落在口播结尾"
+    ],
+    "avoid_phrases": [
+      "薅羊毛",
+      "错过就亏",
+      "闭眼冲",
+      "太香了",
+      "补一个挺省心"
+    ],
+    "extra_rules": [
+      "数字人口播时眼睛必须直视镜头，保持自然稳定的镜头交流感",
+      "不要改写大额红包、优惠价、活动价；福利价也只能作为不带具体金额的模糊表达",
+      "严禁出现任何阿拉伯数字或中文数字的红包金额，也不得从旧项目恢复具体金额口径",
+      "结尾必须出现自然引导语，例如官方链接就在左下角、链接就在下方、赶紧冲吧，不要写披露语",
+      "不要暗示活动长期有效",
+      "不要把未确认品牌、未确认价格或未确认商品范围写成事实"
+    ]
+  }
+}

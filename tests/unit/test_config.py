@@ -112,6 +112,7 @@ def test_load_project_config_uses_referenced_validation_config(tmp_path: Path) -
         tmp_path / "promo-validation.json",
         {
             "call_to_actions": ["直播间"],
+            "forbid_numeric_redpacket_amounts": True,
         },
     )
     source = _write_config(
@@ -125,3 +126,21 @@ def test_load_project_config_uses_referenced_validation_config(tmp_path: Path) -
     config = load_project_config(source)
 
     assert config.validation_config.call_to_actions == ("直播间",)
+    assert config.validation_config.forbid_numeric_redpacket_amounts is True
+
+
+def test_load_project_config_rejects_non_boolean_redpacket_amount_rule(tmp_path: Path) -> None:
+    validation_path = _write_config(
+        tmp_path / "bad-validation.json",
+        {"forbid_numeric_redpacket_amounts": "true"},
+    )
+    source = _write_config(
+        tmp_path / "project.json",
+        {
+            "category": "咖啡",
+            "validation_config_path": validation_path.name,
+        },
+    )
+
+    with pytest.raises(ProjectConfigError, match="forbid_numeric_redpacket_amounts 必须是布尔值"):
+        load_project_config(source)

@@ -9,9 +9,14 @@ from .validation import DEFAULT_VALIDATION_CONFIG, strip_no_split_markers, tempo
 
 
 def _call_to_action_rules(validation_config: ValidationConfig) -> str:
+    rules: list[str] = []
     if validation_config.call_to_actions:
-        return "禁止出现以下行动引导：" + "、".join(validation_config.call_to_actions) + "。"
-    return "当前校验配置未设置行动引导禁用词；仍不得虚构未确认事实或触发未授权付费流程。"
+        rules.append("禁止出现以下行动引导：" + "、".join(validation_config.call_to_actions) + "。")
+    else:
+        rules.append("当前校验配置未设置行动引导禁用词；仍不得虚构未确认事实或触发未授权付费流程。")
+    if validation_config.forbid_numeric_redpacket_amounts:
+        rules.append("禁止出现任何阿拉伯数字或中文数字的红包金额；只能使用已确认的模糊福利表达。")
+    return "\n".join(rules)
 
 
 def compose_prompt_package(

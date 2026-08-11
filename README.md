@@ -21,6 +21,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 - 校验活动利益点、平台名、禁词、行动引导、`[[NO_SPLIT]]` 标签完整性、批量文案相似度及
   50% 改写比例、三模式字段边界和原文块来源去重；另外拦截饮品套用饱腹逻辑，以及平台、红包、
   津贴或配送被填入商品组成插槽。
+- 支持“淘宝闪购合规”美食外卖项目配置：沿用 25 元项目的福利前置投流口径和行动引导，
+  利益点改用大额红包、优惠价、活动价、福利价等模糊表达，并拦截阿拉伯和中文数字红包金额。
 - 为每条口播生成静态数字人首帧 Prompt，并校验人物直视镜头、商品位于人物前方桌面、
   商品不由人物手持、人物不看商品不接触商品、非商品区域无 logo 和无字幕。
 - 输出 SmartSplit 字幕稿：每个任务一份 `<task_id>.smartsplit.txt`，保留 `[[NO_SPLIT]]`。
@@ -93,6 +95,11 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,
 传入 `--config` 后，CLI 使用配置文件作为完整口径，不再叠加默认淘宝闪购预设，也不要同时
 传入 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。
 
+`configs/projects/taobao-instant-commerce-compliance.json` 是无数字红包金额的美食外卖口径，
+其品类、投流风格、配送场景和行动引导规则与 25 元项目一致，
+引用 `configs/validation/taobao-compliance.json`。后者开启
+`forbid_numeric_redpacket_amounts`，不影响现有 12 元和 25 元项目。
+
 兼容预设：
 
 - `taobao-instant-commerce-default`：从
@@ -122,6 +129,7 @@ uv run avatar-prompts compose --category 雨靴 \
 
 ```bash
 uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
+uv run avatar-prompts compose --config configs/projects/taobao-instant-commerce-compliance.json
 ```
 
 校验口播：

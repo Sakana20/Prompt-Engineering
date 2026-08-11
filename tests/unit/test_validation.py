@@ -84,6 +84,65 @@ def test_copy_allows_starting_price_when_current_campaign_confirms_it() -> None:
 
 
 @pytest.mark.parametrize(
+    "numeric_benefit",
+    (
+        "12元无门槛红包",
+        "12.5元红包",
+        "十二元大额红包",
+        "红包最高25元",
+        "红包金额二十五元",
+    ),
+)
+def test_compliance_validation_rejects_numeric_redpacket_amounts(
+    numeric_benefit: str,
+) -> None:
+    campaign = CampaignSpec(
+        platform="淘宝闪购",
+        benefit_points=(BenefitPoint(id="primary-benefit", text="大额红包", no_split=False),),
+        no_split_phrases=("淘宝闪购有大额红包",),
+    )
+    text = (
+        "下班回家想补点水果，[[NO_SPLIT]]淘宝闪购有大额红包[[/NO_SPLIT]]，"
+        f"页面还写着{numeric_benefit}。西瓜切好放进果盘，饭后大家分着吃。"
+    )
+    config = ValidationConfig(
+        min_characters=1,
+        max_characters=200,
+        banned_expressions=(),
+        call_to_actions=(),
+        forbid_numeric_redpacket_amounts=True,
+    )
+
+    report = validate_copy(text, campaign, config)
+
+    assert any(issue.code is IssueCode.NUMERIC_REDPACKET_AMOUNT for issue in report.issues)
+
+
+def test_compliance_validation_allows_fuzzy_benefit_and_unrelated_numeric_price() -> None:
+    campaign = CampaignSpec(
+        platform="淘宝闪购",
+        benefit_points=(BenefitPoint(id="primary-benefit", text="大额红包", no_split=False),),
+        no_split_phrases=("淘宝闪购有大额红包",),
+        confirmed_claims=("商品价格12元",),
+    )
+    text = (
+        "下班回家想补点水果，[[NO_SPLIT]]淘宝闪购有大额红包[[/NO_SPLIT]]，"
+        "页面显示商品价格12元。西瓜切好放进果盘，饭后大家分着吃，买起来是福利价。"
+    )
+    config = ValidationConfig(
+        min_characters=1,
+        max_characters=200,
+        banned_expressions=(),
+        call_to_actions=(),
+        forbid_numeric_redpacket_amounts=True,
+    )
+
+    report = validate_copy(text, campaign, config)
+
+    assert not any(issue.code is IssueCode.NUMERIC_REDPACKET_AMOUNT for issue in report.issues)
+
+
+@pytest.mark.parametrize(
     ("month", "expected_season"),
     [(3, "春季"), (6, "夏季"), (9, "秋季"), (12, "冬季")],
 )

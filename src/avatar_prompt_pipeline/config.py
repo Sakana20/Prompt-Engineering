@@ -71,6 +71,7 @@ _ALLOWED_VALIDATION_CONFIG_KEYS = {
     "banned_expressions",
     "call_to_actions",
     "format_prefixes",
+    "forbid_numeric_redpacket_amounts",
 }
 
 
@@ -241,6 +242,11 @@ def validation_config_from_mapping(data: dict[str, Any]) -> ValidationConfig:
                 _expect_string_tuple(data.get("format_prefixes"), field="format_prefixes")
                 if "format_prefixes" in data
                 else default_config.format_prefixes
+            ),
+            forbid_numeric_redpacket_amounts=_expect_bool(
+                data.get("forbid_numeric_redpacket_amounts"),
+                field="forbid_numeric_redpacket_amounts",
+                default=default_config.forbid_numeric_redpacket_amounts,
             ),
         )
     except BriefValidationError as exc:
