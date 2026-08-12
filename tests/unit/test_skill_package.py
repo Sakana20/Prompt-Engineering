@@ -37,6 +37,16 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert "创建 ASR 候选" in skill
     assert "Preserve the FunASR `.venv/bin/python` symlink path" in skill
     assert "never resolve it to the base interpreter" in skill
+    assert "Preserve the ASR transcript and token timeline verbatim" in skill
+    assert "Never\n  infer missing punctuation, correct words, change case" in skill
+    copy_candidate_schema = json.loads(
+        (SKILL_ROOT / "references" / "copy-learning-candidate.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    copy_properties = copy_candidate_schema["properties"]
+    assert "Verbatim ASR text" in copy_properties["raw_transcript"]["description"]
+    assert "deterministic whitespace" in copy_properties["edited_transcript"]["description"]
     assert "browser-supplied" in skill
     assert "filesystem path" in skill
 

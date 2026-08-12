@@ -45,7 +45,7 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-4" in index
+    assert "app.js?v=20260812-5" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     assert '"/api/learning/media"' in app_js
@@ -55,6 +55,7 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert "learning-media-player" in app_js
     assert "失败素材已保留勾选" in app_js
     assert "learning-failure-list" in app_js
+    assert "不会改字、猜测标点或改变原始时间轴" in app_js
     assert "当前审核台服务版本过旧" in app_js
     assert 'cache: "no-store"' in app_js
 
@@ -237,7 +238,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-4")
+        connection.request("GET", "/app.js?v=20260812-5")
         response = connection.getresponse()
         response.read()
         assert response.status == 200

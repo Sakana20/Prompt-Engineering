@@ -1130,11 +1130,14 @@ function renderLearningDetail() {
     : `来源：${escapeHtml(candidate.source_label)}`;
   const publicationHint = candidate.status === "approved"
     ? `<div class="publication-hint">待 Codex 生成发布清单并通过 CLI 发布</div>` : "";
+  const draftHint = isCopy
+    ? `<span class="helper-text">初始稿只整理中文逐字空格和明显重复标点；不会改字、猜测标点或改变原始时间轴。</span>`
+    : "";
   elements.learningDetail.innerHTML = `<article class="learning-form" data-candidate-id="${escapeHtml(candidate.candidate_id)}" data-revision="${candidate.revision}">
     <div class="learning-meta"><strong>${escapeHtml(candidate.candidate_id)}</strong><span>revision ${candidate.revision} · ${escapeHtml(candidate.status)}</span></div>
     <div class="field-value">${sourceMeta}</div>
     <section class="field-block"><div class="field-name">不可变原文</div><div class="field-value raw-content">${escapeHtml(raw)}</div></section>
-    <label class="field-block"><span class="field-name">可编辑稿</span><textarea id="learning-edited-text" class="field textarea" rows="10" ${canSave ? "" : "disabled"}>${escapeHtml(edited)}</textarea></label>
+    <label class="field-block"><span class="field-name">可编辑稿</span><textarea id="learning-edited-text" class="field textarea" rows="10" ${canSave ? "" : "disabled"}>${escapeHtml(edited)}</textarea>${draftHint}</label>
     <div class="learning-structured">${structured.join("")}</div>
     <section class="field-block"><div class="field-name">风险</div><div class="field-value">${escapeHtml((candidate.risk_tags || []).join("、") || "无")}</div></section>
     <section class="field-block"><div class="field-name">相似项</div><div class="field-value">${escapeHtml((candidate.similarity_hits || []).join("、") || "无")}</div></section>

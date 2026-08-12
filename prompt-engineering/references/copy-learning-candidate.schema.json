@@ -25,8 +25,17 @@
     "asr_cache_key": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "provider": {"const": "paraformer-zh"},
     "model": {"type": "string", "minLength": 1},
-    "raw_transcript": {"type": "string", "minLength": 1, "readOnly": true},
-    "edited_transcript": {"type": "string", "minLength": 1},
+    "raw_transcript": {
+      "type": "string",
+      "minLength": 1,
+      "readOnly": true,
+      "description": "Verbatim ASR text; whitespace, punctuation, case, and wording are immutable."
+    },
+    "edited_transcript": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Review draft initialized by deterministic whitespace and repeated-punctuation cleanup."
+    },
     "word_timeline": {"type": "array", "items": {"$ref": "#/$defs/token"}},
     "audio_conversion": {"type": "array", "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "minItems": 2, "maxItems": 2}},
     "risk_tags": {"$ref": "#/$defs/strings"},

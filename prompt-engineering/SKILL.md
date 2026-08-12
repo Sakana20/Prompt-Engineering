@@ -245,6 +245,10 @@ and the candidate/publication schemas before operating them.
   and backend reason in the workbench, preserve failed selections for retry, and open a successful
   or reused candidate as the review draft. Preserve the FunASR `.venv/bin/python` symlink path;
   never resolve it to the base interpreter.
+  Preserve the ASR transcript and token timeline verbatim. Initialize only the editable draft with
+  deterministic cleanup: remove Chinese character-separating whitespace, preserve one space
+  between adjacent ASCII word characters, and collapse identical repeated punctuation. Never
+  infer missing punctuation, correct words, change case, or alter token timestamps.
 - Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed

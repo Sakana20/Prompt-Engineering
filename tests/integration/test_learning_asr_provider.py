@@ -9,6 +9,7 @@ from avatar_prompt_pipeline.learning.asr_provider import (
     AsrWorkerConfig,
     ParaformerSubprocessProvider,
 )
+from avatar_prompt_pipeline.learning.models import CandidateKind, CopyLearningCandidate
 from avatar_prompt_pipeline.learning.service import LearningService
 from avatar_prompt_pipeline.learning.store import LearningStore
 
@@ -140,7 +141,22 @@ for name in ('input','output','work-dir','model-dir','device'):
     p.add_argument('--'+name, required=True)
 a=p.parse_args(); marker=Path({str(marker)!r})
 marker.write_text((marker.read_text() if marker.exists() else '')+'call\\n')
-payload={{'schema_version':'1.0','provider':'paraformer-zh','model':'fake','source_media':str(Path(a.input).resolve()),'asr_audio':str(Path(a.input).resolve()),'audio_conversion':{{}},'text':'缓存识别','tokens':[{{'index':0,'text':'缓存','start_ms':0,'end_ms':100,'source':'paraformer-zh'}}]}}
+payload={{
+    'schema_version':'1.0',
+    'provider':'paraformer-zh',
+    'model':'fake',
+    'source_media':str(Path(a.input).resolve()),
+    'asr_audio':str(Path(a.input).resolve()),
+    'audio_conversion':{{}},
+    'text':'缓 存 ASR 识 别\uff01\uff01',
+    'tokens':[{{
+        'index':0,
+        'text':'缓存',
+        'start_ms':0,
+        'end_ms':100,
+        'source':'paraformer-zh',
+    }}],
+}}
 Path(a.output).write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
 """,
     )
@@ -155,4 +171,17 @@ Path(a.output).write_text(json.dumps(payload, ensure_ascii=False), encoding='utf
     assert first["succeeded"] == 1
     assert second["reused"] == 1
     assert marker.read_text().splitlines() == ["call"]
+    candidate_ids = first["candidate_ids"]
+    assert isinstance(candidate_ids, list)
+    candidate = service.get(CandidateKind.COPY, str(candidate_ids[0]))
+    assert isinstance(candidate, CopyLearningCandidate)
+    assert candidate.raw_transcript == "缓 存 ASR 识 别\uff01\uff01"
+    assert candidate.edited_transcript == "缓存ASR识别\uff01"
+    candidate_root = tmp_path / "learning" / "copy" / "candidates" / str(candidate.candidate_id)
+    assert (candidate_root / "raw_transcript.txt").read_text(encoding="utf-8") == (
+        "缓 存 ASR 识 别\uff01\uff01"
+    )
+    assert (candidate_root / "edited_transcript.txt").read_text(encoding="utf-8") == (
+        "缓存ASR识别\uff01"
+    )
     assert not (tmp_path / "learning" / "person").exists()

@@ -59,6 +59,11 @@ FunASR 源码补救，也不得对 `.venv/bin/python` 调用 `Path.resolve()`，
 虚拟环境。审核台批次响应将失败项收敛为 `name` 与 `error`；前端必须逐项展示并保留
 失败选择，不能只显示失败数量或清空选择。
 
+`learning.text_cleanup.normalize_asr_editable_draft(...)` 只用于新建文案候选的初始可编辑稿。
+`raw_transcript`、`word_timeline` 和 worker 结果不得经过该函数；函数只能确定性整理空白与相同
+重复标点，不能做纠错、大小写改写或标点推断。ASCII 字母数字两侧都是 ASCII 词字符时保留
+一个空格，其余 ASR 分隔空白移除。
+
 ## 代码标准
 
 - Python 3.12+，公共边界完整类型标注；

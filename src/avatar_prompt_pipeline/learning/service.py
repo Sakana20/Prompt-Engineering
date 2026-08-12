@@ -24,6 +24,7 @@ from .models import (
     Revision,
 )
 from .store import LearningStore, atomic_write_json
+from .text_cleanup import normalize_asr_editable_draft
 from .validation import (
     LearningValidationError,
     allowed_transition,
@@ -184,6 +185,7 @@ class LearningService:
         result: AsrWorkerResult,
     ) -> CopyLearningCandidate:
         transcript = _clean_text(result.text, field="ASR 识别全文")
+        editable_draft = normalize_asr_editable_draft(transcript)
         timestamp = _now()
         previous = tuple(
             (str(item.candidate_id), item.edited_transcript)
@@ -203,11 +205,11 @@ class LearningService:
             provider=result.provider,
             model=result.model,
             raw_transcript=transcript,
-            edited_transcript=transcript,
+            edited_transcript=editable_draft,
             word_timeline=result.tokens,
             audio_conversion=result.audio_conversion,
-            risk_tags=detect_risks(transcript, kind=CandidateKind.COPY),
-            similarity_hits=duplicate_warnings(transcript, previous),
+            risk_tags=detect_risks(editable_draft, kind=CandidateKind.COPY),
+            similarity_hits=duplicate_warnings(editable_draft, previous),
         )
         created = self.store.create(candidate)
         if not isinstance(created, CopyLearningCandidate):

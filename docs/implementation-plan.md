@@ -17,6 +17,8 @@
   资源防缓存；
 - FunASR worker 使用隔离 Python 环境并在识别前预检依赖导入，避免继承 Prompt Engineering
   的 Python 环境；
+- 新候选保留不可变 ASR 原文和时间轴，初始可编辑稿只执行确定性空白与重复标点清洗，不做
+  语义纠错或标点推断；
 - 补齐单元、集成、E2E、API、Skill/schema 与回归测试。真实模型 smoke test 仍以用户提供短
   媒体为前提，不作为默认测试门禁。
 
