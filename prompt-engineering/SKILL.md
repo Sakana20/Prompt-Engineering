@@ -239,7 +239,8 @@ and the candidate/publication schemas before operating them.
   opening, scanning, refreshing, or reviewing the workbench must never start transcription. The
   copy-learning workbench may list the configured date directory and transcribe only media IDs the
   user explicitly selects before clicking `创建 ASR 候选`; it must never accept a browser-supplied
-  filesystem path.
+  filesystem path. Selecting a listed item may preview the last-selected video or audio through the
+  server-revalidated media ID; previewing must never start transcription.
 - Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed

@@ -503,6 +503,11 @@ input[type="color"] {
   background: var(--surface-2);
 }
 
+.learning-media-item.active {
+  border-color: var(--accent);
+  background: #18251f;
+}
+
 .learning-media-info {
   display: grid;
   gap: 3px;
@@ -513,6 +518,37 @@ input[type="color"] {
   overflow-wrap: anywhere;
   font-size: 13px;
   font-weight: 700;
+}
+
+.learning-preview {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.learning-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learning-preview-heading h2 {
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+
+.learning-media-player {
+  width: 100%;
+  max-height: calc(100vh - 290px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #050607;
+}
+
+.audio-player {
+  min-height: 54px;
 }
 
 .raw-content {

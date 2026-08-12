@@ -48,7 +48,9 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 `POST /api/learning/transcribe` 提交 date 与媒体 ID。客户端路径、嵌套文件和过期 ID 必须被
 拒绝；日期和扫描反馈显示在左栏，媒体多选显示在中间主列表。静态资源禁用缓存；若媒体 API
 返回 404，页面提示关闭并重新运行 `tools/skill_reviewer/run.sh`。审核台加载、扫描、刷新和
-候选审核操作都不得自动触发转写。
+候选审核操作都不得自动触发转写。勾选媒体会在右侧通过
+`GET /api/learning/media-content?date=...&id=...` 打开原生视频或音频预览；接口支持单段 HTTP
+Range，并复用服务端媒体 ID 重新校验，不能接收或返回客户端路径。
 
 ## 代码标准
 

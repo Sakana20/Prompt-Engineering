@@ -143,6 +143,7 @@ const learningState = {
   selectedId: "",
   media: [],
   selectedMediaIds: new Set(),
+  previewMediaId: "",
   mediaLoading: false,
   mediaError: "",
   transcribing: false
@@ -923,6 +924,7 @@ function renderLearningMedia() {
   learningState.selectedMediaIds = new Set(
     [...learningState.selectedMediaIds].filter((mediaId) => mediaIds.has(mediaId))
   );
+  if (!mediaIds.has(learningState.previewMediaId)) learningState.previewMediaId = "";
   elements.learningMediaCount.textContent = `${learningState.media.length} 个媒体 · 已选 ${learningState.selectedMediaIds.size}`;
   elements.learningMediaSelectAll.checked = Boolean(learningState.media.length)
     && learningState.selectedMediaIds.size === learningState.media.length;
@@ -949,7 +951,8 @@ function renderLearningMedia() {
     const candidateBadge = candidate
       ? `<span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)} · r${candidate.revision}</span>`
       : `<span class="status-badge idle">未识别</span>`;
-    return `<label class="learning-media-item">
+    const active = item.id === learningState.previewMediaId ? " active" : "";
+    return `<label class="learning-media-item${active}">
       <input type="checkbox" data-learning-media-id="${escapeHtml(item.id)}" ${learningState.selectedMediaIds.has(item.id) ? "checked" : ""} />
       <span class="learning-media-info">
         <span class="learning-media-title">${escapeHtml(item.name)}</span>
@@ -987,6 +990,7 @@ async function loadLearningMedia() {
   } finally {
     learningState.mediaLoading = false;
     renderLearningMedia();
+    renderLearningDetail();
   }
 }
 
@@ -1061,6 +1065,25 @@ function structuredField(name, label, candidate) {
 }
 
 function renderLearningDetail() {
+  const preview = learningState.kind === "copy"
+    ? learningState.media.find((item) => item.id === learningState.previewMediaId) : null;
+  if (preview) {
+    const previewUrl = `/api/learning/media-content?date=${encodeURIComponent(elements.learningMediaDate.value || localDateValue())}&id=${encodeURIComponent(preview.id)}`;
+    const audio = [".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"].includes(preview.suffix);
+    const player = audio
+      ? `<audio class="learning-media-player audio-player" controls preload="metadata" src="${previewUrl}"></audio>`
+      : `<video class="learning-media-player" controls preload="metadata" playsinline src="${previewUrl}"></video>`;
+    elements.learningDetail.innerHTML = `<article class="learning-preview">
+      <div class="learning-preview-heading">
+        <div><div class="field-name">素材预览</div><h2>${escapeHtml(preview.name)}</h2></div>
+        <span class="status-badge idle">${audio ? "音频" : "视频"}</span>
+      </div>
+      ${player}
+      <div class="field-value">${formatBytes(preview.size)} · ${formatModified(preview.modified)}</div>
+      <div class="helper-text">预览只读取已扫描素材，不会启动 ASR。勾选其他素材可切换预览。</div>
+    </article>`;
+    return;
+  }
   const candidate = learningState.candidates.find((item) => item.candidate_id === learningState.selectedId);
   if (!candidate) {
     elements.learningDetail.innerHTML = `<div class="empty-state compact-empty"><p>选择一条学习候选查看详情</p></div>`;
@@ -1160,6 +1183,7 @@ elements.workbenchToggle.addEventListener("click", () => setWorkbench(learningSt
 document.querySelectorAll('input[name="learning-kind"]').forEach((radio) => radio.addEventListener("change", () => {
   learningState.kind = radio.value;
   learningState.selectedId = "";
+  learningState.previewMediaId = "";
   renderLearningHeader();
   updateLearningPanelVisibility();
   loadLearningCandidates();
@@ -1178,19 +1202,32 @@ elements.learningMediaDate.addEventListener("change", () => {
 elements.learningMediaSelectAll.addEventListener("change", () => {
   learningState.selectedMediaIds = elements.learningMediaSelectAll.checked
     ? new Set(learningState.media.map((item) => item.id)) : new Set();
+  learningState.previewMediaId = elements.learningMediaSelectAll.checked
+    ? (learningState.media[0]?.id || "") : "";
   renderLearningMedia();
+  renderLearningDetail();
 });
 elements.learningMediaList.addEventListener("change", (event) => {
   const checkbox = event.target.closest("[data-learning-media-id]");
   if (!checkbox) return;
-  if (checkbox.checked) learningState.selectedMediaIds.add(checkbox.dataset.learningMediaId);
-  else learningState.selectedMediaIds.delete(checkbox.dataset.learningMediaId);
+  if (checkbox.checked) {
+    learningState.selectedMediaIds.add(checkbox.dataset.learningMediaId);
+    learningState.previewMediaId = checkbox.dataset.learningMediaId;
+    learningState.selectedId = "";
+  } else {
+    learningState.selectedMediaIds.delete(checkbox.dataset.learningMediaId);
+    if (learningState.previewMediaId === checkbox.dataset.learningMediaId) {
+      learningState.previewMediaId = [...learningState.selectedMediaIds].at(-1) || "";
+    }
+  }
   renderLearningMedia();
+  renderLearningDetail();
 });
 elements.learningMediaTranscribe.addEventListener("click", transcribeSelectedLearningMedia);
 elements.learningList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-learning-id]");
   if (!button) return;
+  learningState.previewMediaId = "";
   learningState.selectedId = button.dataset.learningId;
   renderLearningList();
   renderLearningDetail();

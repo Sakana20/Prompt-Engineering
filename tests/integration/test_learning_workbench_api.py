@@ -45,11 +45,14 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-2" in index
+    assert "app.js?v=20260812-3" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     assert '"/api/learning/media"' in app_js
     assert '"/api/learning/transcribe"' in app_js
+    assert '"/api/learning/media-content"' not in app_js
+    assert "/api/learning/media-content?date=" in app_js
+    assert "learning-media-player" in app_js
     assert "当前审核台服务版本过旧" in app_js
     assert 'cache: "no-store"' in app_js
 
@@ -131,6 +134,29 @@ def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
         assert all("path" not in item for item in media)
 
         selected_id = str(media[0]["id"])
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        connection.request(
+            "GET",
+            f"/api/learning/media-content?date=2026-08-12&id={selected_id}",
+            headers={"Range": "bytes=1-4"},
+        )
+        preview = connection.getresponse()
+        preview_body = preview.read()
+        assert preview.status == 206
+        assert preview.getheader("Accept-Ranges") == "bytes"
+        assert preview.getheader("Content-Range") == "bytes 1-4/9"
+        assert preview.getheader("Content-Type") == "video/mp4"
+        assert preview_body == b"ideo"
+        connection.close()
+
+        status, invalid_preview = _request(
+            port,
+            "GET",
+            "/api/learning/media-content?date=2026-08-12&id=not-a-server-media-id",
+        )
+        assert status == 422
+        assert "媒体选择已失效" in str(invalid_preview["error"])
+
         status, result = _request(
             port,
             "POST",
@@ -170,7 +196,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-2")
+        connection.request("GET", "/app.js?v=20260812-3")
         response = connection.getresponse()
         response.read()
         assert response.status == 200

@@ -41,6 +41,7 @@ DEFAULT_LEARNING_ROOT = Path(__file__).resolve().parents[2] / "learning"
 LEARNING_ROOT = DEFAULT_LEARNING_ROOT
 MAX_JSON_BODY_BYTES = 1024 * 1024
 MAX_MEDIA_SELECTION = 100
+MEDIA_CHUNK_SIZE = 1024 * 1024
 
 
 def _json_bytes(payload: object) -> bytes:
@@ -327,6 +328,27 @@ def _resolve_learning_media(source_date: date, media_ids: tuple[str, ...]) -> tu
     return tuple(resolved)
 
 
+def _media_byte_range(value: str, size: int) -> tuple[int, int] | None:
+    match = re.fullmatch(r"bytes=(\d*)-(\d*)", value.strip())
+    if match is None or size <= 0:
+        return None
+    start_value, end_value = match.groups()
+    if not start_value and not end_value:
+        return None
+    if start_value:
+        start = int(start_value)
+        end = int(end_value) if end_value else size - 1
+    else:
+        suffix_length = int(end_value)
+        if suffix_length <= 0:
+            return None
+        start = max(0, size - suffix_length)
+        end = size - 1
+    if start >= size or start > end:
+        return None
+    return start, min(end, size - 1)
+
+
 def _database_tables(path: Path) -> list[dict[str, object]]:
     with sqlite3.connect(path) as connection:
         connection.row_factory = sqlite3.Row
@@ -438,6 +460,9 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/learning/media":
             self._handle_learning_media(parsed.query)
+            return
+        if parsed.path == "/api/learning/media-content":
+            self._handle_learning_media_content(parsed.query)
             return
         learning_route = _learning_candidate_route(parsed.path)
         if learning_route is not None and learning_route[2] == "":
@@ -565,6 +590,53 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
                 if isinstance(error, LearningValidationError)
                 else LearningValidationError("读取每日素材目录失败")
             )
+
+    def _handle_learning_media_content(self, query: str) -> None:
+        try:
+            params = parse_qs(query)
+            source_date = _learning_media_date(params.get("date", [""])[0])
+            media_id = params.get("id", [""])[0]
+            path = _resolve_learning_media(source_date, (media_id,))[0]
+            size = path.stat().st_size
+        except (OSError, LearningValidationError) as error:
+            self._handle_learning_error(
+                error
+                if isinstance(error, LearningValidationError)
+                else LearningValidationError("读取媒体预览失败")
+            )
+            return
+
+        range_header = self.headers.get("Range", "")
+        selected_range = _media_byte_range(range_header, size) if range_header else None
+        if range_header and selected_range is None:
+            self.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+            self.send_header("Content-Range", f"bytes */{size}")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        start, end = selected_range if selected_range is not None else (0, size - 1)
+        content_length = max(0, end - start + 1)
+        status = HTTPStatus.PARTIAL_CONTENT if selected_range is not None else HTTPStatus.OK
+        self.send_response(status)
+        self.send_header("Content-Type", self.guess_type(path))
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(content_length))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        if selected_range is not None:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.end_headers()
+        try:
+            with path.open("rb") as handle:
+                handle.seek(start)
+                remaining = content_length
+                while remaining > 0:
+                    chunk = handle.read(min(MEDIA_CHUNK_SIZE, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
+        except OSError:
+            return
 
     def _handle_learning_transcribe(self) -> None:
         try:
