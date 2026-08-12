@@ -62,12 +62,18 @@ FunASR 源码补救，也不得对 `.venv/bin/python` 调用 `Path.resolve()`，
 `learning.text_cleanup.normalize_asr_editable_draft(...)` 只用于新建文案候选的初始可编辑稿。
 `raw_transcript`、`word_timeline` 和 worker 结果不得经过该函数；函数只能确定性整理空白与相同
 重复标点，不能做纠错、大小写改写或标点推断。ASCII 字母数字两侧都是 ASCII 词字符时保留
-一个空格，其余 ASR 分隔空白移除。
+一个空格，其余 ASR 分隔空白移除。开发和回归测试必须区分两种情况：ASR 已经返回的标点应
+保留并折叠相同重复项；ASR 未返回的标点不得由初始化逻辑补写。例如
+`以 前 上 班 我 忍 气 吞 声` 的初始编辑稿只能是 `以前上班我忍气吞声`。人工保存的补标点或
+纠错版本是新的 revision，不能覆盖 `raw_transcript.txt`。
 
 文案候选结构化字段的合法值集中在 `learning.options`。审核台从候选列表响应读取标签和说明，
-不得自行新增自由文本值。提交审核要求非空品类族、消费需求和来源用途。`DELETE` 候选接口必须
-提供 `expected_revision`，只能归档非 approved/published 候选；服务端移动完整目录到 trash，
-不得删除源媒体或正式发布资源。
+不得自行新增自由文本值。品类族、消费需求和季节限制渲染为单选下拉；来源用途渲染为
+`source_fill` / `human_rewrite` 复选项。提交审核要求非空品类族、消费需求和至少一个来源用途。
+`DELETE /api/learning/candidates/{kind}/{candidate_id}` 必须提供 `expected_revision`，只能归档非
+approved/published 候选；服务端移动完整目录到 trash，不得删除源媒体或正式发布资源。删除后
+必须重新读取媒体映射，使源媒体显示为未识别；再次转写必须创建新 candidate ID，不能复活旧
+候选或覆盖 trash 中的审计记录。
 
 ## 代码标准
 
