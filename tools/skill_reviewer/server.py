@@ -9,12 +9,14 @@ import re
 import sqlite3
 import tempfile
 import uuid
+from datetime import date, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from avatar_prompt_pipeline.learning.asr_provider import SUPPORTED_MEDIA_SUFFIXES
 from avatar_prompt_pipeline.learning.models import CandidateKind, LearningStatus
 from avatar_prompt_pipeline.learning.service import LearningService
 from avatar_prompt_pipeline.learning.store import (
@@ -27,6 +29,9 @@ APP_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = Path(tempfile.gettempdir()) / "prompt-engineering-skill-reviewer"
 DAILY_SOURCE_ROOT = Path("/Users/sakana/Desktop/Work/2026")
 DAILY_SOURCE_SUFFIX = Path("淘宝闪购/素材/Codex")
+DEFAULT_DAILY_MEDIA_ROOT = Path("/Users/sakana/Desktop/Work/2026")
+DAILY_MEDIA_ROOT = DEFAULT_DAILY_MEDIA_ROOT
+DAILY_MEDIA_SUFFIX = Path("淘宝闪购/素材")
 DATE_DIRECTORY_PATTERN = re.compile(r"^\d{2}\.\d{2}$")
 SOURCE_FILE_SUFFIXES = {".csv", ".db", ".sqlite", ".sqlite3"}
 SQLITE_SUFFIXES = {".db", ".sqlite", ".sqlite3"}
@@ -35,6 +40,7 @@ SOURCE_FILES: dict[str, Path] = {}
 DEFAULT_LEARNING_ROOT = Path(__file__).resolve().parents[2] / "learning"
 LEARNING_ROOT = DEFAULT_LEARNING_ROOT
 MAX_JSON_BODY_BYTES = 1024 * 1024
+MAX_MEDIA_SELECTION = 100
 
 
 def _json_bytes(payload: object) -> bytes:
@@ -228,6 +234,99 @@ def _source_path_from_query(query: str) -> Path | None:
     return path
 
 
+def _learning_media_date(value: str) -> date:
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise LearningValidationError("date 必须是有效的 YYYY-MM-DD") from exc
+    configured_year = DAILY_MEDIA_ROOT.name
+    if configured_year.isdigit() and parsed.year != int(configured_year):
+        raise LearningValidationError(f"date 必须位于每日素材年份 {configured_year}")
+    return parsed
+
+
+def _learning_media_directory(source_date: date) -> Path:
+    return DAILY_MEDIA_ROOT / source_date.strftime("%m.%d") / DAILY_MEDIA_SUFFIX
+
+
+def _is_allowed_learning_media(path: Path, directory: Path) -> bool:
+    resolved = path.expanduser().resolve()
+    return (
+        resolved.parent == directory.expanduser().resolve()
+        and resolved.is_file()
+        and resolved.suffix.lower() in SUPPORTED_MEDIA_SUFFIXES
+    )
+
+
+def _discover_learning_media(source_date: date) -> tuple[tuple[str, Path], ...]:
+    directory = _learning_media_directory(source_date).expanduser().resolve()
+    if not directory.is_dir():
+        return ()
+    discovered: list[tuple[str, Path]] = []
+    for path in sorted(directory.iterdir(), key=lambda item: item.name.casefold()):
+        if not _is_allowed_learning_media(path, directory):
+            continue
+        resolved = path.resolve()
+        media_id = uuid.uuid5(uuid.NAMESPACE_URL, str(resolved)).hex
+        discovered.append((media_id, resolved))
+    return tuple(discovered)
+
+
+def _learning_media_payload(source_date: date, service: LearningService) -> dict[str, object]:
+    directory = _learning_media_directory(source_date).expanduser().resolve()
+    candidates_by_source: dict[Path, dict[str, object]] = {}
+    for candidate in service.list(CandidateKind.COPY):
+        data = candidate.to_dict()
+        source_media = data.get("source_media")
+        if isinstance(source_media, str):
+            candidates_by_source[Path(source_media).expanduser().resolve()] = data
+
+    media: list[dict[str, object]] = []
+    for media_id, resolved in _discover_learning_media(source_date):
+        stat = resolved.stat()
+        item: dict[str, object] = {
+            "id": media_id,
+            "name": resolved.name,
+            "suffix": resolved.suffix.lower(),
+            "size": stat.st_size,
+            "modified": stat.st_mtime,
+        }
+        candidate = candidates_by_source.get(resolved)
+        if candidate is not None:
+            item["candidate"] = {
+                "candidate_id": candidate["candidate_id"],
+                "status": candidate["status"],
+                "revision": candidate["revision"],
+            }
+        media.append(item)
+    return {
+        "schema_version": "1.0",
+        "date": source_date.isoformat(),
+        "root": str(directory),
+        "exists": directory.is_dir(),
+        "count": len(media),
+        "media": media,
+    }
+
+
+def _resolve_learning_media(source_date: date, media_ids: tuple[str, ...]) -> tuple[Path, ...]:
+    if not media_ids:
+        raise LearningValidationError("media_ids 至少选择一项")
+    if len(media_ids) > MAX_MEDIA_SELECTION:
+        raise LearningValidationError(f"单次最多选择 {MAX_MEDIA_SELECTION} 个媒体")
+    if len(set(media_ids)) != len(media_ids):
+        raise LearningValidationError("media_ids 不得重复")
+    directory = _learning_media_directory(source_date).expanduser().resolve()
+    available = dict(_discover_learning_media(source_date))
+    resolved: list[Path] = []
+    for media_id in media_ids:
+        path = available.get(media_id)
+        if path is None or not _is_allowed_learning_media(path, directory):
+            raise LearningValidationError("媒体选择已失效，请刷新素材列表后重试")
+        resolved.append(path)
+    return tuple(resolved)
+
+
 def _database_tables(path: Path) -> list[dict[str, object]]:
     with sqlite3.connect(path) as connection:
         connection.row_factory = sqlite3.Row
@@ -332,6 +431,9 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/learning/candidates":
             self._handle_learning_list(parsed.query)
             return
+        if parsed.path == "/api/learning/media":
+            self._handle_learning_media(parsed.query)
+            return
         learning_route = _learning_candidate_route(parsed.path)
         if learning_route is not None and learning_route[2] == "":
             self._handle_learning_detail(learning_route[0], learning_route[1])
@@ -348,6 +450,9 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/learning/person-candidates":
             self._handle_learning_create_person()
+            return
+        if parsed.path == "/api/learning/transcribe":
+            self._handle_learning_transcribe()
             return
         learning_route = _learning_candidate_route(parsed.path)
         if learning_route is not None and learning_route[2]:
@@ -442,6 +547,35 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             self._send_json(candidate.to_dict())
         except (ValueError, LearningValidationError, CandidateNotFoundError) as error:
             self._handle_learning_error(_as_learning_error(error, "kind 参数无效"))
+
+    def _handle_learning_media(self, query: str) -> None:
+        try:
+            params = parse_qs(query)
+            date_value = params.get("date", [datetime.now().astimezone().date().isoformat()])[0]
+            source_date = _learning_media_date(date_value)
+            self._send_json(_learning_media_payload(source_date, self._learning_service()))
+        except (OSError, LearningValidationError) as error:
+            self._handle_learning_error(
+                error
+                if isinstance(error, LearningValidationError)
+                else LearningValidationError("读取每日素材目录失败")
+            )
+
+    def _handle_learning_transcribe(self) -> None:
+        try:
+            data = self._read_json_object()
+            _strict_keys(data, allowed={"date", "media_ids"}, required={"date", "media_ids"})
+            source_date = _learning_media_date(_body_string(data, "date"))
+            media_ids = _body_string_tuple(data, "media_ids")
+            inputs = _resolve_learning_media(source_date, media_ids)
+            result = self._learning_service().transcribe(inputs, source_date=source_date)
+            self._send_json(result)
+        except (OSError, LearningValidationError) as error:
+            self._handle_learning_error(
+                error
+                if isinstance(error, LearningValidationError)
+                else LearningValidationError("每日素材转写准备失败")
+            )
 
     def _handle_learning_create_person(self) -> None:
         try:
@@ -660,12 +794,14 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8765, type=int)
     parser.add_argument("--learning-root", type=Path, default=DEFAULT_LEARNING_ROOT)
+    parser.add_argument("--daily-media-root", type=Path, default=DEFAULT_DAILY_MEDIA_ROOT)
     args = parser.parse_args()
 
     if args.host not in {"127.0.0.1", "localhost", "::1"}:
         raise SystemExit("审核台只允许绑定 loopback host")
-    global LEARNING_ROOT
+    global DAILY_MEDIA_ROOT, LEARNING_ROOT
     LEARNING_ROOT = args.learning_root.expanduser().resolve()
+    DAILY_MEDIA_ROOT = args.daily_media_root.expanduser().resolve()
 
     server = ThreadingHTTPServer((args.host, args.port), SkillReviewerHandler)
     print(f"Skill reviewer: http://{args.host}:{args.port}")

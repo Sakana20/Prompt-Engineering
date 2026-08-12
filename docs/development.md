@@ -43,8 +43,10 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 
 每日 ASR 学习素材与上述 CSV 入口分开：默认目录为
 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。`learning-transcribe` 省略
-`--input` 时用本地日期或 `--date` 解析该目录，只扫描当前一层。审核台加载、刷新和审核操作
-都不得自动触发转写。
+`--input` 时用本地日期或 `--date` 解析该目录，只扫描当前一层。学习工作台的媒体列表使用
+`GET /api/learning/media`；只有点击“创建 ASR 候选”才向
+`POST /api/learning/transcribe` 提交 date 与媒体 ID。客户端路径、嵌套文件和过期 ID 必须被
+拒绝；审核台加载、扫描、刷新和候选审核操作都不得自动触发转写。
 
 ## 代码标准
 

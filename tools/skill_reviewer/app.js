@@ -117,6 +117,15 @@ Object.assign(elements, {
   workbenchSubtitle: document.getElementById("workbench-subtitle"),
   learningRefresh: document.getElementById("learning-refresh"),
   learningStatusFilter: document.getElementById("learning-status-filter"),
+  learningMediaPanel: document.getElementById("learning-media-panel"),
+  learningMediaDate: document.getElementById("learning-media-date"),
+  learningMediaRefresh: document.getElementById("learning-media-refresh"),
+  learningMediaRoot: document.getElementById("learning-media-root"),
+  learningMediaSelectAll: document.getElementById("learning-media-select-all"),
+  learningMediaCount: document.getElementById("learning-media-count"),
+  learningMediaList: document.getElementById("learning-media-list"),
+  learningMediaTranscribe: document.getElementById("learning-media-transcribe"),
+  learningMediaStatus: document.getElementById("learning-media-status"),
   learningAddPersonPanel: document.getElementById("learning-add-person-panel"),
   learningNewSource: document.getElementById("learning-new-source"),
   learningNewPrompt: document.getElementById("learning-new-prompt"),
@@ -130,7 +139,10 @@ const learningState = {
   workbench: localStorage.getItem(WORKBENCH_STORAGE_KEY) === "learning" ? "learning" : "task",
   kind: "copy",
   candidates: [],
-  selectedId: ""
+  selectedId: "",
+  media: [],
+  selectedMediaIds: new Set(),
+  transcribing: false
 };
 
 function clone(value) {
@@ -836,8 +848,9 @@ function setWorkbench(value) {
   elements.workbenchSubtitle.textContent = learning ? "学习审核" : "CSV 审核与状态预览";
   if (learning) {
     renderLearningHeader();
-    updatePersonCreateVisibility();
+    updateLearningPanelVisibility();
     loadLearningCandidates();
+    if (learningState.kind === "copy") loadLearningMedia();
   } else {
     renderDatasetHeaderForTask();
   }
@@ -856,9 +869,10 @@ function renderDatasetHeaderForTask() {
     : "导入后会自动识别字段并高亮可审核内容";
 }
 
-function updatePersonCreateVisibility() {
-  const visible = learningState.workbench === "learning" && learningState.kind === "person";
-  elements.learningAddPersonPanel.classList.toggle("hidden", !visible);
+function updateLearningPanelVisibility() {
+  const learning = learningState.workbench === "learning";
+  elements.learningAddPersonPanel.classList.toggle("hidden", !(learning && learningState.kind === "person"));
+  elements.learningMediaPanel.classList.toggle("hidden", !(learning && learningState.kind === "copy"));
 }
 
 function learningStatusTone(status) {
@@ -880,6 +894,95 @@ async function learningRequest(url, options = {}) {
     throw error;
   }
   return payload;
+}
+
+function localDateValue() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function renderLearningMedia() {
+  const mediaIds = new Set(learningState.media.map((item) => item.id));
+  learningState.selectedMediaIds = new Set(
+    [...learningState.selectedMediaIds].filter((mediaId) => mediaIds.has(mediaId))
+  );
+  elements.learningMediaCount.textContent = `${learningState.media.length} 个媒体 · 已选 ${learningState.selectedMediaIds.size}`;
+  elements.learningMediaSelectAll.checked = Boolean(learningState.media.length)
+    && learningState.selectedMediaIds.size === learningState.media.length;
+  elements.learningMediaSelectAll.indeterminate = learningState.selectedMediaIds.size > 0
+    && learningState.selectedMediaIds.size < learningState.media.length;
+  elements.learningMediaTranscribe.disabled = learningState.transcribing
+    || learningState.selectedMediaIds.size === 0;
+  if (!learningState.media.length) {
+    elements.learningMediaList.innerHTML = `<div class="status-line">当天目录没有发现受支持的视频或音频</div>`;
+    return;
+  }
+  elements.learningMediaList.innerHTML = learningState.media.map((item) => {
+    const candidate = item.candidate;
+    const candidateBadge = candidate
+      ? `<span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)} · r${candidate.revision}</span>`
+      : `<span class="status-badge idle">未识别</span>`;
+    return `<label class="learning-media-item">
+      <input type="checkbox" data-learning-media-id="${escapeHtml(item.id)}" ${learningState.selectedMediaIds.has(item.id) ? "checked" : ""} />
+      <span class="learning-media-info">
+        <span class="learning-media-title">${escapeHtml(item.name)}</span>
+        <span class="source-file-meta">${formatBytes(item.size)} · ${formatModified(item.modified)}</span>
+      </span>
+      ${candidateBadge}
+    </label>`;
+  }).join("");
+}
+
+async function loadLearningMedia() {
+  if (learningState.kind !== "copy" || learningState.workbench !== "learning") return;
+  const url = new URL("/api/learning/media", window.location.origin);
+  url.searchParams.set("date", elements.learningMediaDate.value || localDateValue());
+  elements.learningMediaList.innerHTML = `<div class="status-line">正在扫描当天目录...</div>`;
+  elements.learningMediaStatus.classList.remove("error");
+  elements.learningMediaStatus.textContent = "";
+  try {
+    const payload = await learningRequest(url);
+    learningState.media = payload.media || [];
+    elements.learningMediaRoot.textContent = payload.root || elements.learningMediaRoot.textContent;
+    if (!payload.exists) {
+      elements.learningMediaStatus.textContent = "当天素材目录不存在";
+    }
+    renderLearningMedia();
+  } catch (error) {
+    learningState.media = [];
+    renderLearningMedia();
+    elements.learningMediaStatus.textContent = error.message;
+    elements.learningMediaStatus.classList.add("error");
+  }
+}
+
+async function transcribeSelectedLearningMedia() {
+  if (!learningState.selectedMediaIds.size || learningState.transcribing) return;
+  learningState.transcribing = true;
+  elements.learningMediaStatus.classList.remove("error");
+  elements.learningMediaStatus.textContent = `正在识别 ${learningState.selectedMediaIds.size} 个媒体，请保持页面打开...`;
+  renderLearningMedia();
+  try {
+    const result = await learningRequest("/api/learning/transcribe", {
+      method: "POST",
+      body: JSON.stringify({
+        date: elements.learningMediaDate.value || localDateValue(),
+        media_ids: [...learningState.selectedMediaIds]
+      })
+    });
+    const completion = `完成：新建 ${result.succeeded}，缓存复用 ${result.reused}，失败 ${result.failed}`;
+    learningState.selectedMediaIds.clear();
+    await Promise.all([loadLearningCandidates(), loadLearningMedia()]);
+    elements.learningMediaStatus.textContent = completion;
+  } catch (error) {
+    elements.learningMediaStatus.textContent = error.message;
+    elements.learningMediaStatus.classList.add("error");
+  } finally {
+    learningState.transcribing = false;
+    renderLearningMedia();
+  }
 }
 
 async function loadLearningCandidates() {
@@ -1026,11 +1129,33 @@ document.querySelectorAll('input[name="learning-kind"]').forEach((radio) => radi
   learningState.kind = radio.value;
   learningState.selectedId = "";
   renderLearningHeader();
-  updatePersonCreateVisibility();
+  updateLearningPanelVisibility();
   loadLearningCandidates();
+  if (learningState.kind === "copy") loadLearningMedia();
 }));
 elements.learningStatusFilter.addEventListener("change", loadLearningCandidates);
-elements.learningRefresh.addEventListener("click", loadLearningCandidates);
+elements.learningRefresh.addEventListener("click", () => {
+  loadLearningCandidates();
+  if (learningState.kind === "copy") loadLearningMedia();
+});
+elements.learningMediaRefresh.addEventListener("click", loadLearningMedia);
+elements.learningMediaDate.addEventListener("change", () => {
+  learningState.selectedMediaIds.clear();
+  loadLearningMedia();
+});
+elements.learningMediaSelectAll.addEventListener("change", () => {
+  learningState.selectedMediaIds = elements.learningMediaSelectAll.checked
+    ? new Set(learningState.media.map((item) => item.id)) : new Set();
+  renderLearningMedia();
+});
+elements.learningMediaList.addEventListener("change", (event) => {
+  const checkbox = event.target.closest("[data-learning-media-id]");
+  if (!checkbox) return;
+  if (checkbox.checked) learningState.selectedMediaIds.add(checkbox.dataset.learningMediaId);
+  else learningState.selectedMediaIds.delete(checkbox.dataset.learningMediaId);
+  renderLearningMedia();
+});
+elements.learningMediaTranscribe.addEventListener("click", transcribeSelectedLearningMedia);
 elements.learningList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-learning-id]");
   if (!button) return;
@@ -1063,4 +1188,5 @@ elements.learningAddPerson.addEventListener("click", async () => {
 
 renderSettings();
 loadDailySources();
+elements.learningMediaDate.value = localDateValue();
 setWorkbench(learningState.workbench);

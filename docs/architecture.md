@@ -166,9 +166,10 @@ Codex 是唯一语义生成器。Skill 必须向 Codex 提供事实边界、生�
 不执行导入、生成或付费提交。
 
 学习工作台显示独立的每日媒体默认目录
-`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。它只承担候选审核；转写仍由 Codex
-或 CLI 明确启动。`learning-transcribe` 未提供 `--input` 时按本地日期解析该目录，并只发现
-当前一层的受支持媒体，不影响任务 CSV 的 `/素材/Codex` 入口。
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。视频文案页通过受限 API 列出当前
+一层媒体，浏览器只持有服务端签发的稳定 ID；用户点击按钮时，服务端重新扫描并验证 ID 后才
+调用同一 `LearningService.transcribe(...)`。`learning-transcribe` 未提供 `--input` 时也按
+本地日期解析该目录。两条入口共享领域服务与缓存，不影响任务 CSV 的 `/素材/Codex` 入口。
 
 ### LibTV OmniHuman
 
@@ -225,8 +226,9 @@ worker 由 FunASR 既有 Python 使用 `-B` 执行，正常 import 已安装的 
 `learned-copy-source-blocks.md` 并进入 source-block 注册表；人物 identity/hair/outfit/scene
 块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板和 validator 提供。
 
-审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，客户端
-只能提交 kind、candidate ID、revision 与允许字段，不能提交目标路径，也不能触发发布或视频。
+审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，候选
+操作只能提交 kind、candidate ID、revision 与允许字段；媒体操作只能提交 date 和扫描得到的
+media ID。客户端不能提交目标路径，也不能触发发布、下游视频生成或付费提交。
 
 ## 安全与可恢复性
 

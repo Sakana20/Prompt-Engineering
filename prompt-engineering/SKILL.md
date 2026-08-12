@@ -236,7 +236,10 @@ and the candidate/publication schemas before operating them.
   An explicit `--input` file or one-level directory always overrides that default. It creates only
   `copy` candidates and calls the Prompt Engineering-owned worker with the existing FunASR
   environment; never modify the FunASR repository or the existing subtitle entry point. Merely
-  opening or reviewing the workbench must never start transcription.
+  opening, scanning, refreshing, or reviewing the workbench must never start transcription. The
+  copy-learning workbench may list the configured date directory and transcribe only media IDs the
+  user explicitly selects before clicking `创建 ASR 候选`; it must never accept a browser-supplied
+  filesystem path.
 - Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed

@@ -87,8 +87,6 @@
           </div>
           <label class="switch-row"><input type="radio" name="learning-kind" value="copy" checked />视频文案</label>
           <label class="switch-row"><input type="radio" name="learning-kind" value="person" />人物 Prompt</label>
-          <div class="source-root">每日视频素材：/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材</div>
-          <div class="helper-text">由 Codex 或 CLI 明确启动转写；只读取所选日期目录当前一层的媒体。</div>
           <label for="learning-status-filter">状态筛选</label>
           <select id="learning-status-filter" class="field">
             <option value="">全部状态</option>
@@ -99,6 +97,26 @@
             <option value="rejected">rejected</option>
             <option value="published">published</option>
           </select>
+        </section>
+
+        <section id="learning-media-panel" class="panel compact learning-workbench hidden">
+          <div class="panel-title-row">
+            <h2>当天视频素材</h2>
+            <button id="learning-media-refresh" type="button">扫描</button>
+          </div>
+          <label for="learning-media-date">素材日期</label>
+          <input id="learning-media-date" class="field" type="date" />
+          <div id="learning-media-root" class="source-root">/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材</div>
+          <div class="media-select-row">
+            <label class="switch-row"><input id="learning-media-select-all" type="checkbox" />全选</label>
+            <span id="learning-media-count" class="helper-text">0 个媒体</span>
+          </div>
+          <div id="learning-media-list" class="learning-media-list">
+            <div class="status-line">选择日期后扫描当天目录</div>
+          </div>
+          <button id="learning-media-transcribe" type="button" disabled>创建 ASR 候选</button>
+          <div id="learning-media-status" class="status-line"></div>
+          <div class="helper-text">只读取该目录当前一层；打开或刷新页面不会自动转写。</div>
         </section>
 
         <section id="learning-add-person-panel" class="panel compact learning-workbench hidden">

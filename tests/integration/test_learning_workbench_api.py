@@ -39,8 +39,13 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     )
 
     assert "/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材" in index
-    assert "明确启动转写" in index
+    assert 'id="learning-media-list"' in index
+    assert 'id="learning-media-transcribe"' in index
     assert "learning-transcribe" not in index
+
+    app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
+    assert '"/api/learning/media"' in app_js
+    assert '"/api/learning/transcribe"' in app_js
 
 
 def _request(
@@ -57,6 +62,96 @@ def _request(
     data = json.loads(response.read().decode("utf-8"))
     connection.close()
     return response.status, data
+
+
+@pytest.mark.integration
+def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    media_root = tmp_path / "2026"
+    media_directory = media_root / "08.12" / "淘宝闪购" / "素材"
+    media_directory.mkdir(parents=True)
+    first = media_directory / "第一条.mp4"
+    second = media_directory / "第二条.wav"
+    first.write_bytes(b"video-one")
+    second.write_bytes(b"audio-two")
+    (media_directory / "忽略.txt").write_text("not media", encoding="utf-8")
+    nested = media_directory / "子目录"
+    nested.mkdir()
+    (nested / "不递归.mp4").write_bytes(b"nested")
+
+    transcribe_calls: list[tuple[tuple[Path, ...], str]] = []
+
+    class FakeLearningService:
+        @classmethod
+        def from_root(cls, root: Path) -> "FakeLearningService":
+            del root
+            return cls()
+
+        def list(self, kind: object, *, status: object = None) -> tuple[object, ...]:
+            del kind, status
+            return ()
+
+        def transcribe(self, inputs: tuple[Path, ...], *, source_date: object) -> dict[str, object]:
+            rendered_date = str(source_date)
+            transcribe_calls.append((inputs, rendered_date))
+            return {
+                "schema_version": "1.0",
+                "kind": "copy",
+                "date": rendered_date,
+                "succeeded": len(inputs),
+                "reused": 0,
+                "failed": 0,
+                "candidate_ids": [],
+                "succeeded_candidate_ids": [],
+                "reused_candidate_ids": [],
+                "failures": [],
+            }
+
+    previous_media_root = cast(Path, reviewer.__dict__["DAILY_MEDIA_ROOT"])
+    monkeypatch.setitem(reviewer.__dict__, "DAILY_MEDIA_ROOT", media_root)
+    monkeypatch.setitem(reviewer.__dict__, "LearningService", FakeLearningService)
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), reviewer.SkillReviewerHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        port = int(httpd.server_address[1])
+        status, listing = _request(port, "GET", "/api/learning/media?date=2026-08-12")
+        assert status == 200
+        assert listing["exists"] is True
+        assert listing["count"] == 2
+        media = cast(list[dict[str, object]], listing["media"])
+        assert {str(item["name"]) for item in media} == {"第一条.mp4", "第二条.wav"}
+        assert all("path" not in item for item in media)
+
+        selected_id = str(media[0]["id"])
+        status, result = _request(
+            port,
+            "POST",
+            "/api/learning/transcribe",
+            {"date": "2026-08-12", "media_ids": [selected_id]},
+        )
+        assert status == 200
+        assert result["succeeded"] == 1
+        assert transcribe_calls == [((media_directory / str(media[0]["name"]),), "2026-08-12")]
+
+        status, invalid = _request(
+            port,
+            "POST",
+            "/api/learning/transcribe",
+            {
+                "date": "2026-08-12",
+                "media_ids": [selected_id],
+                "path": str(first),
+            },
+        )
+        assert status == 422
+        assert "未知字段" in str(invalid["error"])
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        reviewer.__dict__["DAILY_MEDIA_ROOT"] = previous_media_root
 
 
 @pytest.mark.integration

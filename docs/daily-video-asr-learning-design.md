@@ -339,6 +339,9 @@ prompt-engineering/references/person-prompt-block-contracts.md
 - 切换不刷新页面，使用 `localStorage` 保存最后工作台；
 - 原任务审核所有现有行为和只读属性保持不变；
 - 学习审核默认显示“视频文案”，可切换到独立的“人物 Prompt”页面；
+- 视频文案页按日期列出 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材` 当前一层
+  的受支持媒体，支持多选；扫描目录本身不得启动 ASR；
+- 用户点击“创建 ASR 候选”后才转写已选媒体，完成后显示新增、缓存复用和失败数量并刷新候选；
 - 文案页显示媒体来源、不可变原文、可编辑稿、风险、相似项、revision 和状态动作；
 - 人物页支持“新增人物 Prompt”，并显示不可变原文、可编辑稿、结构化字段、风险、相似项、
   revision 和状态动作；
@@ -353,6 +356,8 @@ prompt-engineering/references/person-prompt-block-contracts.md
 ```text
 GET  /api/learning/candidates?kind=copy|person&status=...
 GET  /api/learning/candidates/<kind>/<candidate_id>
+GET  /api/learning/media?date=YYYY-MM-DD
+POST /api/learning/transcribe
 POST /api/learning/person-candidates
 PUT  /api/learning/candidates/<kind>/<candidate_id>
 POST /api/learning/candidates/<kind>/<candidate_id>/submit-review
@@ -367,6 +372,7 @@ POST /api/learning/candidates/<kind>/<candidate_id>/reject
 - JSON body 有大小限制和严格类型校验；
 - kind、candidate ID 和 revision 均由服务端验证；
 - 不接受客户端文件路径；
+- 媒体转写只接受当前扫描结果中的服务端媒体 ID，提交时重新校验日期目录、一级路径和格式；
 - 只允许 loopback host 的现有默认行为；
 - 不把异常堆栈、环境变量或绝对敏感路径返回浏览器。
 
