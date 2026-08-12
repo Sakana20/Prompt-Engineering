@@ -16,7 +16,7 @@ class LearningFieldOption:
 
 
 CATEGORY_FAMILY_OPTIONS = (
-    LearningFieldOption("", "请选择品类族", "提交审核前必须选择"),
+    LearningFieldOption("", "请选择品类族", "提交学习前必须选择"),
     LearningFieldOption("beverage", "饮品", "咖啡、奶茶、果汁等以饮用为主要动作的商品"),
     LearningFieldOption("other", "非饮品", "食品、正餐及其他不以饮用为主要动作的商品"),
 )

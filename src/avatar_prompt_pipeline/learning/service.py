@@ -53,6 +53,26 @@ def _clean_values(values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(value.strip() for value in values if value.strip()))
 
 
+def _validate_submission_fields(candidate: LearningCandidate, *, action_label: str) -> None:
+    if not isinstance(candidate, CopyLearningCandidate):
+        return
+    validate_copy_learning_fields(
+        category_family=candidate.category_family,
+        consumption_need=candidate.consumption_need,
+        season=candidate.season,
+        source_usage=candidate.source_usage,
+    )
+    missing: list[str] = []
+    if not candidate.category_family:
+        missing.append("品类族")
+    if not candidate.consumption_need:
+        missing.append("消费需求")
+    if not candidate.source_usage:
+        missing.append("来源块用途")
+    if missing:
+        raise LearningValidationError(f"{action_label}前请选择：" + "、".join(missing))
+
+
 class LearningService:
     def __init__(
         self,
@@ -293,27 +313,29 @@ class LearningService:
         self, kind: CandidateKind, candidate_id: str, *, expected_revision: int
     ) -> LearningCandidate:
         current = self.store.get(kind, candidate_id)
-        if isinstance(current, CopyLearningCandidate):
-            validate_copy_learning_fields(
-                category_family=current.category_family,
-                consumption_need=current.consumption_need,
-                season=current.season,
-                source_usage=current.source_usage,
-            )
-            missing: list[str] = []
-            if not current.category_family:
-                missing.append("品类族")
-            if not current.consumption_need:
-                missing.append("消费需求")
-            if not current.source_usage:
-                missing.append("来源块用途")
-            if missing:
-                raise LearningValidationError("提交审核前请选择：" + "、".join(missing))
+        _validate_submission_fields(current, action_label="提交审核")
         allowed_transition(current, LearningStatus.READY_FOR_REVIEW)
         return self.store.save(
             replace(current, status=LearningStatus.READY_FOR_REVIEW),
             expected_revision=expected_revision,
             action="submitted_for_review",
+        )
+
+    def submit_learning(
+        self, kind: CandidateKind, candidate_id: str, *, expected_revision: int
+    ) -> LearningCandidate:
+        current = self.store.get(kind, candidate_id)
+        _validate_submission_fields(current, action_label="提交学习")
+        if current.status not in {LearningStatus.PENDING, LearningStatus.EDITING}:
+            raise LearningValidationError(f"不允许从 {current.status.value} 提交学习")
+        return self.store.save(
+            replace(
+                current,
+                status=LearningStatus.APPROVED,
+                rejection_reason="",
+            ),
+            expected_revision=expected_revision,
+            action="submitted_for_learning",
         )
 
     def approve(

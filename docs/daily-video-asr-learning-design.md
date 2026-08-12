@@ -25,11 +25,10 @@ FunASR 仓库必须保持完全只读。
 同步和本地安装验证：
 
 1. **每日视频 ASR 文案学习**：用户显式提供视频或目录后，CLI 调用本地
-   FunASR/Paraformer 生成候选识别稿；用户可在学习审核工作台对照原始识别稿修改、提交审核、
-   批准和驳回；批准后由 Codex 生成发布清单并通过 CLI 发布；
+   FunASR/Paraformer 生成候选识别稿；用户可在学习审核工作台对照原始识别稿修改、保存并
+   “提交学习”；该显式人工动作直接批准候选，再由 Codex 生成发布清单并通过 CLI 发布；
 2. **按需人物 Prompt 学习**：只有用户主动输入人物 Prompt 时才创建候选；用户可在同一学习
-   审核工作台的独立页面修改、提交审核、批准和驳回；批准后由 Codex 生成发布清单并通过 CLI
-   发布。
+   审核工作台的独立页面修改、保存并“提交学习”；提交后由 Codex 生成发布清单并通过 CLI 发布。
 
 这两个功能必须使用独立命令、独立目录、独立 schema、独立状态记录和独立正式资源。运行其中
 一个功能不得读取、创建、修改或发布另一个功能的候选。
@@ -81,7 +80,7 @@ FunASR 仓库必须保持完全只读。
 - 不使用 `shell=True`，不拼接可执行命令字符串；
 - 不允许浏览器提交任意目标路径；
 - 不允许修改不可变的 `raw_transcript` 或 `raw_prompt`；
-- 不允许自动批准候选；
+- 不允许后台或无人操作自动批准候选；网页“提交学习”是用户显式批准动作；
 - 不把识别出的价格、促销、品牌、功效、销量或配送话术当作事实；
 - 不让人物学习块覆盖固定镜头、商品摆放、无 logo、无字幕和人物稳定性约束；
 - 不因为实现新工作台而破坏现有 CSV/SQLite 审核功能；
@@ -267,6 +266,7 @@ avatar-prompts learning-add-person-prompt \
 
 ```text
 learning-list    --kind copy|person [--status ...]
+learning-preflight --learning-root ...
 learning-update  --kind copy|person --candidate-id ... --expected-revision ... --edited-file ...
 learning-submit-review --kind copy|person --candidate-id ... --expected-revision ...
 learning-approve --kind copy|person --candidate-id ... --expected-revision ...
@@ -282,6 +282,8 @@ learning-publish --kind copy|person --candidate-id ... --expected-revision ... -
 - `publish` 只接受 `approved`，且 manifest 中的 candidate ID、kind 和 revision 必须完全一致；
 - `reject` 保留原始内容和审计记录，不物理删除；
 - 所有命令输出稳定 JSON，成功为 0、验证失败为 1、参数/输入错误为 2；
+- `learning-preflight` 在有 approved 候选或 published 正式块不一致时返回 3，并输出 Codex
+  必须完成的 `required_actions`；
 - 新参数必须出现在 CLI schema 和 Skill 透明启动器帮助中。
 
 ### Step 4：发布清单与正式资源
@@ -354,7 +356,8 @@ prompt-engineering/references/person-prompt-block-contracts.md
   revision 和状态动作；
 - 保存时发送 expected revision；409 冲突必须提示用户重新加载，不能覆盖；
 - 按状态禁用不允许的按钮；
-- 工作台只负责保存、提交审核、批准和驳回，不提供自动发布按钮；
+- 单人工作台只负责保存和“提交学习”，后者作为显式人工批准直接进入 `approved`；兼容 CLI
+  仍保留提交审核、批准和驳回，不提供自动发布按钮；
 - 已批准详情明确显示“待 Codex 生成发布清单并通过 CLI 发布”；
 - 页面在窄屏下不重叠，所有控件使用原生可访问元素。
 
@@ -367,6 +370,7 @@ GET  /api/learning/media?date=YYYY-MM-DD
 POST /api/learning/transcribe
 POST /api/learning/person-candidates
 PUT  /api/learning/candidates/<kind>/<candidate_id>
+POST /api/learning/candidates/<kind>/<candidate_id>/submit-learning
 POST /api/learning/candidates/<kind>/<candidate_id>/submit-review
 POST /api/learning/candidates/<kind>/<candidate_id>/approve
 POST /api/learning/candidates/<kind>/<candidate_id>/reject
@@ -427,7 +431,7 @@ tests/e2e/test_learning_cli.py
 - 学习块进入实际 Prompt 编排；
 - 无 learned 资源时兼容旧行为；
 - 原审核台 API 回归；
-- 学习审核 API 的读取、保存、409、提交审核、批准和驳回；
+- 学习审核 API 的读取、保存、409、提交学习直达 approved，以及兼容提交审核、批准和驳回；
 - CLI schema 覆盖每个新参数；
 - Skill 包含每个新增 reference。
 
@@ -487,7 +491,7 @@ Skill 内容或结构变化后运行 `skill-creator` 的 `quick_validate.py`。�
 - [ ] 无学习数据时现有 CLI 和生成行为保持兼容；
 - [ ] 审核台顶部可在任务审核与学习审核间切换；
 - [ ] 原任务审核仍然只读且功能无回归；
-- [ ] 学习审核能修改文案、按需新增人物 Prompt、保存、提交审核、批准和驳回；
+- [ ] 学习审核能修改文案、按需新增人物 Prompt、保存并提交学习；
 - [ ] 已批准候选只能由带合法发布清单的 `learning-publish` CLI 发布；
 - [ ] 全部工程质量门禁通过；
 - [ ] Skill 完成校验、备份安装、目录无差异比对和已安装 CLI 验证；
@@ -523,7 +527,7 @@ Prompt 不扫描视频、不调用 ASR。它们只是在同一个 Prompt Enginee
 - 保存不可变的 ASR 原文、人工修订稿和审核状态；
 - 接收用户手工输入的人物 Prompt；
 - 分别管理文案候选库与人物 Prompt 候选库；
-- 提供可视化编辑、提交审核、批准和驳回，并提供独立 CLI 发布；
+- 提供可视化编辑、保存和提交学习，并提供独立 CLI 发布；
 - 执行来源追踪、重复检测、事实隔离和确定性校验；
 - 将批准内容发布到对应的 Prompt 资源；
 - 在后续生成中调度更多样的文案结构、人物身份和服装组合。
@@ -556,6 +560,7 @@ Prompt 不扫描视频、不调用 ASR。它们只是在同一个 Prompt Enginee
 ```text
 avatar-prompts learning-transcribe
 avatar-prompts learning-add-person-prompt
+avatar-prompts learning-preflight
 avatar-prompts learning-list
 avatar-prompts learning-update
 avatar-prompts learning-submit-review
@@ -601,11 +606,13 @@ avatar-prompts learning-publish
 目录和正式资源。
 
 ```text
-pending → editing → ready_for_review → approved → published
-                 ↘ rejected
+单人网页：pending → editing → 提交学习/approved → published
+兼容 CLI：pending → editing → ready_for_review → approved → published
+                                      ↘ rejected
 ```
 
-只有人工操作可以把候选从 `ready_for_review` 改为 `approved`。任何自动任务都不能自动批准。
+只有用户点击“提交学习”或在兼容 CLI 明确执行批准动作才能进入 `approved`。任何后台任务都不能
+自动批准。
 
 ## 文案视频识别
 
@@ -835,7 +842,7 @@ prompt-engineering/references/person-prompt-block-contracts.md
 │ ○ 视频文案     │ □ 今日视频.mp4       │ 来源 / 状态 / 风险 / 相似项  │
 │ ○ 人物 Prompt  │ □ 今日音频.wav       │ 原始内容（只读）             │
 │ 日期           │ [创建 ASR 候选]      │ 编辑内容                     │
-│ [扫描]         │                      │ [保存] [提交] [批准] [驳回] │
+│ [扫描]         │                      │ [保存修改] [提交学习]       │
 │ 状态筛选       │ 学习候选             │                              │
 │ [+新增人物]    │ 08-12 · pending      │                              │
 └────────────────┴──────────────────────┴──────────────────────────────┘
@@ -855,8 +862,9 @@ prompt-engineering/references/person-prompt-block-contracts.md
 - 与历史候选和正式原文块的相似项；
 - 建议品类族、消费需求、季节限制和来源块用途；
 - 品类族、消费需求和季节必须显示为带中文解释的单选项；来源块用途允许同时选择直接填槽与
-  AI 改写参考，使用复选项；提交审核前必须完成品类族、消费需求和至少一种用途；
-- 保存、提交审核、批准和驳回动作；批准后显示等待 Codex 发布的状态。
+  AI 改写参考，使用复选项；提交学习前必须完成品类族、消费需求和至少一种用途并先保存；
+- 宽屏下三个单选字段自适应并排、两个来源用途并排，窄屏回退单列；
+- 保存和提交学习动作；提交学习后直接显示等待 Codex 发布的 `approved` 状态。
 
 pending、editing、ready_for_review 和 rejected 候选可按 revision 删除。删除为可恢复归档：
 整个候选目录移入 `learning/<kind>/trash/`，不删除源素材；对应媒体恢复“未识别”，用户可重新
@@ -875,7 +883,7 @@ pending、editing、ready_for_review 和 rejected 候选可按 revision 删除�
 - 固定约束与可学习变量的对照；
 - 品牌、logo、年龄、暴露和具体真人复刻风险；
 - 与既有人物块的身份相似度和服装相似度；
-- 保存、提交审核、批准和驳回动作；批准后显示等待 Codex 发布的状态。
+- 保存和提交学习动作；提交学习作为用户显式批准，之后显示等待 Codex 发布的状态。
 
 “新增人物 Prompt”打开一个简单编辑区域，只要求 Prompt 正文和可选来源说明。创建成功后进入
 详情页，不直接发布。
@@ -891,7 +899,7 @@ pending、editing、ready_for_review 和 rejected 候选可按 revision 删除�
 - 编辑稿采用 UTF-8 原子写入；
 - 每次保存带 `revision`，旧 revision 提交时拒绝覆盖；
 - 状态转换在服务端校验，未批准候选不能发布；
-- 保存、提交审核、批准、驳回以及后续 CLI 发布都写入审计记录；
+- 保存、提交学习以及后续 CLI 发布都写入审计记录；兼容 CLI 的提交审核、批准、驳回仍保留审计；
 - 发布前完成全量校验，失败时不修改正式资源；
 - 工作台不得触发视频生成、导入或付费提交。
 
@@ -936,11 +944,11 @@ pending、editing、ready_for_review 和 rejected 候选可按 revision 删除�
 
 - 在现有审核台增加“切换到学习审核/返回任务审核”按钮；
 - 原任务审核保持只读；
-- 首先支持视频文案的对照修改、revision 冲突保护、提交审核、批准和驳回；
+- 首先支持视频文案的对照修改、revision 冲突保护、保存和提交学习；
 - 视频文案候选列表与详情提供可恢复删除入口；删除带 `expected_revision`，只允许尚未批准或
   发布的候选，完整目录移动到 trash，源媒体恢复未识别后可重新转写为新候选；
-- 品类族、消费需求和季节限制使用中文下拉，来源块用途使用带解释的受控多选；提交审核前必须
-  完成品类族、消费需求和至少一个来源用途；
+- 品类族、消费需求和季节限制使用中文下拉，来源块用途使用带解释的受控多选；提交学习前必须
+  完成品类族、消费需求和至少一个来源用途并先保存；宽屏分类区压缩为多列；
 - 增加安全受限的学习候选 API。
 
 验收：用户能在工作台对照原文修改识别稿；刷新或切换工作台不会丢失已保存内容；不能通过
@@ -951,7 +959,7 @@ API 写出 `learning/` 根目录。
 - 新增独立人物 Prompt 候选模型和 `learning-add-person-prompt`；
 - 只接受用户主动输入，不建立每日扫描或自动任务；
 - 在学习审核台增加独立的“人物 Prompt”页面和“新增人物 Prompt”入口；
-- 支持编辑、结构化拆解、相似度预警、批准和驳回；
+- 支持编辑、结构化拆解、相似度预警、保存和提交学习；
 - 确保整个流程不读取视频候选，也不调用 ASR。
 
 验收：只有主动输入才会创建人物候选；人物 Prompt 操作不会启动视频识别或改变文案候选状态。

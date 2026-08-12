@@ -888,6 +888,39 @@ function learningStatusTone(status) {
   return "idle";
 }
 
+function learningStatusHelp() {
+  return `<span class="status-help" aria-label="查看学习状态说明">
+    <span class="status-help-icon" aria-hidden="true">?</span>
+    <span class="status-help-tooltip" role="tooltip">
+      <span><strong>pending / editing：</strong>本地已保存，但还不能用。</span>
+      <span><strong>ready_for_review：</strong>已提交审核，但还不能用。</span>
+      <span><strong>approved：</strong>已批准，等待 Codex 拆解并发布，仍不能用。</span>
+      <span><strong>published：</strong>已进入正式学习资源，可以用于后续生成。</span>
+    </span>
+  </span>`;
+}
+
+function positionLearningStatusTooltip(help) {
+  const tooltip = help.querySelector(".status-help-tooltip");
+  if (!tooltip) return;
+  const margin = 12;
+  const gap = 8;
+  const anchor = help.getBoundingClientRect();
+  const width = Math.min(360, window.innerWidth - margin * 2);
+  tooltip.style.width = `${width}px`;
+  const height = tooltip.getBoundingClientRect().height || 150;
+  const left = Math.min(
+    Math.max(margin, anchor.right - width),
+    window.innerWidth - width - margin
+  );
+  const below = anchor.bottom + gap;
+  const top = below + height <= window.innerHeight - margin
+    ? below
+    : Math.max(margin, anchor.top - height - gap);
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
 async function learningRequest(url, options = {}) {
   let response;
   try {
@@ -1072,10 +1105,10 @@ function renderLearningList() {
     const deleteAction = canDelete
       ? `<button type="button" class="row-delete danger-action" data-learning-delete-id="${escapeHtml(candidate.candidate_id)}" aria-label="删除候选 ${escapeHtml(candidate.candidate_id)}">删除</button>`
       : "";
-    return `<div class="row-card-shell">
-      <button type="button" class="row-card${active}" data-learning-id="${escapeHtml(candidate.candidate_id)}">
+    return `<div class="row-card-shell${active}">
+      <button type="button" class="row-card" data-learning-id="${escapeHtml(candidate.candidate_id)}">
       <div class="row-title"><span>${escapeHtml(source || candidate.candidate_id)}</span>
-      <span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)}</span></div>
+      <span class="learning-status"><span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)}</span>${learningStatusHelp()}</span></div>
       <div class="row-summary">revision ${candidate.revision} · ${escapeHtml(summary || "")}</div>
       </button>${deleteAction}</div>`;
   }).join("");
@@ -1141,7 +1174,6 @@ function renderLearningDetail() {
     && Array.isArray(candidate.source_usage) && candidate.source_usage.length);
   const canSubmit = ["pending", "editing"].includes(candidate.status)
     && (!isCopy || copyMetadataComplete);
-  const canReview = candidate.status === "ready_for_review";
   const canDelete = !["approved", "published"].includes(candidate.status);
   const structured = isCopy
     ? [
@@ -1166,23 +1198,23 @@ function renderLearningDetail() {
     ? `<span class="helper-text">初始稿只整理中文逐字空格和明显重复标点；不会改字、猜测标点或改变原始时间轴。</span>`
     : "";
   const metadataHint = isCopy && !copyMetadataComplete
-    ? `<div class="classification-hint">先选择品类族、消费需求和至少一种来源块用途并保存，才可提交审核。</div>`
+    ? `<div class="classification-hint">先选择品类族、消费需求和至少一种来源块用途并保存，才可提交学习。</div>`
     : "";
   elements.learningDetail.innerHTML = `<article class="learning-form" data-candidate-id="${escapeHtml(candidate.candidate_id)}" data-revision="${candidate.revision}">
     <div class="learning-meta"><strong>${escapeHtml(candidate.candidate_id)}</strong><span>revision ${candidate.revision} · ${escapeHtml(candidate.status)}</span></div>
     <div class="field-value">${sourceMeta}</div>
     <section class="field-block"><div class="field-name">不可变原文</div><div class="field-value raw-content">${escapeHtml(raw)}</div></section>
     <label class="field-block"><span class="field-name">可编辑稿</span><textarea id="learning-edited-text" class="field textarea" rows="10" ${canSave ? "" : "disabled"}>${escapeHtml(edited)}</textarea>${draftHint}</label>
-    <div class="learning-structured">${structured.join("")}</div>
+    <div class="learning-structured${isCopy ? " copy-learning-structured" : ""}">${structured.join("")}</div>
     <section class="field-block"><div class="field-name">风险</div><div class="field-value">${escapeHtml((candidate.risk_tags || []).join("、") || "无")}</div></section>
     <section class="field-block"><div class="field-name">相似项</div><div class="field-value">${escapeHtml((candidate.similarity_hits || []).join("、") || "无")}</div></section>
     ${publicationHint}
     ${metadataHint}
     <div class="learning-actions">
-      <button type="button" data-learning-action="save" ${canSave ? "" : "disabled"}>保存修改</button>
-      <button type="button" data-learning-action="submit-review" ${canSubmit ? "" : "disabled"}>提交审核</button>
-      <button type="button" data-learning-action="approve" ${canReview ? "" : "disabled"}>批准</button>
-      <button type="button" data-learning-action="reject" ${canReview ? "" : "disabled"}>驳回</button>
+      <div class="learning-actions-primary">
+        <button type="button" data-learning-action="save" ${canSave ? "" : "disabled"}>保存修改</button>
+        <button type="button" data-learning-action="submit-learning" title="确认内容并交给 Codex 发布" ${canSubmit ? "" : "disabled"}>提交学习</button>
+      </div>
       <button type="button" class="danger-action" data-learning-action="delete" ${canDelete ? "" : "disabled"}>删除候选</button>
     </div>
     ${canDelete ? `<div class="helper-text">删除只把候选移入回收目录，不删除源素材；删除后可以重新创建。</div>` : `<div class="helper-text">已批准或已发布的候选不能删除。</div>`}
@@ -1220,13 +1252,10 @@ async function runLearningAction(action) {
     const personMessage = "候选将移入回收目录，原始输入不会写入正式学习资源。确定删除？";
     if (!window.confirm(learningState.kind === "copy" ? copyMessage : personMessage)) return;
     method = "DELETE";
-  } else if (action === "reject") {
-    const reason = window.prompt("请输入驳回原因");
-    if (!reason) return;
-    body.reason = reason;
-    url += "/reject";
+  } else if (action === "submit-learning") {
+    url += "/submit-learning";
   } else {
-    url += `/${action}`;
+    return;
   }
   status.textContent = "正在提交...";
   try {
@@ -1306,6 +1335,10 @@ elements.learningMediaList.addEventListener("change", (event) => {
   renderLearningDetail();
 });
 elements.learningMediaTranscribe.addEventListener("click", transcribeSelectedLearningMedia);
+document.addEventListener("pointerover", (event) => {
+  const help = event.target.closest(".status-help");
+  if (help) positionLearningStatusTooltip(help);
+});
 elements.learningList.addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-learning-delete-id]");
   if (deleteButton) {

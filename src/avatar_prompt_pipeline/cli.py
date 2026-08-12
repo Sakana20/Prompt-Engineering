@@ -26,6 +26,7 @@ from .config import ProjectConfig, ProjectConfigError, load_project_config
 from .io import serialize_package, write_package
 from .learning.asr_provider import AsrProviderError, AsrWorkerConfig
 from .learning.models import CandidateKind, LearningCandidate, LearningStatus
+from .learning.preflight import PREFLIGHT_BLOCKED_EXIT_CODE, inspect_learning_preflight
 from .learning.publication import load_publication_manifest, publish_manifest
 from .learning.service import LearningService
 from .learning.store import CandidateNotFoundError, RevisionConflictError
@@ -214,6 +215,11 @@ def build_parser() -> argparse.ArgumentParser:
     person_input.add_argument("--input", type=Path)
     add_person.add_argument("--source-label", default="用户人工样本")
     add_person.add_argument("--learning-root", type=Path, default=DEFAULT_LEARNING_ROOT)
+    learning_preflight = commands.add_parser(
+        "learning-preflight",
+        help="生成前检查 approved 候选、published 候选和正式学习资源",
+    )
+    learning_preflight.add_argument("--learning-root", type=Path, default=DEFAULT_LEARNING_ROOT)
     learning_list = commands.add_parser("learning-list", help="列出学习候选")
     _add_learning_kind(learning_list)
     learning_list.add_argument("--status", choices=tuple(status.value for status in LearningStatus))
@@ -569,6 +575,10 @@ def _run_learning_command(args: argparse.Namespace) -> int:
                 raise AssertionError("transcribe failed count must be int")
             return 0 if failed == 0 else 1
         service = LearningService.from_root(args.learning_root)
+        if args.command == "learning-preflight":
+            report = inspect_learning_preflight(service.store)
+            print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+            return 0 if report.ready_for_generation else PREFLIGHT_BLOCKED_EXIT_CODE
         if args.command == "learning-add-person-prompt":
             if args.text is not None:
                 text = str(args.text)

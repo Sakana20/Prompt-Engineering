@@ -192,6 +192,16 @@
       }
     },
     {
+      "title": "learning-preflight",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command"],
+      "properties": {
+        "command": {"const": "learning-preflight"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
       "title": "learning-transcribe",
       "type": "object",
       "additionalProperties": false,

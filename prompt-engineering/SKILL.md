@@ -8,6 +8,29 @@ description: Generate natural Chinese product short-video copy, avatar prompts, 
 Turn user-supplied product and campaign facts into an auditable copy-to-avatar workflow. Perform
 all semantic analysis and generation directly as Codex. Do not call another LLM.
 
+## Generation Learning Gate
+
+Before generating copy or avatar prompts, or running `compose`, `init-batch`, `validate-copy`,
+`validate-batch`, `package`, or `export-csv`, run `learning-preflight` against the active project
+learning root. Do not run this gate before `learning-*` management commands, help, tests, or Skill
+validation.
+
+- If `ready_for_generation` is `true`, read the reported formal learned resources and continue.
+- If `required_actions` contains `codex_publish_approved`, stop the production command. Read every
+  approved candidate returned by the report, remove sample price, promotion, platform, delivery,
+  brand, efficacy, sales, CTA, fixed-frame, logo, and real-person risks, create a matching
+  `learning-publication.schema.json` manifest, and run `learning-publish` with the exact kind,
+  candidate ID, and revision. Never infer reusable product or campaign facts from the sample.
+- If `required_actions` contains `repair_published_resources`, stop and repair the formal-resource
+  inconsistency before generating anything; never silently ignore missing published block IDs.
+- After all approved candidates publish, run `learning-preflight` again. Continue only when it
+  returns exit code `0`, `ready_for_generation=true`, and an empty `required_actions` list. Exit
+  code `3` is an intentional generation gate, not permission to skip publication.
+- A successful publication changes the distributed Skill resources. Complete the repository's
+  required tests, Skill validation, recoverable installed-Skill backup, local Skill sync, directory
+  comparison, and installed CLI verification before treating the learned blocks as available to
+  later Codex sessions.
+
 ## Workflow
 
 1. Read [campaign-contract.md](references/campaign-contract.md),
@@ -257,8 +280,10 @@ and the candidate/publication schemas before operating them.
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed
   fields, always using the current expected revision.
-- Never approve automatically. The workbench or CLI may save, submit, approve, or reject; publication
-  remains a separate Codex step.
+- Never approve without an explicit human action. In the single-user workbench, clicking
+  `提交学习` is that approval action and moves a saved `pending`/`editing` candidate directly to
+  `approved`; it is not background or automatic approval. Keep the legacy CLI review/approve/reject
+  path compatible. Publication remains a separate Codex step.
 - After human approval, remove sample price, promotion, platform, delivery, brand, efficacy, sales,
   CTA, fixed-frame, logo, and real-person risks, then create a manifest conforming to
   [learning-publication.schema.json](references/learning-publication.schema.json).

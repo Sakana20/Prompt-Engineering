@@ -45,9 +45,13 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-6" in index
+    assert "app.js?v=20260812-9" in index
+    assert "styles.css?v=20260812-9" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
+    styles = (Path(__file__).parents[2] / "tools/skill_reviewer/styles.css").read_text(
+        encoding="utf-8"
+    )
     assert '"/api/learning/media"' in app_js
     assert '"/api/learning/transcribe"' in app_js
     assert '"/api/learning/media-content"' not in app_js
@@ -58,6 +62,26 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert "不会改字、猜测标点或改变原始时间轴" in app_js
     assert "删除候选" in app_js
     assert "data-learning-delete-id" in app_js
+    assert "learningStatusHelp" in app_js
+    assert "positionLearningStatusTooltip" in app_js
+    assert "pending / editing：" in app_js
+    assert "ready_for_review：" in app_js
+    assert "approved：" in app_js
+    assert "published：" in app_js
+    assert "learning-actions-primary" in app_js
+    assert 'data-learning-action="submit-learning"' in app_js
+    assert 'data-learning-action="approve"' not in app_js
+    assert 'data-learning-action="reject"' not in app_js
+    assert "提交学习" in app_js
+    assert "copy-learning-structured" in app_js
+    assert ".row-card-shell.active" in styles
+    assert ".status-help-tooltip" in styles
+    assert "position: fixed" in styles
+    assert ".learning-actions-primary" in styles
+    assert ".copy-learning-structured" in styles
+    assert "repeat(auto-fit, minmax(220px, 1fr))" in styles
+    assert ".learning-field > .field" in styles
+    assert "font-size: 1rem" in styles
     assert 'method = "DELETE"' in app_js
     assert "learningSelectField" in app_js
     assert "learningMultiChoiceField" in app_js
@@ -245,7 +269,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-6")
+        connection.request("GET", "/app.js?v=20260812-9")
         response = connection.getresponse()
         response.read()
         assert response.status == 200
@@ -328,6 +352,24 @@ def test_learning_api_create_save_conflict_and_review(tmp_path: Path) -> None:
         )
         assert status == 200
         assert approved["status"] == "approved"
+
+        status, direct_created = _request(
+            port,
+            "POST",
+            "/api/learning/person-candidates",
+            {"text": "年轻女生，栗棕短发，浅色针织衫", "source_label": "直接提交测试"},
+        )
+        assert status == 201
+        direct_id = str(direct_created["candidate_id"])
+        status, direct_approved = _request(
+            port,
+            "POST",
+            f"/api/learning/candidates/person/{direct_id}/submit-learning",
+            {"expected_revision": direct_created["revision"]},
+        )
+        assert status == 200
+        assert direct_approved["status"] == "approved"
+        assert direct_approved["revision"] == 2
 
         status, reject_created = _request(
             port,

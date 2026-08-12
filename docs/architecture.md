@@ -221,10 +221,17 @@ worker 由 FunASR 既有 Python 使用 `-B` 执行，正常 import 已安装的 
 转换音频与 JSON 写到 `learning/copy/work/`。FunASR 源码、锁文件、缓存与现有字幕入口保持
 只读。内容指纹与 worker 配置共同缓存，单项失败落独立报告。
 
-候选经工作台或 CLI 人工批准后仍不能自动进入生产。Codex 负责语义拆解并生成发布清单；
+候选经工作台“提交学习”显式确认或兼容 CLI 人工批准后仍不能自动进入生产。Codex 负责语义拆解并生成发布清单；
 `learning-publish` 只做确定性校验、风险隔离、冲突检查和多目标事务写入。文案块发布到
 `learned-copy-source-blocks.md` 并进入 source-block 注册表；人物 identity/hair/outfit/scene
 块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板和 validator 提供。
+
+生产生成入口前增加只读 `learning-preflight` 门禁。它同时汇总 copy/person 的 approved 与
+published 候选，核对 published 候选登记的 block ID 是否存在于正式 learned 资源。存在
+approved 候选时返回 `codex_publish_approved`，由 Codex 完成语义清理和发布；存在缺失正式块时
+返回 `repair_published_resources`。任一动作未清零时退出码为 3，原生产 CLI 不得继续。发布后
+必须复检到 `ready_for_generation=true`，从而把审核、语义发布和生产消费连成可验证闭环，同时
+保持 Python 不承担语义抽取。
 
 审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，候选
 操作只能提交 kind、candidate ID、revision 与允许字段；媒体操作只能提交 date 和扫描得到的
@@ -248,19 +255,24 @@ ASR、下游视频生成或付费提交。
 
 学习分类使用服务端统一枚举：品类族、消费需求和季节是单值，来源用途是
 `source_fill` / `human_rewrite` 多值。API 返回机器值、中文标签和解释，前端不维护自由文本。
+单人工作台保存后只显示“提交学习”，该人工动作把 `pending`/`editing` 直接转为 `approved`；
+旧 `ready_for_review -> approve/reject` 路径仅为 CLI 兼容保留。宽屏分类区使用自适应三列单选和
+双列来源用途，窄屏回退为单列。
 草稿删除使用 revision 校验并把整个候选目录原子移动到 `learning/<kind>/trash/`；媒体映射只
 读取活动候选，因此删除后素材自然恢复“未识别”并可重新转写。批准和发布状态禁止删除。
+候选状态旁的问号用视口级悬浮卡片解释各状态的可用性，避免在候选滚动容器内被裁切；候选
+内容和行内删除入口共用一个状态容器，详情区则把常规生命周期操作与危险删除操作分组。
 候选生命周期与重新生成分支为：
 
 ```text
-未识别媒体 -> 显式转写 -> pending 候选 -> 人工编辑与分类 -> 提交审核 -> 批准 -> 发布
+未识别媒体 -> 显式转写 -> pending 候选 -> 保存编辑与分类 -> 提交学习/approved -> 发布
                          |
                          +-> 删除到 trash -> 媒体恢复未识别 -> 再次显式转写
 ```
 
 勾选媒体、播放器预览、保存编辑稿和选择分类都不会隐式进入转写或发布分支。来源用途允许多选，
 是因为同一原文既可能保留结构直接填槽，也可能只作为语言节奏的改写参考；其余分类字段保持
-单选。提交审核前必须选择品类族、消费需求和至少一个来源用途。
+单选。提交学习前必须选择品类族、消费需求和至少一个来源用途并先保存。
 
 ## 安全与可恢复性
 

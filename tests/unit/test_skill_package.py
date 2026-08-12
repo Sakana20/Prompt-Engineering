@@ -54,6 +54,10 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     }
     assert "browser-supplied" in skill
     assert "filesystem path" in skill
+    assert "learning-preflight" in skill
+    assert "ready_for_generation" in skill
+    assert "codex_publish_approved" in skill
+    assert "`提交学习` is that approval action" in skill
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:

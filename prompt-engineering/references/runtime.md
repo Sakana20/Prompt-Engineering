@@ -11,6 +11,7 @@ python scripts/run_cli.py -- init-batch --task-name watermelon-batch --category 
 python scripts/run_cli.py -- export-csv --input watermelon.tasks.json --config configs/projects/example.json
 python scripts/run_cli.py -- validate-batch --input generated-task-batch.json --config configs/projects/example.json
 python scripts/run_cli.py -- package --input generated-task-batch.json --format json --format csv --preset none
+python scripts/run_cli.py -- learning-preflight --learning-root learning
 python scripts/run_cli.py -- learning-transcribe --input /path/video.mp4 --learning-root learning --date 2026-08-11
 python scripts/run_cli.py -- learning-transcribe --learning-root learning --date 2026-08-12
 python scripts/run_cli.py -- learning-add-person-prompt --text "人物 Prompt" --source-label "用户人工样本" --learning-root learning
@@ -21,6 +22,25 @@ schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使�
 `--python-executable` 或 `AVATAR_PROMPT_PYTHON` 可指定已经安装本项目的 Python 环境。
 
 ## 学习候选与发布
+
+所有生产文案、人物 Prompt、任务清单和任务包流程在调用 `compose`、`init-batch`、
+`validate-copy`、`validate-batch`、`package` 或 `export-csv` 前，必须先运行：
+
+```bash
+avatar-prompts learning-preflight --learning-root learning
+```
+
+该命令一次读取 copy/person 的 `approved` 与 `published` 候选，并核对 published 候选登记的
+block ID 是否仍存在于正式 learned 资源。输出 `ready_for_generation`、`required_actions`、
+完整 approved 候选、published 候选和正式 block ID。无阻塞项时退出码为 `0`；存在待发布候选
+或正式资源缺失时退出码为 `3`，普通生成不得继续。
+
+`codex_publish_approved` 只能由 Codex 处理：逐条清除样本价格、促销、平台、配送、品牌、功效、
+销量、CTA、固定画面、logo 和真人风险，生成严格发布清单并执行 `learning-publish`。Python CLI
+不得自动做语义抽取、自动批准或绕过发布清单。发布完所有 approved 候选后必须再次运行
+`learning-preflight`；只有 `ready_for_generation=true` 且 `required_actions=[]` 才可继续原生产
+命令。`repair_published_resources` 表示 published 候选登记的 block ID 不在正式资源中，必须先
+恢复一致性，不能静默忽略。
 
 `learning-transcribe` 传入 `--input` 时只处理显式本地文件或目录当前一层。省略 `--input` 时，
 按本地日期（或 `--date`）解析用户指定的默认目录
@@ -49,12 +69,14 @@ schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使�
 不提交路径。勾选媒体后，右侧通过受限 `media-content` Range 接口预览最后勾选的视频或音频；
 预览不会启动 ASR。真实转写使用清理继承变量后的 `-I -B` Python，并先预检 FunASR 模块；
 失败响应只包含素材名和原因，页面保留失败选择用于重试，成功或复用时自动打开草稿。工作台还
-提供
-新增人物 Prompt、保存、提交、批准和驳回，但不提供发布、导入、下游视频生成或付费提交按钮。
+提供新增人物 Prompt、保存和“提交学习”；“提交学习”是用户显式确认，会把已保存且分类完整的
+`pending`/`editing` 候选直接转为 `approved`。兼容 CLI 仍保留提交审核、批准和驳回命令，但网页
+不展示这层多人审核按钮。工作台不提供发布、导入、下游视频生成或付费提交按钮。
 新候选原样保存 ASR 全文和 token 时间轴；初始可编辑稿只确定性移除中文逐字空格、保留 ASCII
 词组内部单个空格并压缩相同重复标点，不补写标点、不纠错、不改变大小写。
 文案详情中的品类族、消费需求和季节使用带中文说明的单选下拉；来源块用途使用“直接填槽”与
-“AI 改写参考”复选项。提交审核前必须选择品类族、消费需求和至少一种用途。未批准、未发布的
+“AI 改写参考”复选项。提交学习前必须选择品类族、消费需求和至少一种用途并先保存。宽屏下三
+个单选字段并排、两个来源用途并排，窄屏自动回到单列。未批准、未发布的
 候选可携带 revision 移入 `learning/<kind>/trash/`；源素材不删除，媒体恢复“未识别”并可重新
 转写为新候选。已批准或已发布候选禁止删除。
 

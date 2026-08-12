@@ -32,6 +32,7 @@ uv run avatar-prompts validate-batch --input generated-task-batch.json --preset 
 uv run avatar-prompts package --input generated-task-batch.json --format json --preset none
 uv run avatar-prompts init-batch --task-name demo --category 水果 --output demo.tasks.json
 uv run avatar-prompts export-csv --input demo.tasks.json --preset none
+uv run avatar-prompts learning-preflight --learning-root learning
 ```
 
 `tools/skill_reviewer/` 是本地人工审核台。它会扫描
@@ -69,11 +70,17 @@ FunASR 源码补救，也不得对 `.venv/bin/python` 调用 `Path.resolve()`，
 
 文案候选结构化字段的合法值集中在 `learning.options`。审核台从候选列表响应读取标签和说明，
 不得自行新增自由文本值。品类族、消费需求和季节限制渲染为单选下拉；来源用途渲染为
-`source_fill` / `human_rewrite` 复选项。提交审核要求非空品类族、消费需求和至少一个来源用途。
+`source_fill` / `human_rewrite` 复选项。提交学习要求非空品类族、消费需求和至少一个来源用途。
+网页单人流程在保存后调用 `POST .../submit-learning`，这是用户显式批准并直接写入 `approved`；
+旧 `submit-review/approve/reject` API 与 CLI 继续用于兼容，不在网页显示。宽屏分类区使用三个
+自适应单选列和双列来源用途，窄屏恢复单列。下拉值、文本输入值和来源用途名称使用 `1rem`，
+与可编辑稿正文一致；字段标签和 `small` 辅助说明继续使用紧凑字号。
 `DELETE /api/learning/candidates/{kind}/{candidate_id}` 必须提供 `expected_revision`，只能归档非
 approved/published 候选；服务端移动完整目录到 trash，不得删除源媒体或正式发布资源。删除后
 必须重新读取媒体映射，使源媒体显示为未识别；再次转写必须创建新 candidate ID，不能复活旧
-候选或覆盖 trash 中的审计记录。
+候选或覆盖 trash 中的审计记录。候选列表状态徽标后的问号使用视口定位的悬浮说明，不能被
+滚动列表裁切；列表删除按钮必须处于同一个候选行容器内并共享选中态底色，详情操作区的常规
+流程按钮和危险删除按钮分别分组，但保持相同控件高度。
 
 ## 代码标准
 
@@ -94,8 +101,9 @@ approved/published 候选；服务端移动完整目录到 trash，不得删除�
 
 学习功能测试默认使用可注入 fake worker，不加载真实 Paraformer。测试必须覆盖 copy/person
 隔离、原文不可变、revision 冲突、状态机、路径穿越、worker 超时与非法 JSON、缓存复用、
-单项失败、未批准拒绝发布、事务回滚、learned 资源进入 Prompt、空资源兼容、审核台旧 API
-回归和学习 API 409。真实素材 smoke test 只在用户明确提供短媒体后运行。
+单项失败、未批准拒绝发布、事务回滚、生成前 approved 门禁、published 正式块一致性、
+learned 资源进入 Prompt、空资源兼容、审核台旧 API 回归和学习 API 409。真实素材 smoke test
+只在用户明确提供短媒体后运行。
 
 不得在 FunASR 仓库运行测试或格式化；执行 Prompt-owned worker 前后分别记录其
 `git status --short`，结果必须完全相同。

@@ -6,6 +6,8 @@ from typing import Any
 import pytest
 
 from avatar_prompt_pipeline.cli import build_parser, default_daily_media_directory, run
+from avatar_prompt_pipeline.learning.models import CandidateKind
+from avatar_prompt_pipeline.learning.service import LearningService
 
 
 @pytest.mark.e2e
@@ -62,6 +64,7 @@ def test_help_and_cli_schema_cover_all_learning_commands() -> None:
     commands = {
         "learning-transcribe",
         "learning-add-person-prompt",
+        "learning-preflight",
         "learning-list",
         "learning-update",
         "learning-submit-review",
@@ -81,6 +84,44 @@ def test_help_and_cli_schema_cover_all_learning_commands() -> None:
     assert commands <= schema_commands
     assert transcribe_schema["required"] == ["command"]
     assert "<MM.DD>/淘宝闪购/素材" in transcribe_schema["properties"]["input"]["description"]
+
+
+@pytest.mark.e2e
+def test_learning_preflight_gates_approved_candidates_before_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    root = tmp_path / "learning"
+    monkeypatch.setenv("AVATAR_PROMPT_PROJECT", str(tmp_path))
+
+    result = run(["learning-preflight", "--learning-root", str(root)])
+    ready: dict[str, Any] = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert ready["ready_for_generation"] is True
+
+    service = LearningService.from_root(root)
+    candidate = service.add_person_prompt("年轻鹅蛋脸女生，栗棕短发，米白针织衫")
+    review = service.submit_review(
+        CandidateKind.PERSON,
+        str(candidate.candidate_id),
+        expected_revision=1,
+    )
+    service.approve(
+        CandidateKind.PERSON,
+        str(candidate.candidate_id),
+        expected_revision=int(review.revision),
+    )
+
+    result = run(["learning-preflight", "--learning-root", str(root)])
+    blocked: dict[str, Any] = json.loads(capsys.readouterr().out)
+
+    assert result == 3
+    assert blocked["ready_for_generation"] is False
+    assert blocked["required_actions"] == ["codex_publish_approved"]
+    assert blocked["approved_count"] == 1
+    assert blocked["approved"]["person"][0]["edited_prompt"].startswith("年轻鹅蛋脸")
 
 
 @pytest.mark.e2e

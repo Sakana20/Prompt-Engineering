@@ -783,7 +783,9 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             kind = CandidateKind(kind_value)
             revision = _body_revision(data)
             service = self._learning_service()
-            if action == "submit-review":
+            if action == "submit-learning":
+                candidate = service.submit_learning(kind, candidate_id, expected_revision=revision)
+            elif action == "submit-review":
                 candidate = service.submit_review(kind, candidate_id, expected_revision=revision)
             elif action == "approve":
                 candidate = service.approve(kind, candidate_id, expected_revision=revision)
@@ -940,7 +942,7 @@ def main() -> None:
 
 def _learning_candidate_route(path: str) -> tuple[str, str, str] | None:
     match = re.fullmatch(
-        r"/api/learning/candidates/(copy|person)/([A-Za-z0-9][A-Za-z0-9_-]{7,95})(?:/(submit-review|approve|reject))?",
+        r"/api/learning/candidates/(copy|person)/([A-Za-z0-9][A-Za-z0-9_-]{7,95})(?:/(submit-learning|submit-review|approve|reject))?",
         path,
     )
     if match is None:

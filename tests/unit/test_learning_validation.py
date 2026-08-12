@@ -46,7 +46,7 @@ def test_risk_detection_keeps_asr_claims_out_of_fact_layer() -> None:
     assert {"price", "promotion", "platform_or_delivery", "action_call", "claim"} <= set(risks)
 
 
-def test_copy_review_requires_controlled_classification_fields(tmp_path: Path) -> None:
+def test_copy_submission_requires_controlled_classification_fields(tmp_path: Path) -> None:
     service = LearningService.from_root(tmp_path / "learning")
     candidate = CopyLearningCandidate(
         candidate_id=CandidateId("copy-classification-001"),
@@ -65,8 +65,12 @@ def test_copy_review_requires_controlled_classification_fields(tmp_path: Path) -
     )
     service.store.create(candidate)
 
-    with pytest.raises(LearningValidationError, match="提交审核前请选择"):
-        service.submit_review(CandidateKind.COPY, str(candidate.candidate_id), expected_revision=1)
+    with pytest.raises(LearningValidationError, match="提交学习前请选择"):
+        service.submit_learning(
+            CandidateKind.COPY,
+            str(candidate.candidate_id),
+            expected_revision=1,
+        )
 
     updated = service.update(
         CandidateKind.COPY,
@@ -80,10 +84,30 @@ def test_copy_review_requires_controlled_classification_fields(tmp_path: Path) -
             "source_usage": ("human_rewrite",),
         },
     )
-    ready = service.submit_review(
+    approved = service.submit_learning(
         CandidateKind.COPY,
         str(candidate.candidate_id),
         expected_revision=int(updated.revision),
     )
 
-    assert ready.status is LearningStatus.READY_FOR_REVIEW
+    assert approved.status is LearningStatus.APPROVED
+
+
+def test_submit_learning_is_explicit_single_user_approval(tmp_path: Path) -> None:
+    service = LearningService.from_root(tmp_path / "learning")
+    candidate = service.add_person_prompt("年轻圆脸女生，黑色短发，简约通勤服装")
+
+    approved = service.submit_learning(
+        CandidateKind.PERSON,
+        str(candidate.candidate_id),
+        expected_revision=1,
+    )
+
+    assert approved.status is LearningStatus.APPROVED
+    assert int(approved.revision) == 2
+    with pytest.raises(LearningValidationError, match="不允许从 approved 提交学习"):
+        service.submit_learning(
+            CandidateKind.PERSON,
+            str(candidate.candidate_id),
+            expected_revision=2,
+        )

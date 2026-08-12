@@ -7,7 +7,9 @@
 - 新增两套独立候选模型、目录、schema、revision、审计和状态机；原始内容不可更新；
 - 新增 Prompt Engineering 自有 Paraformer worker 与严格 subprocess provider，FunASR 仓库
   完全只读，现有字幕入口不变；
-- 新增八个 `avatar-prompts learning-*` 子命令、浅层媒体发现、缓存、局部失败与稳定 JSON；
+- 新增九个 `avatar-prompts learning-*` 子命令、浅层媒体发现、缓存、局部失败与稳定 JSON；
+- 新增生产生成前 `learning-preflight` 门禁：检查 approved、published 与正式块一致性，要求
+  Codex 发布后复检通过才继续生产 CLI；
 - 新增 Codex 发布清单、独立 learned 文案/人物资源、风险隔离和全有或全无发布；
 - learned 文案块进入 source-block 注册表，learned 人物块进入视觉 Prompt 指令；空资源兼容
   旧行为；
@@ -21,9 +23,13 @@
   语义纠错或标点推断；ASR 已有标点会保留，缺失标点必须由审核人在可编辑稿中补写并保存为
   新 revision；
 - 审核分类字段使用服务端枚举和中文控件，单选字段使用下拉、来源用途使用带解释的多选；
-  未完成品类族、消费需求和来源用途时不得提交审核；
+  未完成品类族、消费需求和来源用途时不得提交学习；宽屏以自适应三列单选和双列用途压缩高度；
+- 单人网页流程只显示保存和提交学习，提交学习作为显式人工确认直接进入 `approved`；兼容 CLI
+  继续保留 ready_for_review、approve 和 reject 路径；
 - 候选列表和详情均提供删除入口；非批准/发布候选支持 revision 保护的可恢复删除，完整候选
   目录进入 trash，源媒体恢复未识别并可重新生成，批准或发布候选禁止删除；
+- 状态徽标旁提供不会被滚动容器裁切的悬浮生命周期说明；列表删除入口与候选行共享选中底色，
+  详情常规操作与危险删除操作分组并保持一致控件高度；
 - 补齐单元、集成、E2E、API、Skill/schema 与回归测试。真实模型 smoke test 仍以用户提供短
   媒体为前提，不作为默认测试门禁。
 
