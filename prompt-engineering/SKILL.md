@@ -249,6 +249,10 @@ and the candidate/publication schemas before operating them.
   deterministic cleanup: remove Chinese character-separating whitespace, preserve one space
   between adjacent ASCII word characters, and collapse identical repeated punctuation. Never
   infer missing punctuation, correct words, change case, or alter token timestamps.
+  Present copy classification as controlled labeled choices, not free-form internal values. Allow
+  draft candidates to be recoverably deleted into the learning trash directory with revision
+  protection; deleting must never remove source media. After deletion, allow the media to be
+  selected and transcribed into a new candidate. Never delete approved or published candidates.
 - Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed

@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse
 
 from avatar_prompt_pipeline.learning.asr_provider import SUPPORTED_MEDIA_SUFFIXES
 from avatar_prompt_pipeline.learning.models import CandidateKind, LearningStatus
+from avatar_prompt_pipeline.learning.options import copy_learning_field_options
 from avatar_prompt_pipeline.learning.service import LearningService
 from avatar_prompt_pipeline.learning.store import (
     CandidateNotFoundError,
@@ -498,6 +499,14 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             return
         self._send_json({"error": "Unknown API route"}, HTTPStatus.NOT_FOUND)
 
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        learning_route = _learning_candidate_route(parsed.path)
+        if learning_route is not None and learning_route[2] == "":
+            self._handle_learning_delete(learning_route[0], learning_route[1])
+            return
+        self._send_json({"error": "Unknown API route"}, HTTPStatus.NOT_FOUND)
+
     def guess_type(self, path: str | os.PathLike[str]) -> str:
         rendered = os.fspath(path)
         if rendered.endswith(".js"):
@@ -566,6 +575,9 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
                     "kind": kind.value,
                     "count": len(candidates),
                     "candidates": [candidate.to_dict() for candidate in candidates],
+                    "field_options": copy_learning_field_options()
+                    if kind is CandidateKind.COPY
+                    else {},
                 }
             )
         except (ValueError, LearningValidationError) as error:
@@ -720,6 +732,33 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
                 structured_fields=fields,
             )
             self._send_json(candidate.to_dict())
+        except (
+            ValueError,
+            LearningValidationError,
+            CandidateNotFoundError,
+            RevisionConflictError,
+        ) as error:
+            self._handle_learning_error(_as_learning_error(error, "kind 参数无效"))
+
+    def _handle_learning_delete(self, kind_value: str, candidate_id: str) -> None:
+        try:
+            data = self._read_json_object()
+            _strict_keys(data, allowed={"expected_revision"}, required={"expected_revision"})
+            kind = CandidateKind(kind_value)
+            candidate = self._learning_service().delete(
+                kind,
+                candidate_id,
+                expected_revision=_body_revision(data),
+            )
+            self._send_json(
+                {
+                    "schema_version": "1.0",
+                    "kind": kind.value,
+                    "candidate_id": str(candidate.candidate_id),
+                    "deleted": True,
+                    "recoverable": True,
+                }
+            )
         except (
             ValueError,
             LearningValidationError,

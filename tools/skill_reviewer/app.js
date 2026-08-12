@@ -140,6 +140,7 @@ const learningState = {
   workbench: localStorage.getItem(WORKBENCH_STORAGE_KEY) === "learning" ? "learning" : "task",
   kind: "copy",
   candidates: [],
+  fieldOptions: {},
   selectedId: "",
   media: [],
   selectedMediaIds: new Set(),
@@ -1047,6 +1048,7 @@ async function loadLearningCandidates() {
   try {
     const payload = await learningRequest(url);
     learningState.candidates = payload.candidates || [];
+    learningState.fieldOptions = payload.field_options || {};
     if (!learningState.candidates.some((item) => item.candidate_id === learningState.selectedId)) {
       learningState.selectedId = learningState.candidates[0]?.candidate_id || "";
     }
@@ -1066,18 +1068,44 @@ function renderLearningList() {
     const active = candidate.candidate_id === learningState.selectedId ? " active" : "";
     const summary = learningState.kind === "copy" ? candidate.edited_transcript : candidate.edited_prompt;
     const source = learningState.kind === "copy" ? candidate.source_date : candidate.source_label;
-    return `<button type="button" class="row-card${active}" data-learning-id="${escapeHtml(candidate.candidate_id)}">
+    const canDelete = !["approved", "published"].includes(candidate.status);
+    const deleteAction = canDelete
+      ? `<button type="button" class="row-delete danger-action" data-learning-delete-id="${escapeHtml(candidate.candidate_id)}" aria-label="删除候选 ${escapeHtml(candidate.candidate_id)}">删除</button>`
+      : "";
+    return `<div class="row-card-shell">
+      <button type="button" class="row-card${active}" data-learning-id="${escapeHtml(candidate.candidate_id)}">
       <div class="row-title"><span>${escapeHtml(source || candidate.candidate_id)}</span>
       <span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)}</span></div>
       <div class="row-summary">revision ${candidate.revision} · ${escapeHtml(summary || "")}</div>
-    </button>`;
+      </button>${deleteAction}</div>`;
   }).join("");
 }
 
-function structuredField(name, label, candidate) {
+function structuredField(name, label, candidate, enabled = true) {
   const value = Array.isArray(candidate[name]) ? candidate[name].join("，") : (candidate[name] || "");
   return `<label class="learning-field"><span>${escapeHtml(label)}</span>
-    <input class="field" data-learning-field="${escapeHtml(name)}" value="${escapeHtml(value)}" /></label>`;
+    <input class="field" data-learning-field="${escapeHtml(name)}" value="${escapeHtml(value)}" ${enabled ? "" : "disabled"} /></label>`;
+}
+
+function learningSelectField(name, label, candidate, enabled) {
+  const options = learningState.fieldOptions[name] || [];
+  const selected = candidate[name] || "";
+  const selectedOption = options.find((option) => option.value === selected);
+  const rendered = options.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === selected ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("");
+  return `<label class="learning-field"><span>${escapeHtml(label)}</span>
+    <select class="field" data-learning-field="${escapeHtml(name)}" ${enabled ? "" : "disabled"}>${rendered}</select>
+    <small data-learning-description-for="${escapeHtml(name)}">${escapeHtml(selectedOption?.description || "请从列表中选择")}</small></label>`;
+}
+
+function learningMultiChoiceField(name, label, candidate, enabled) {
+  const options = learningState.fieldOptions[name] || [];
+  const selected = new Set(Array.isArray(candidate[name]) ? candidate[name] : []);
+  const choices = options.map((option) => `<label class="learning-choice">
+    <input type="checkbox" data-learning-choice="${escapeHtml(name)}" value="${escapeHtml(option.value)}" ${selected.has(option.value) ? "checked" : ""} ${enabled ? "" : "disabled"} />
+    <span><strong>${escapeHtml(option.label)}</strong><small>${escapeHtml(option.description)}</small></span>
+  </label>`).join("");
+  return `<fieldset class="learning-field learning-choice-field"><legend>${escapeHtml(label)}</legend>
+    <div class="learning-choice-group">${choices}</div></fieldset>`;
 }
 
 function renderLearningDetail() {
@@ -1108,23 +1136,27 @@ function renderLearningDetail() {
   const isCopy = learningState.kind === "copy";
   const raw = isCopy ? candidate.raw_transcript : candidate.raw_prompt;
   const edited = isCopy ? candidate.edited_transcript : candidate.edited_prompt;
+  const canSave = ["pending", "editing", "rejected"].includes(candidate.status);
+  const copyMetadataComplete = Boolean(candidate.category_family && candidate.consumption_need
+    && Array.isArray(candidate.source_usage) && candidate.source_usage.length);
+  const canSubmit = ["pending", "editing"].includes(candidate.status)
+    && (!isCopy || copyMetadataComplete);
+  const canReview = candidate.status === "ready_for_review";
+  const canDelete = !["approved", "published"].includes(candidate.status);
   const structured = isCopy
     ? [
-        structuredField("category_family", "品类族", candidate),
-        structuredField("consumption_need", "消费需求", candidate),
-        structuredField("season", "季节限制", candidate),
-        structuredField("source_usage", "来源块用途（逗号分隔）", candidate)
+        learningSelectField("category_family", "品类族", candidate, canSave),
+        learningSelectField("consumption_need", "消费需求", candidate, canSave),
+        learningSelectField("season", "季节限制", candidate, canSave),
+        learningMultiChoiceField("source_usage", "来源块用途（可多选）", candidate, canSave)
       ]
     : [
-        structuredField("identity_traits", "人物身份（逗号分隔）", candidate),
-        structuredField("hair_traits", "发型（逗号分隔）", candidate),
-        structuredField("outfit_traits", "服装（逗号分隔）", candidate),
-        structuredField("scene_traits", "场景（逗号分隔）", candidate),
-        structuredField("forbidden_traits", "禁止复用（逗号分隔）", candidate)
+        structuredField("identity_traits", "人物身份（逗号分隔）", candidate, canSave),
+        structuredField("hair_traits", "发型（逗号分隔）", candidate, canSave),
+        structuredField("outfit_traits", "服装（逗号分隔）", candidate, canSave),
+        structuredField("scene_traits", "场景（逗号分隔）", candidate, canSave),
+        structuredField("forbidden_traits", "禁止复用（逗号分隔）", candidate, canSave)
       ];
-  const canSave = ["pending", "editing", "rejected"].includes(candidate.status);
-  const canSubmit = ["pending", "editing"].includes(candidate.status);
-  const canReview = candidate.status === "ready_for_review";
   const sourceMeta = isCopy
     ? `媒体：${escapeHtml(candidate.source_media)}<br />指纹：${escapeHtml(candidate.source_fingerprint)}<br />识别：${escapeHtml(candidate.provider)} · ${escapeHtml(candidate.model)}`
     : `来源：${escapeHtml(candidate.source_label)}`;
@@ -1132,6 +1164,9 @@ function renderLearningDetail() {
     ? `<div class="publication-hint">待 Codex 生成发布清单并通过 CLI 发布</div>` : "";
   const draftHint = isCopy
     ? `<span class="helper-text">初始稿只整理中文逐字空格和明显重复标点；不会改字、猜测标点或改变原始时间轴。</span>`
+    : "";
+  const metadataHint = isCopy && !copyMetadataComplete
+    ? `<div class="classification-hint">先选择品类族、消费需求和至少一种来源块用途并保存，才可提交审核。</div>`
     : "";
   elements.learningDetail.innerHTML = `<article class="learning-form" data-candidate-id="${escapeHtml(candidate.candidate_id)}" data-revision="${candidate.revision}">
     <div class="learning-meta"><strong>${escapeHtml(candidate.candidate_id)}</strong><span>revision ${candidate.revision} · ${escapeHtml(candidate.status)}</span></div>
@@ -1142,12 +1177,15 @@ function renderLearningDetail() {
     <section class="field-block"><div class="field-name">风险</div><div class="field-value">${escapeHtml((candidate.risk_tags || []).join("、") || "无")}</div></section>
     <section class="field-block"><div class="field-name">相似项</div><div class="field-value">${escapeHtml((candidate.similarity_hits || []).join("、") || "无")}</div></section>
     ${publicationHint}
+    ${metadataHint}
     <div class="learning-actions">
       <button type="button" data-learning-action="save" ${canSave ? "" : "disabled"}>保存修改</button>
       <button type="button" data-learning-action="submit-review" ${canSubmit ? "" : "disabled"}>提交审核</button>
       <button type="button" data-learning-action="approve" ${canReview ? "" : "disabled"}>批准</button>
       <button type="button" data-learning-action="reject" ${canReview ? "" : "disabled"}>驳回</button>
+      <button type="button" class="danger-action" data-learning-action="delete" ${canDelete ? "" : "disabled"}>删除候选</button>
     </div>
+    ${canDelete ? `<div class="helper-text">删除只把候选移入回收目录，不删除源素材；删除后可以重新创建。</div>` : `<div class="helper-text">已批准或已发布的候选不能删除。</div>`}
     <div id="learning-action-status" class="status-line"></div>
   </article>`;
 }
@@ -1172,6 +1210,16 @@ async function runLearningAction(action) {
       body[input.dataset.learningField] = listFields.includes(input.dataset.learningField)
         ? splitStructuredValue(input.value) : input.value.trim();
     });
+    document.querySelectorAll("[data-learning-choice]").forEach((input) => {
+      const field = input.dataset.learningChoice;
+      if (!Array.isArray(body[field])) body[field] = [];
+      if (input.checked) body[field].push(input.value);
+    });
+  } else if (action === "delete") {
+    const copyMessage = "删除后该素材会恢复为未识别，并可重新创建 ASR 候选。候选将移入回收目录，源素材不会删除。确定删除？";
+    const personMessage = "候选将移入回收目录，原始输入不会写入正式学习资源。确定删除？";
+    if (!window.confirm(learningState.kind === "copy" ? copyMessage : personMessage)) return;
+    method = "DELETE";
   } else if (action === "reject") {
     const reason = window.prompt("请输入驳回原因");
     if (!reason) return;
@@ -1183,6 +1231,21 @@ async function runLearningAction(action) {
   status.textContent = "正在提交...";
   try {
     const updated = await learningRequest(url, { method, body: JSON.stringify(body) });
+    if (action === "delete") {
+      const deletedMedia = learningState.media.find((item) => item.candidate?.candidate_id === candidate.candidate_id);
+      learningState.selectedId = "";
+      learningState.previewMediaId = "";
+      await Promise.all([loadLearningCandidates(), loadLearningMedia()]);
+      if (deletedMedia) {
+        learningState.selectedId = "";
+        learningState.selectedMediaIds.add(deletedMedia.id);
+        learningState.previewMediaId = deletedMedia.id;
+        elements.learningMediaStatus.textContent = "候选已移入回收目录；素材已重新勾选，可直接点击“创建 ASR 候选”。";
+      }
+      renderLearningMedia();
+      renderLearningDetail();
+      return;
+    }
     const index = learningState.candidates.findIndex((item) => item.candidate_id === updated.candidate_id);
     learningState.candidates[index] = updated;
     renderLearningList();
@@ -1244,6 +1307,15 @@ elements.learningMediaList.addEventListener("change", (event) => {
 });
 elements.learningMediaTranscribe.addEventListener("click", transcribeSelectedLearningMedia);
 elements.learningList.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-learning-delete-id]");
+  if (deleteButton) {
+    learningState.previewMediaId = "";
+    learningState.selectedId = deleteButton.dataset.learningDeleteId;
+    renderLearningList();
+    renderLearningDetail();
+    runLearningAction("delete");
+    return;
+  }
   const button = event.target.closest("[data-learning-id]");
   if (!button) return;
   learningState.previewMediaId = "";
@@ -1254,6 +1326,14 @@ elements.learningList.addEventListener("click", (event) => {
 elements.learningDetail.addEventListener("click", (event) => {
   const button = event.target.closest("[data-learning-action]");
   if (button && !button.disabled) runLearningAction(button.dataset.learningAction);
+});
+elements.learningDetail.addEventListener("change", (event) => {
+  const select = event.target.closest("select[data-learning-field]");
+  if (!select) return;
+  const option = (learningState.fieldOptions[select.dataset.learningField] || [])
+    .find((item) => item.value === select.value);
+  const hint = elements.learningDetail.querySelector(`[data-learning-description-for="${select.dataset.learningField}"]`);
+  if (hint) hint.textContent = option?.description || "请从列表中选择";
 });
 elements.learningAddPerson.addEventListener("click", async () => {
   const text = elements.learningNewPrompt.value.trim();

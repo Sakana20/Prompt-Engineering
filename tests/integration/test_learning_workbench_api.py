@@ -45,7 +45,7 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-5" in index
+    assert "app.js?v=20260812-6" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     assert '"/api/learning/media"' in app_js
@@ -56,6 +56,13 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert "失败素材已保留勾选" in app_js
     assert "learning-failure-list" in app_js
     assert "不会改字、猜测标点或改变原始时间轴" in app_js
+    assert "删除候选" in app_js
+    assert "data-learning-delete-id" in app_js
+    assert 'method = "DELETE"' in app_js
+    assert "learningSelectField" in app_js
+    assert "learningMultiChoiceField" in app_js
+    assert "来源块用途\uff08可多选\uff09" in app_js
+    assert "data-learning-description-for" in app_js
     assert "当前审核台服务版本过旧" in app_js
     assert 'cache: "no-store"' in app_js
 
@@ -238,7 +245,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-5")
+        connection.request("GET", "/app.js?v=20260812-6")
         response = connection.getresponse()
         response.read()
         assert response.status == 200
@@ -269,6 +276,18 @@ def test_learning_api_create_save_conflict_and_review(tmp_path: Path) -> None:
         )
         assert status == 201
         candidate_id = str(created["candidate_id"])
+        status, copy_listing = _request(port, "GET", "/api/learning/candidates?kind=copy")
+        assert status == 200
+        field_options = cast(dict[str, list[dict[str, str]]], copy_listing["field_options"])
+        assert {item["value"] for item in field_options["category_family"]} == {
+            "",
+            "beverage",
+            "other",
+        }
+        assert {item["value"] for item in field_options["source_usage"]} == {
+            "source_fill",
+            "human_rewrite",
+        }
         status, updated = _request(
             port,
             "PUT",
@@ -337,6 +356,41 @@ def test_learning_api_create_save_conflict_and_review(tmp_path: Path) -> None:
         assert status == 200
         assert rejected["status"] == "rejected"
         assert rejected["rejection_reason"] == "人物信息不够完整"
+
+        status, delete_created = _request(
+            port,
+            "POST",
+            "/api/learning/person-candidates",
+            {"text": "年轻女生，黑色长发，蓝色针织衫", "source_label": "删除测试"},
+        )
+        assert status == 201
+        delete_id = str(delete_created["candidate_id"])
+        status, deleted = _request(
+            port,
+            "DELETE",
+            f"/api/learning/candidates/person/{delete_id}",
+            {"expected_revision": delete_created["revision"]},
+        )
+        assert status == 200
+        assert deleted["deleted"] is True
+        assert deleted["recoverable"] is True
+        assert (tmp_path / "learning" / "person" / "trash" / delete_id).is_dir()
+        status, missing = _request(
+            port,
+            "GET",
+            f"/api/learning/candidates/person/{delete_id}",
+        )
+        assert status == 404
+        assert missing["error"] == "候选不存在"
+
+        status, protected = _request(
+            port,
+            "DELETE",
+            f"/api/learning/candidates/person/{candidate_id}",
+            {"expected_revision": approved["revision"]},
+        )
+        assert status == 422
+        assert "不能删除" in str(protected["error"])
 
         status, sources = _request(port, "GET", "/api/sources")
         assert status == 200

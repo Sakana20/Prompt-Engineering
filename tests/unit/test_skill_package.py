@@ -47,6 +47,11 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     copy_properties = copy_candidate_schema["properties"]
     assert "Verbatim ASR text" in copy_properties["raw_transcript"]["description"]
     assert "deterministic whitespace" in copy_properties["edited_transcript"]["description"]
+    assert copy_properties["category_family"]["enum"] == ["", "beverage", "other"]
+    assert set(copy_properties["source_usage"]["items"]["enum"]) == {
+        "source_fill",
+        "human_rewrite",
+    }
     assert "browser-supplied" in skill
     assert "filesystem path" in skill
 

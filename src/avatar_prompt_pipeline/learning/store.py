@@ -336,6 +336,44 @@ class LearningStore:
         _transactional_replace(files)
         return updated
 
+    def archive(
+        self,
+        kind: CandidateKind,
+        candidate_id: str,
+        *,
+        expected_revision: int,
+    ) -> LearningCandidate:
+        current = self.get(kind, candidate_id)
+        if int(current.revision) != expected_revision:
+            raise RevisionConflictError(
+                f"revision 冲突：expected={expected_revision},actual={int(current.revision)}"
+            )
+        directory = self.candidate_directory(kind, candidate_id)
+        archive_root = self.kind_root(kind) / "trash"
+        archived = archive_root / candidate_id
+        if archived.exists():
+            raise FileExistsError(f"回收目录已存在同名候选：{candidate_id}")
+        archive_root.mkdir(parents=True, exist_ok=True)
+        deletion_record = directory / "deletion.json"
+        atomic_write_json(
+            deletion_record,
+            {
+                "schema_version": "1.0",
+                "action": "archived",
+                "candidate_id": candidate_id,
+                "kind": kind.value,
+                "revision": int(current.revision),
+                "status": current.status.value,
+                "archived_at": _now(),
+            },
+        )
+        try:
+            directory.replace(archived)
+        except BaseException:
+            deletion_record.unlink(missing_ok=True)
+            raise
+        return current
+
 
 def asdict_token(token: AsrToken) -> dict[str, object]:
     return {

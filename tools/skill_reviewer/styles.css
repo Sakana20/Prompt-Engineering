@@ -459,6 +459,62 @@ input[type="color"] {
   font-size: 12px;
 }
 
+.learning-field small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.learning-choice-field {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.learning-choice-field legend {
+  margin-bottom: 7px;
+}
+
+.learning-choice-group {
+  display: grid;
+  gap: 8px;
+}
+
+.learning-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #11151b;
+  padding: 10px;
+}
+
+.learning-choice span {
+  display: grid;
+  gap: 3px;
+}
+
+.classification-hint {
+  border: 1px solid #854d0e;
+  border-radius: 8px;
+  background: #2b2111;
+  color: #fde68a;
+  padding: 11px;
+  line-height: 1.5;
+}
+
+.danger-action {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.danger-action:hover {
+  border-color: var(--danger);
+  background: #321719;
+}
+
 .media-select-row {
   display: flex;
   align-items: center;
@@ -578,6 +634,7 @@ input[type="color"] {
 
 button:disabled,
 input:disabled,
+select:disabled,
 textarea:disabled {
   cursor: not-allowed;
   opacity: 0.48;
@@ -611,6 +668,22 @@ textarea:disabled {
   background: transparent;
   text-align: left;
   padding: 14px;
+}
+
+.row-card-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.row-card-shell .row-card {
+  border-bottom: 0;
+}
+
+.row-delete {
+  margin-right: 10px;
+  padding: 6px 9px;
 }
 
 .row-card:hover,

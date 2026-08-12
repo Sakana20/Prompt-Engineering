@@ -23,6 +23,7 @@ from .models import (
     PersonPromptLearningCandidate,
     Revision,
 )
+from .options import validate_copy_learning_fields
 from .store import LearningStore, atomic_write_json
 from .text_cleanup import normalize_asr_editable_draft
 from .validation import (
@@ -248,16 +249,24 @@ class LearningService:
         if unknown:
             raise LearningValidationError("不允许编辑字段：" + "、".join(sorted(unknown)))
         if isinstance(current, CopyLearningCandidate):
+            category_family = _field_string(fields, "category_family", current.category_family)
+            consumption_need = _field_string(fields, "consumption_need", current.consumption_need)
+            season = _field_string(fields, "season", current.season)
+            source_usage = _field_tuple(fields, "source_usage", current.source_usage)
+            validate_copy_learning_fields(
+                category_family=category_family,
+                consumption_need=consumption_need,
+                season=season,
+                source_usage=source_usage,
+            )
             updated: LearningCandidate = replace(
                 current,
                 status=LearningStatus.EDITING,
                 edited_transcript=edited,
-                category_family=_field_string(fields, "category_family", current.category_family),
-                consumption_need=_field_string(
-                    fields, "consumption_need", current.consumption_need
-                ),
-                season=_field_string(fields, "season", current.season),
-                source_usage=_field_tuple(fields, "source_usage", current.source_usage),
+                category_family=category_family,
+                consumption_need=consumption_need,
+                season=season,
+                source_usage=source_usage,
                 risk_tags=detect_risks(edited, kind=CandidateKind.COPY),
             )
         elif isinstance(current, PersonPromptLearningCandidate):
@@ -284,6 +293,22 @@ class LearningService:
         self, kind: CandidateKind, candidate_id: str, *, expected_revision: int
     ) -> LearningCandidate:
         current = self.store.get(kind, candidate_id)
+        if isinstance(current, CopyLearningCandidate):
+            validate_copy_learning_fields(
+                category_family=current.category_family,
+                consumption_need=current.consumption_need,
+                season=current.season,
+                source_usage=current.source_usage,
+            )
+            missing: list[str] = []
+            if not current.category_family:
+                missing.append("品类族")
+            if not current.consumption_need:
+                missing.append("消费需求")
+            if not current.source_usage:
+                missing.append("来源块用途")
+            if missing:
+                raise LearningValidationError("提交审核前请选择：" + "、".join(missing))
         allowed_transition(current, LearningStatus.READY_FOR_REVIEW)
         return self.store.save(
             replace(current, status=LearningStatus.READY_FOR_REVIEW),
@@ -318,6 +343,22 @@ class LearningService:
             expected_revision=expected_revision,
             action="rejected",
             details=(clean_reason,),
+        )
+
+    def delete(
+        self,
+        kind: CandidateKind,
+        candidate_id: str,
+        *,
+        expected_revision: int,
+    ) -> LearningCandidate:
+        current = self.store.get(kind, candidate_id)
+        if current.status in {LearningStatus.APPROVED, LearningStatus.PUBLISHED}:
+            raise LearningValidationError("已批准或已发布的候选不能删除")
+        return self.store.archive(
+            kind,
+            candidate_id,
+            expected_revision=expected_revision,
         )
 
 

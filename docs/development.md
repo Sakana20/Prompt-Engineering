@@ -64,6 +64,11 @@ FunASR 源码补救，也不得对 `.venv/bin/python` 调用 `Path.resolve()`，
 重复标点，不能做纠错、大小写改写或标点推断。ASCII 字母数字两侧都是 ASCII 词字符时保留
 一个空格，其余 ASR 分隔空白移除。
 
+文案候选结构化字段的合法值集中在 `learning.options`。审核台从候选列表响应读取标签和说明，
+不得自行新增自由文本值。提交审核要求非空品类族、消费需求和来源用途。`DELETE` 候选接口必须
+提供 `expected_revision`，只能归档非 approved/published 候选；服务端移动完整目录到 trash，
+不得删除源媒体或正式发布资源。
+
 ## 代码标准
 
 - Python 3.12+，公共边界完整类型标注；

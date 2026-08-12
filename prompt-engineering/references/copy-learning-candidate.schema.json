@@ -40,10 +40,19 @@
     "audio_conversion": {"type": "array", "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "minItems": 2, "maxItems": 2}},
     "risk_tags": {"$ref": "#/$defs/strings"},
     "similarity_hits": {"$ref": "#/$defs/strings"},
-    "category_family": {"type": "string"},
-    "consumption_need": {"type": "string"},
-    "season": {"type": "string"},
-    "source_usage": {"$ref": "#/$defs/strings"},
+    "category_family": {"enum": ["", "beverage", "other"]},
+    "consumption_need": {
+      "enum": [
+        "", "meal", "craving", "afternoon_tea", "commute", "sharing",
+        "binge_watching", "daily_use", "urgent_need", "gifting", "other"
+      ]
+    },
+    "season": {"enum": ["all", "spring", "summer", "autumn", "winter"]},
+    "source_usage": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["source_fill", "human_rewrite"]}
+    },
     "published_block_ids": {"$ref": "#/$defs/strings"},
     "rejection_reason": {"type": "string"}
   },

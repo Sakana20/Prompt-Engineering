@@ -184,4 +184,16 @@ Path(a.output).write_text(json.dumps(payload, ensure_ascii=False), encoding='utf
     assert (candidate_root / "edited_transcript.txt").read_text(encoding="utf-8") == (
         "缓存ASR识别\uff01"
     )
+    service.delete(
+        CandidateKind.COPY,
+        str(candidate.candidate_id),
+        expected_revision=int(candidate.revision),
+    )
+    regenerated = service.transcribe((media,), source_date=date(2026, 8, 11))
+    regenerated_ids = regenerated["candidate_ids"]
+    assert isinstance(regenerated_ids, list)
+    assert regenerated["succeeded"] == 1
+    assert regenerated_ids != candidate_ids
+    assert marker.read_text().splitlines() == ["call", "call"]
+    assert (tmp_path / "learning" / "copy" / "trash" / str(candidate.candidate_id)).is_dir()
     assert not (tmp_path / "learning" / "person").exists()
