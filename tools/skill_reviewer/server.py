@@ -38,6 +38,7 @@ SOURCE_FILE_SUFFIXES = {".csv", ".db", ".sqlite", ".sqlite3"}
 SQLITE_SUFFIXES = {".db", ".sqlite", ".sqlite3"}
 DATABASES: dict[str, Path] = {}
 SOURCE_FILES: dict[str, Path] = {}
+LEARNING_MEDIA_DIRECTORIES: dict[str, Path] = {}
 DEFAULT_LEARNING_ROOT = Path(__file__).resolve().parents[2] / "learning"
 LEARNING_ROOT = DEFAULT_LEARNING_ROOT
 MAX_JSON_BODY_BYTES = 1024 * 1024
@@ -251,31 +252,76 @@ def _learning_media_directory(source_date: date) -> Path:
     return DAILY_MEDIA_ROOT / source_date.strftime("%m.%d") / DAILY_MEDIA_SUFFIX
 
 
-def _is_allowed_learning_media(path: Path, directory: Path) -> bool:
+def _is_within_directory(path: Path, directory: Path) -> bool:
+    try:
+        path.expanduser().resolve().relative_to(directory.expanduser().resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _is_allowed_learning_directory(path: Path, root: Path) -> bool:
+    resolved = path.expanduser().resolve()
+    return _is_within_directory(resolved, root) and resolved.is_dir()
+
+
+def _learning_directory_id(path: Path) -> str:
+    resolved = path.expanduser().resolve()
+    directory_id = uuid.uuid5(uuid.NAMESPACE_URL, f"directory:{resolved}").hex
+    LEARNING_MEDIA_DIRECTORIES[directory_id] = resolved
+    return directory_id
+
+
+def _resolve_learning_directory(source_date: date, directory_id: str = "") -> Path:
+    root = _learning_media_directory(source_date).expanduser().resolve()
+    if not directory_id:
+        return root
+    directory = LEARNING_MEDIA_DIRECTORIES.get(directory_id)
+    if directory is None or not _is_allowed_learning_directory(directory, root):
+        raise LearningValidationError("文件夹选择已失效，请返回当天素材根目录后重试")
+    return directory
+
+
+def _is_allowed_learning_media(path: Path, root: Path, directory: Path) -> bool:
     resolved = path.expanduser().resolve()
     return (
         resolved.parent == directory.expanduser().resolve()
+        and _is_within_directory(resolved, root)
         and resolved.is_file()
         and resolved.suffix.lower() in SUPPORTED_MEDIA_SUFFIXES
     )
 
 
-def _discover_learning_media(source_date: date) -> tuple[tuple[str, Path], ...]:
-    directory = _learning_media_directory(source_date).expanduser().resolve()
+def _discover_learning_media(
+    source_date: date,
+    directory_id: str = "",
+) -> tuple[Path, tuple[tuple[str, Path], ...], tuple[tuple[str, Path], ...]]:
+    root = _learning_media_directory(source_date).expanduser().resolve()
+    directory = _resolve_learning_directory(source_date, directory_id)
     if not directory.is_dir():
-        return ()
-    discovered: list[tuple[str, Path]] = []
+        return directory, (), ()
+    directories: list[tuple[str, Path]] = []
+    media: list[tuple[str, Path]] = []
     for path in sorted(directory.iterdir(), key=lambda item: item.name.casefold()):
-        if not _is_allowed_learning_media(path, directory):
-            continue
         resolved = path.resolve()
+        if _is_allowed_learning_directory(resolved, root):
+            directories.append((_learning_directory_id(resolved), resolved))
+            continue
+        if not _is_allowed_learning_media(resolved, root, directory):
+            continue
         media_id = uuid.uuid5(uuid.NAMESPACE_URL, str(resolved)).hex
-        discovered.append((media_id, resolved))
-    return tuple(discovered)
+        media.append((media_id, resolved))
+    return directory, tuple(directories), tuple(media)
 
 
-def _learning_media_payload(source_date: date, service: LearningService) -> dict[str, object]:
-    directory = _learning_media_directory(source_date).expanduser().resolve()
+def _learning_media_payload(
+    source_date: date,
+    service: LearningService,
+    *,
+    directory_id: str = "",
+) -> dict[str, object]:
+    root = _learning_media_directory(source_date).expanduser().resolve()
+    directory, directories, discovered_media = _discover_learning_media(source_date, directory_id)
     candidates_by_source: dict[Path, dict[str, object]] = {}
     for candidate in service.list(CandidateKind.COPY):
         data = candidate.to_dict()
@@ -284,7 +330,7 @@ def _learning_media_payload(source_date: date, service: LearningService) -> dict
             candidates_by_source[Path(source_media).expanduser().resolve()] = data
 
     media: list[dict[str, object]] = []
-    for media_id, resolved in _discover_learning_media(source_date):
+    for media_id, resolved in discovered_media:
         stat = resolved.stat()
         item: dict[str, object] = {
             "id": media_id,
@@ -301,29 +347,50 @@ def _learning_media_payload(source_date: date, service: LearningService) -> dict
                 "revision": candidate["revision"],
             }
         media.append(item)
+    current_directory_id = _learning_directory_id(directory) if directory.is_dir() else ""
+    parent_id = (
+        ""
+        if not directory.is_dir() or directory == root
+        else _learning_directory_id(directory.parent)
+    )
     return {
         "schema_version": "1.0",
+        "directory_navigation": True,
         "date": source_date.isoformat(),
         "root": str(directory),
         "exists": directory.is_dir(),
+        "directory_id": current_directory_id,
+        "parent_id": parent_id,
+        "at_root": directory == root,
+        "relative_directory": "." if directory == root else directory.relative_to(root).as_posix(),
+        "directory_count": len(directories),
+        "directories": [
+            {"id": item_id, "name": resolved.name} for item_id, resolved in directories
+        ],
         "count": len(media),
         "media": media,
     }
 
 
-def _resolve_learning_media(source_date: date, media_ids: tuple[str, ...]) -> tuple[Path, ...]:
+def _resolve_learning_media(
+    source_date: date,
+    media_ids: tuple[str, ...],
+    *,
+    directory_id: str = "",
+) -> tuple[Path, ...]:
     if not media_ids:
         raise LearningValidationError("media_ids 至少选择一项")
     if len(media_ids) > MAX_MEDIA_SELECTION:
         raise LearningValidationError(f"单次最多选择 {MAX_MEDIA_SELECTION} 个媒体")
     if len(set(media_ids)) != len(media_ids):
         raise LearningValidationError("media_ids 不得重复")
-    directory = _learning_media_directory(source_date).expanduser().resolve()
-    available = dict(_discover_learning_media(source_date))
+    root = _learning_media_directory(source_date).expanduser().resolve()
+    directory, _, discovered_media = _discover_learning_media(source_date, directory_id)
+    available = dict(discovered_media)
     resolved: list[Path] = []
     for media_id in media_ids:
         path = available.get(media_id)
-        if path is None or not _is_allowed_learning_media(path, directory):
+        if path is None or not _is_allowed_learning_media(path, root, directory):
             raise LearningValidationError("媒体选择已失效，请刷新素材列表后重试")
         resolved.append(path)
     return tuple(resolved)
@@ -595,7 +662,14 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             params = parse_qs(query)
             date_value = params.get("date", [datetime.now().astimezone().date().isoformat()])[0]
             source_date = _learning_media_date(date_value)
-            self._send_json(_learning_media_payload(source_date, self._learning_service()))
+            directory_id = params.get("directory_id", [""])[0]
+            self._send_json(
+                _learning_media_payload(
+                    source_date,
+                    self._learning_service(),
+                    directory_id=directory_id,
+                )
+            )
         except (OSError, LearningValidationError) as error:
             self._handle_learning_error(
                 error
@@ -608,7 +682,12 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             params = parse_qs(query)
             source_date = _learning_media_date(params.get("date", [""])[0])
             media_id = params.get("id", [""])[0]
-            path = _resolve_learning_media(source_date, (media_id,))[0]
+            directory_id = params.get("directory_id", [""])[0]
+            path = _resolve_learning_media(
+                source_date,
+                (media_id,),
+                directory_id=directory_id,
+            )[0]
             size = path.stat().st_size
         except (OSError, LearningValidationError) as error:
             self._handle_learning_error(
@@ -653,10 +732,19 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
     def _handle_learning_transcribe(self) -> None:
         try:
             data = self._read_json_object()
-            _strict_keys(data, allowed={"date", "media_ids"}, required={"date", "media_ids"})
+            _strict_keys(
+                data,
+                allowed={"date", "directory_id", "media_ids"},
+                required={"date", "media_ids"},
+            )
             source_date = _learning_media_date(_body_string(data, "date"))
+            directory_id = _body_string(data, "directory_id")
             media_ids = _body_string_tuple(data, "media_ids")
-            inputs = _resolve_learning_media(source_date, media_ids)
+            inputs = _resolve_learning_media(
+                source_date,
+                media_ids,
+                directory_id=directory_id,
+            )
             result = self._learning_service().transcribe(inputs, source_date=source_date)
             response = dict(result)
             failures = result.get("failures", [])

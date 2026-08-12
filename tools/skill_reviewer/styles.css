@@ -561,6 +561,27 @@ input[type="color"] {
   margin: 0;
 }
 
+.learning-directory-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.learning-directory-bar button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.learning-directory-bar .helper-text {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .learning-media-list {
   display: grid;
   gap: 7px;
@@ -599,6 +620,30 @@ input[type="color"] {
   background: #14171c;
   padding: 9px;
   cursor: pointer;
+}
+
+.learning-directory-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #171b22;
+  padding: 9px;
+  text-align: left;
+}
+
+.learning-directory-item:hover {
+  border-color: #596170;
+  background: var(--surface-2);
+}
+
+.learning-directory-icon {
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .learning-media-item:hover {

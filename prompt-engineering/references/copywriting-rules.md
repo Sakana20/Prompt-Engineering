@@ -34,9 +34,10 @@
   提炼成抽象风格再写规整广告文。每条记录 `copy_mode`；只有来源轨记录 `source_block_id`。
   AI 改写另记录
   至少两个确实出现在成稿中的 `rewrite_anchor_phrases`，由 CLI 硬校验。
-- 若 [learned-copy-source-blocks.md](learned-copy-source-blocks.md) 已包含审核发布块，将其与
-  原人工块一起参与选块，但不得改变 `human_rewrite=floor(N/2)`、三模式字段边界、活动事实
-  隔离、品类动作和季节校验。空 learned 资源保持旧行为。
+- [volume-copy-source-blocks.md](volume-copy-source-blocks.md) 是唯一正式文案学习库：上半部分
+  保留历史人工块，“审核发布的网页学习块”一节接收新增审核块，两者一起参与选块。新增块不得
+  改变 `human_rewrite=floor(N/2)`、三模式字段边界、活动事实隔离、品类动作和季节校验。
+  正式库中的新增块继续使用原有“块标题 + `text` 文案”格式，不混入 JSON 或候选审计信息。
 - 新任务可登记开头、节奏、需求和情绪标签；批次集中度结果是人工复核预警，不替代文案
   合规校验，也不得靠虚构事实换取多样性。
 - 选块前按 [source-block-contracts.md](source-block-contracts.md) 检查品类、消费需求和必需商品资料。

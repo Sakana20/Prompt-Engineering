@@ -3,7 +3,11 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .learning.publication import reference_path
+from .learning.publication import (
+    COPY_RESOURCE_NAME,
+    PUBLISHED_COPY_SECTION_HEADING,
+    reference_path,
+)
 from .models import CampaignSpec, LanguageStyle, ProductBrief, PromptPackage, ValidationConfig
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
 from .template_loader import TEMPLATE_VERSION, load_template
@@ -44,10 +48,7 @@ def compose_prompt_package(
     copywriting_prompt = copywriting_prompt.replace(
         "{{TEMPORAL_CONTEXT}}", temporal_context(reference_date)
     )
-    copywriting_prompt += _learned_resource_context(
-        reference_path("learned-copy-source-blocks.md"),
-        heading="审核发布的 learned 文案块",
-    )
+    copywriting_prompt += _published_copy_resource_context(reference_path(COPY_RESOURCE_NAME))
     avatar_template += _learned_resource_context(
         reference_path("person-prompt-source-blocks.md"),
         heading="审核发布的 learned 人物变量块",
@@ -84,3 +85,13 @@ def _learned_resource_context(path: Path, *, heading: str) -> str:
     if '"block_id"' not in text:
         return ""
     return f"\n\n【{heading}】\n{text}"
+
+
+def _published_copy_resource_context(path: Path) -> str:
+    if not path.is_file():
+        return ""
+    text = path.read_text(encoding="utf-8")
+    _, marker, published = text.partition(PUBLISHED_COPY_SECTION_HEADING)
+    if not marker or "### `" not in published or "```text" not in published:
+        return ""
+    return f"\n\n【审核发布的文案块】\n{marker}\n{published.strip()}"

@@ -292,13 +292,13 @@ learning-publish --kind copy|person --candidate-id ... --expected-revision ... -
 CLI 不自行从自然语言提取语义块。Codex 读取已批准候选后，生成符合 schema 的发布清单，再由
 `learning-publish` 确定性校验和落盘。
 
-新增：
+相关正式资源：
 
 ```text
 prompt-engineering/references/copy-learning-candidate.schema.json
 prompt-engineering/references/person-prompt-learning-candidate.schema.json
 prompt-engineering/references/learning-publication.schema.json
-prompt-engineering/references/learned-copy-source-blocks.md
+prompt-engineering/references/volume-copy-source-blocks.md
 prompt-engineering/references/person-prompt-source-blocks.md
 prompt-engineering/references/person-prompt-block-contracts.md
 ```
@@ -323,8 +323,9 @@ prompt-engineering/references/person-prompt-block-contracts.md
 
 正式资源规则：
 
-- 现有人工库不被重写；新增学习块写入单独 learned 资源；
-- `SKILL.md`、copywriting/avatar rules 和生产模板必须读取新增资源；
+- 现有人工块不被重写；新增审核文案块以原有“块标题 + `text` 文案”格式追加到
+  `volume-copy-source-blocks.md` 的独立小节，发布清单 JSON 和候选审计字段不进入正式文案库；
+- `SKILL.md`、copywriting rules 和生产模板必须从这一统一文案资源读取新增块；
 - `source_blocks.py` 的验证注册表必须能识别已发布文案块，不能只更新 Markdown；
 - 人物块必须真正进入人物 Prompt 生成指令，不能只保存不使用；
 - 固定人物画面约束始终由现有模板和 validator 提供，learned 人物块只能补充变量；
@@ -342,13 +343,13 @@ prompt-engineering/references/person-prompt-block-contracts.md
 - 切换不刷新页面，使用 `localStorage` 保存最后工作台；
 - 原任务审核所有现有行为和只读属性保持不变；
 - 学习审核默认显示“视频文案”，可切换到独立的“人物 Prompt”页面；
-- 视频文案页按日期列出 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材` 当前一层
-  的受支持媒体：日期与扫描控制在左栏，扫描结果和多选在中间主列表；扫描目录本身不得启动
-  ASR；
+- 视频文案页按日期从 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材` 开始，逐层
+  列出文件夹与当前层受支持媒体：日期与扫描控制在左栏，文件夹导航和多选在中间主列表；支持
+  进入文件夹和返回上一层，扫描与导航本身不得启动 ASR；
 - 静态资源必须禁用缓存；前端连接到缺少每日媒体 API 的旧服务时，必须明确提示重启审核台；
 - 用户点击“创建 ASR 候选”后才转写已选媒体，完成后显示新增、缓存复用和失败数量并刷新候选；
 - 勾选媒体后在右侧预览最后勾选项；视频和音频使用浏览器原生控件，媒体内容接口支持 Range，
-  只能使用服务端扫描得到的 date + media ID，预览不得启动 ASR；
+  只能使用服务端扫描得到的 date + directory ID + media ID，预览不得启动 ASR；
 - worker 必须清理继承的 Python 环境、使用隔离参数并在识别前预检 FunASR 模块导入；预检或
   识别失败时，页面逐项显示素材名和后端原因并保留失败选择，不得只显示失败数量；FunASR
   `.venv/bin/python` 必须保留符号链接路径，不能 `resolve()` 成基础解释器；
@@ -367,7 +368,7 @@ prompt-engineering/references/person-prompt-block-contracts.md
 ```text
 GET  /api/learning/candidates?kind=copy|person&status=...
 GET  /api/learning/candidates/<kind>/<candidate_id>
-GET  /api/learning/media?date=YYYY-MM-DD
+GET  /api/learning/media?date=YYYY-MM-DD&directory_id=<server-issued-id>
 POST /api/learning/transcribe
 POST /api/learning/person-candidates
 PUT  /api/learning/candidates/<kind>/<candidate_id>
@@ -384,7 +385,8 @@ POST /api/learning/candidates/<kind>/<candidate_id>/reject
 - JSON body 有大小限制和严格类型校验；
 - kind、candidate ID 和 revision 均由服务端验证；
 - 不接受客户端文件路径；
-- 媒体转写只接受当前扫描结果中的服务端媒体 ID，提交时重新校验日期目录、一级路径和格式；
+- 媒体浏览只接受后端返回的目录 ID；媒体转写只接受当前目录扫描结果中的服务端媒体 ID，提交
+  时重新校验目录和媒体仍位于当天素材根目录内、媒体属于当前层且格式受支持；
 - 只允许 loopback host 的现有默认行为；
 - 不把异常堆栈、环境变量或绝对敏感路径返回浏览器。
 
@@ -392,14 +394,14 @@ POST /api/learning/candidates/<kind>/<candidate_id>/reject
 
 完成发布还不算完成。新增学习块必须实际参与后续生成：
 
-- 文案 Prompt 包同时读取原人工块与已发布 learned 文案块；
+- 文案 Prompt 包从统一的 `volume-copy-source-blocks.md` 读取原人工块与已发布网页学习块；
 - 继续满足 `human_rewrite=floor(N/2)` 和三模式字段契约；
 - 新增开头类型、节奏、需求和情绪标签的批次集中度预警；
 - 人物 Prompt 包读取已发布 identity/hair/outfit/scene 块；
 - 在现有年轻、自然、干净、生活化边界内组合，不生成具体真人复刻；
 - 继续生成批次唯一 `identity_key` 和 `outfit_key`；
 - 增加人物身份标签和服装标签的集中度预警；
-- 没有任何 learned 资源时，现有生成结果和 CLI 行为保持兼容。
+- 没有网页发布块或人物 learned 资源时，现有生成结果和 CLI 行为保持兼容。
 
 ### Step 7：测试、文档与安装
 
@@ -430,7 +432,7 @@ tests/e2e/test_learning_cli.py
 - 未批准不能发布；
 - 多目标发布全有或全无；
 - 学习块进入实际 Prompt 编排；
-- 无 learned 资源时兼容旧行为；
+- 无网页发布块或人物 learned 资源时兼容旧行为；
 - 原审核台 API 回归；
 - 学习审核 API 的读取、保存、409、提交学习直达 approved，以及兼容提交审核、批准和驳回；
 - CLI schema 覆盖每个新参数；

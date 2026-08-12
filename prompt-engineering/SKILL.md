@@ -38,15 +38,15 @@ help, tests, or Skill validation.
 ## Workflow
 
 1. Read [campaign-contract.md](references/campaign-contract.md),
-   [copywriting-rules.md](references/copywriting-rules.md), and
-   [avatar-rules.md](references/avatar-rules.md).
-   When approved learned resources contain blocks, also read
-   [learned-copy-source-blocks.md](references/learned-copy-source-blocks.md),
-   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md), and
+   [copywriting-rules.md](references/copywriting-rules.md),
+   [avatar-rules.md](references/avatar-rules.md),
+   [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md), and
+   [source-block-contracts.md](references/source-block-contracts.md). The volume-copy resource is
+   the single formal copy library for both historical human blocks and newly audited web learning
+   blocks. When person resources contain published blocks, also read
+   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md) and
    [person-prompt-block-contracts.md](references/person-prompt-block-contracts.md).
-   For production-volume copy based on the supplied human-written samples, also read
-   [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md) and
-   [source-block-contracts.md](references/source-block-contracts.md). Classify the product and its
+   For production-volume copy, classify the product and its
    consumption need before selecting a block. For a batch, assign exactly `floor(N/2)` rows to
    `human_rewrite`. For the remaining rows, use compatible `source_fill` blocks when available and
    otherwise use `natural_generate`; ten rows therefore always contain five rewrites. In
@@ -264,10 +264,15 @@ and the candidate/publication schemas before operating them.
   `copy` candidates and calls the Prompt Engineering-owned worker with the existing FunASR
   environment; never modify the FunASR repository or the existing subtitle entry point. Merely
   opening, scanning, refreshing, or reviewing the workbench must never start transcription. The
-  copy-learning workbench may list the configured date directory and transcribe only media IDs the
-  user explicitly selects before clicking `创建 ASR 候选`; it must never accept a browser-supplied
-  filesystem path. Selecting a listed item may preview the last-selected video or audio through the
-  server-revalidated media ID; previewing must never start transcription. Run the worker with an
+  copy-learning workbench may list folders and supported media one directory level at a time beneath
+  the configured date root. Allow entering a returned folder and returning to its parent, and
+  transcribe only media IDs the user explicitly selects before clicking `创建 ASR 候选`; never
+  accept a browser-supplied filesystem path. Require the media-list directory-navigation capability
+  marker; if a newly loaded page is connected to an old backend process, instruct the user to stop
+  and restart the review server instead of showing zero folders. Carry the server-issued directory ID when listing,
+  previewing, or transcribing media below the root, and revalidate that the directory and media stay
+  inside the configured date root. Selecting a listed item may preview the last-selected video or
+  audio; folder navigation and previewing must never start transcription. Run the worker with an
   isolated inherited environment and preflight its FunASR imports. Surface each failed media name
   and backend reason in the workbench, preserve failed selections for retry, and open a successful
   or reused candidate as the review draft. Preserve the FunASR `.venv/bin/python` symlink path;
@@ -290,12 +295,17 @@ and the candidate/publication schemas before operating them.
   path compatible. Publication remains a separate Codex step.
 - After human approval, remove sample price, promotion, platform, delivery, brand, efficacy, sales,
   CTA, fixed-frame, logo, and real-person risks, then create a manifest conforming to
-  [learning-publication.schema.json](references/learning-publication.schema.json).
+  [learning-publication.schema.json](references/learning-publication.schema.json). Treat this JSON
+  manifest only as the deterministic CLI input, never as content for the formal copy library.
 - Run `learning-publish` with matching kind, candidate ID, and revision. Never publish an unapproved
   candidate, and never write a partial formal resource.
-- Keep learned copy and person resources independent. Learned copy blocks retain typed slots and
-  campaign isolation. Learned person blocks supplement only identity, hair, outfit, and scene;
-  fixed visual and product constraints remain authoritative.
+- Append audited copy blocks to the existing `volume-copy-source-blocks.md` formal library; never
+  create or consult a second copy-learning resource. Write every copy block in exactly the existing
+  `### block-id` plus fenced `text` format; do not append JSON, source candidate IDs, provenance, or
+  registry fields to that Markdown file. Keep structured publication metadata only in the local
+  `learning/<kind>/published/provenance.jsonl` audit record. Published copy blocks retain typed
+  slots and campaign isolation. Keep person blocks in their independent resource, supplementing only
+  identity, hair, outfit, and scene; fixed visual and product constraints remain authoritative.
 - Treat diversity concentration results as review warnings. Continue enforcing batch-unique
   `identity_key` and `outfit_key` and all existing copy/visual validators.
 

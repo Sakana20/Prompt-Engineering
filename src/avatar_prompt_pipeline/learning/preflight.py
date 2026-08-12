@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..source_blocks import learned_person_blocks, learned_source_block_contracts
+from ..source_blocks import learned_person_blocks, published_copy_block_contracts
 from .models import CandidateKind, LearningCandidate, LearningStatus
-from .publication import reference_path
+from .publication import COPY_RESOURCE_NAME, reference_path
 from .store import LearningStore
 
 PREFLIGHT_BLOCKED_EXIT_CODE = 3
@@ -108,9 +108,9 @@ def inspect_learning_preflight(
     published_copy = store.list(CandidateKind.COPY, status=LearningStatus.PUBLISHED)
     published_person = store.list(CandidateKind.PERSON, status=LearningStatus.PUBLISHED)
 
-    copy_path = reference_path("learned-copy-source-blocks.md", root=resource_root)
+    copy_path = reference_path(COPY_RESOURCE_NAME, root=resource_root)
     person_path = reference_path("person-prompt-source-blocks.md", root=resource_root)
-    formal_copy_block_ids = tuple(sorted(learned_source_block_contracts(copy_path)))
+    formal_copy_block_ids = tuple(sorted(published_copy_block_contracts(copy_path)))
     formal_person_block_ids = _person_block_ids(person_path)
     expected_copy_block_ids = _published_block_ids(published_copy)
     expected_person_block_ids = _published_block_ids(published_person)

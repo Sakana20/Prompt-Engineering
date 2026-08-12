@@ -24,7 +24,7 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "copy-learning-candidate.schema.json").is_file()
     assert (SKILL_ROOT / "references" / "person-prompt-learning-candidate.schema.json").is_file()
     assert (SKILL_ROOT / "references" / "learning-publication.schema.json").is_file()
-    assert (SKILL_ROOT / "references" / "learned-copy-source-blocks.md").is_file()
+    assert not (SKILL_ROOT / "references" / "learned-copy-source-blocks.md").exists()
     assert (SKILL_ROOT / "references" / "person-prompt-source-blocks.md").is_file()
     assert (SKILL_ROOT / "references" / "person-prompt-block-contracts.md").is_file()
     assert (SKILL_ROOT / "references" / "validation-config.schema.json").is_file()
@@ -137,6 +137,9 @@ def test_volume_copy_library_preserves_human_source_blocks() -> None:
     assert "这天一冷\n只想和好朋友\n窝在家里吃[商品名]聊八卦" in blocks
     assert "只填方括号" in blocks
     assert "不总结文风，也不仿写新句子" in blocks
+    published_section = blocks.partition("## 审核发布的网页学习块")[2]
+    assert "```json" not in published_section
+    assert "来源候选" not in published_section
 
 
 def test_generated_batch_schema_exposes_copy_mix_audit_fields() -> None:

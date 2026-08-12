@@ -7,7 +7,11 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
-from .learning.publication import reference_path
+from .learning.publication import (
+    COPY_RESOURCE_NAME,
+    PUBLISHED_COPY_SECTION_HEADING,
+    reference_path,
+)
 
 
 class CategoryFamily(StrEnum):
@@ -83,7 +87,7 @@ def category_family(category: str) -> CategoryFamily:
 
 
 def source_block_contract(source_block_id: str) -> SourceBlockContract | None:
-    return SOURCE_BLOCK_CONTRACTS.get(source_block_id) or learned_source_block_contracts().get(
+    return SOURCE_BLOCK_CONTRACTS.get(source_block_id) or published_copy_block_contracts().get(
         source_block_id
     )
 
@@ -107,25 +111,30 @@ def _json_fences(path: Path) -> tuple[dict[str, object], ...]:
     return tuple(records)
 
 
-def learned_source_block_contracts(path: Path | None = None) -> dict[str, SourceBlockContract]:
-    resource = path or reference_path("learned-copy-source-blocks.md")
+def published_copy_block_contracts(path: Path | None = None) -> dict[str, SourceBlockContract]:
+    resource = path or reference_path(COPY_RESOURCE_NAME)
+    if not resource.is_file():
+        return {}
+    _, marker, published = resource.read_text(encoding="utf-8").partition(
+        PUBLISHED_COPY_SECTION_HEADING
+    )
+    if not marker:
+        return {}
     contracts: dict[str, SourceBlockContract] = {}
-    for record in _json_fences(resource):
-        block_id = record.get("block_id")
-        minimum = record.get("minimum_source_slot_values", 1)
-        solid_food_only = record.get("solid_food_only", False)
-        if (
-            isinstance(block_id, str)
-            and isinstance(minimum, int)
-            and not isinstance(minimum, bool)
-            and minimum >= 1
-            and isinstance(solid_food_only, bool)
-        ):
-            contracts[block_id] = SourceBlockContract(
-                block_id=block_id,
-                solid_food_only=solid_food_only,
-                minimum_source_slot_values=minimum,
-            )
+    pattern = re.compile(
+        r"^### `(?P<block_id>[a-z0-9][a-z0-9-]{2,95})`[ \t]*\n+"
+        r"[ \t]*```text[ \t]*\n(?P<template>.*?)\n```(?=\n|$)",
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    for match in pattern.finditer(published):
+        block_id = match.group("block_id")
+        template = match.group("template")
+        slot_names = set(re.findall(r"\[([^\[\]\n]+)\]", template))
+        contracts[block_id] = SourceBlockContract(
+            block_id=block_id,
+            solid_food_only=category_family(template) is not CategoryFamily.BEVERAGE,
+            minimum_source_slot_values=max(1, len(slot_names)),
+        )
     return contracts
 
 

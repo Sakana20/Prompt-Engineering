@@ -131,7 +131,21 @@ def test_preflight_verifies_published_candidate_against_formal_resource(tmp_path
     assert report.published_count == 1
     assert report.formal_copy_block_ids == ("learned-preflight-copy-001",)
 
-    resource = tmp_path / "prompt-engineering" / "references" / "learned-copy-source-blocks.md"
+    resource = tmp_path / "prompt-engineering" / "references" / "volume-copy-source-blocks.md"
+    formal_text = resource.read_text(encoding="utf-8")
+    published_section = formal_text.partition("## 审核发布的网页学习块")[2]
+    assert (
+        "### `learned-preflight-copy-001`\n\n"
+        "```text\n上班路上带一杯[商品名]很方便\n```" in published_section
+    )
+    assert "```json" not in published_section
+    assert str(approved.candidate_id) not in formal_text
+
+    provenance_path = tmp_path / "learning" / "copy" / "published" / "provenance.jsonl"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    assert provenance["blocks"][0]["block_id"] == "learned-preflight-copy-001"
+    assert provenance["blocks"][0]["category_families"] == ["beverage"]
+
     resource.unlink()
     broken = inspect_learning_preflight(service.store, resource_root=tmp_path)
 

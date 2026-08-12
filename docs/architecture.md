@@ -166,10 +166,12 @@ Codex 是唯一语义生成器。Skill 必须向 Codex 提供事实边界、生�
 不执行导入、生成或付费提交。
 
 学习工作台显示独立的每日媒体默认目录
-`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。视频文案页通过受限 API 列出当前
-一层媒体，浏览器只持有服务端签发的稳定 ID；用户点击按钮时，服务端重新扫描并验证 ID 后才
-调用同一 `LearningService.transcribe(...)`。`learning-transcribe` 未提供 `--input` 时也按
-本地日期解析该目录。两条入口共享领域服务与缓存，不影响任务 CSV 的 `/素材/Codex` 入口。
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。视频文案页通过受限 API 逐层列出
+文件夹和当前层媒体，浏览器只持有服务端签发的目录 ID 与媒体 ID；进入、返回、预览和转写时，
+服务端都会重新验证目标仍位于当天素材根目录内。用户点击按钮后才调用同一
+`LearningService.transcribe(...)`。`learning-transcribe` 未提供 `--input` 时仍按本地日期解析
+该目录并只扫描根目录当前一层。两条入口共享领域服务与缓存，不影响任务 CSV 的
+`/素材/Codex` 入口。
 
 ### LibTV OmniHuman
 
@@ -213,7 +215,8 @@ logo。静态人物图和 LibTV 首帧必须优先定义为数字人口播
 ## 审核式学习架构
 
 学习域位于 `src/avatar_prompt_pipeline/learning/`。`copy` 与 `person` 共用安全 ID、原子写入、
-revision 和审计事件基础设施，但拥有独立 dataclass、目录、schema、状态记录和正式资源。
+revision 和审计事件基础设施，但拥有独立 dataclass、目录、schema 和状态记录。文案发布复用
+原有正式文案库，人物发布使用独立人物资源。
 原始 `raw_transcript`/`raw_prompt` 不可更新；所有可写操作都要求 `expected_revision`。
 
 ASR 主进程通过参数数组和 `shell=False` 调用 Prompt Engineering 自有 `funasr_worker.py`。
@@ -222,9 +225,11 @@ worker 由 FunASR 既有 Python 使用 `-B` 执行，正常 import 已安装的 
 只读。内容指纹与 worker 配置共同缓存，单项失败落独立报告。
 
 候选经工作台“提交学习”显式确认或兼容 CLI 人工批准后仍不能自动进入生产。Codex 负责语义拆解并生成发布清单；
-`learning-publish` 只做确定性校验、风险隔离、冲突检查和多目标事务写入。文案块发布到
-`learned-copy-source-blocks.md` 并进入 source-block 注册表；人物 identity/hair/outfit/scene
-块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板和 validator 提供。
+`learning-publish` 只做确定性校验、风险隔离、冲突检查和多目标事务写入。文案块追加到原有
+`volume-copy-source-blocks.md` 的“审核发布的网页学习块”一节，以原有“块标题 + `text` 文案”
+格式进入 source-block 注册表；发布清单和审计 JSON 不写入正式文案库。人物
+identity/hair/outfit/scene 块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板
+和 validator 提供。
 
 `compose`、`init-batch`、`validate-copy`、`validate-batch`、`package` 和 `export-csv` 在自身
 业务逻辑与文件写入前强制执行只读 `learning-preflight` 门禁。它同时汇总 copy/person 的
@@ -237,10 +242,12 @@ approved 与 published 候选，核对 published 候选登记的 block ID 是否
 
 审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，候选
 操作只能提交 kind、candidate ID、revision 与允许字段；媒体操作只能提交 date 和扫描得到的
-media ID。视频文案页在左栏选择日期，中间主列表展示当天媒体和学习候选。静态资源响应使用
+目录 ID、media ID。视频文案页在左栏选择日期，中间主列表展示文件夹、当前层媒体和学习候选。
+静态资源响应使用
 `no-store`，避免新页面连接旧缓存脚本；旧服务缺少媒体 API 时前端给出重启提示。客户端不能
 提交目标路径。勾选媒体时，右侧通过受限 `media-content` API 预览最后勾选项；该 API 每次按
-date + media ID 重新发现并校验当前层文件，支持 HTTP Range，不返回路径。预览不能触发发布、
+date + directory ID + media ID 重新发现并校验当前层文件，支持 HTTP Range，不返回路径。
+预览不能触发发布、
 ASR、下游视频生成或付费提交。
 
 转写 provider 清除继承的 Python 路径、虚拟环境和 macOS `__PYVENV_LAUNCHER__`，使用

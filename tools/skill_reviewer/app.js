@@ -121,6 +121,8 @@ Object.assign(elements, {
   learningMediaDate: document.getElementById("learning-media-date"),
   learningMediaRefresh: document.getElementById("learning-media-refresh"),
   learningMediaRoot: document.getElementById("learning-media-root"),
+  learningMediaBack: document.getElementById("learning-media-back"),
+  learningMediaDirectory: document.getElementById("learning-media-directory"),
   learningMediaSelectAll: document.getElementById("learning-media-select-all"),
   learningMediaCount: document.getElementById("learning-media-count"),
   learningMediaList: document.getElementById("learning-media-list"),
@@ -142,6 +144,11 @@ const learningState = {
   candidates: [],
   fieldOptions: {},
   selectedId: "",
+  directories: [],
+  directoryId: "",
+  parentDirectoryId: "",
+  atMediaRoot: true,
+  relativeDirectory: ".",
   media: [],
   selectedMediaIds: new Set(),
   previewMediaId: "",
@@ -959,7 +966,10 @@ function renderLearningMedia() {
     [...learningState.selectedMediaIds].filter((mediaId) => mediaIds.has(mediaId))
   );
   if (!mediaIds.has(learningState.previewMediaId)) learningState.previewMediaId = "";
-  elements.learningMediaCount.textContent = `${learningState.media.length} 个媒体 · 已选 ${learningState.selectedMediaIds.size}`;
+  elements.learningMediaCount.textContent = `${learningState.directories.length} 个文件夹 · ${learningState.media.length} 个媒体 · 已选 ${learningState.selectedMediaIds.size}`;
+  elements.learningMediaBack.disabled = learningState.mediaLoading || learningState.atMediaRoot;
+  elements.learningMediaDirectory.textContent = learningState.atMediaRoot
+    ? "素材根目录" : learningState.relativeDirectory;
   elements.learningMediaSelectAll.checked = Boolean(learningState.media.length)
     && learningState.selectedMediaIds.size === learningState.media.length;
   elements.learningMediaSelectAll.indeterminate = learningState.selectedMediaIds.size > 0
@@ -976,11 +986,19 @@ function renderLearningMedia() {
     elements.learningMediaList.innerHTML = `<div class="error media-error">${escapeHtml(learningState.mediaError)}</div>`;
     return;
   }
-  if (!learningState.media.length) {
-    elements.learningMediaList.innerHTML = `<div class="status-line">当天目录没有发现受支持的视频或音频</div>`;
+  if (!learningState.directories.length && !learningState.media.length) {
+    elements.learningMediaList.innerHTML = `<div class="status-line">当前文件夹没有子文件夹或受支持的媒体</div>`;
     return;
   }
-  elements.learningMediaList.innerHTML = learningState.media.map((item) => {
+  const directories = learningState.directories.map((item) => `
+    <button type="button" class="learning-directory-item" data-learning-directory-id="${escapeHtml(item.id)}">
+      <span class="learning-directory-icon" aria-hidden="true">▸</span>
+      <span class="learning-media-info">
+        <span class="learning-media-title">${escapeHtml(item.name)}</span>
+        <span class="source-file-meta">文件夹 · 点击打开</span>
+      </span>
+    </button>`).join("");
+  const media = learningState.media.map((item) => {
     const candidate = item.candidate;
     const candidateBadge = candidate
       ? `<span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)} · r${candidate.revision}</span>`
@@ -995,13 +1013,15 @@ function renderLearningMedia() {
       ${candidateBadge}
     </label>`;
   }).join("");
+  elements.learningMediaList.innerHTML = directories + media;
 }
 
-async function loadLearningMedia() {
+async function loadLearningMedia(directoryId = learningState.directoryId) {
   if (learningState.kind !== "copy" || learningState.workbench !== "learning") return;
   if (learningState.mediaLoading) return;
   const url = new URL("/api/learning/media", window.location.origin);
   url.searchParams.set("date", elements.learningMediaDate.value || localDateValue());
+  if (directoryId) url.searchParams.set("directory_id", directoryId);
   learningState.mediaLoading = true;
   learningState.mediaError = "";
   elements.learningMediaStatus.classList.remove("error");
@@ -1009,13 +1029,28 @@ async function loadLearningMedia() {
   renderLearningMedia();
   try {
     const payload = await learningRequest(url);
+    if (payload.directory_navigation !== true || !Array.isArray(payload.directories)) {
+      throw new Error(
+        "页面已更新，但当前审核台后端仍是旧进程。请在启动审核台的终端按 Ctrl+C，重新运行 tools/skill_reviewer/run.sh 后刷新页面"
+      );
+    }
+    learningState.directories = payload.directories || [];
     learningState.media = payload.media || [];
+    learningState.directoryId = payload.directory_id || "";
+    learningState.parentDirectoryId = payload.parent_id || "";
+    learningState.atMediaRoot = payload.at_root !== false;
+    learningState.relativeDirectory = payload.relative_directory || ".";
     elements.learningMediaRoot.textContent = payload.root || elements.learningMediaRoot.textContent;
     elements.learningMediaStatus.textContent = payload.exists
-      ? `扫描完成：发现 ${learningState.media.length} 个媒体`
+      ? `扫描完成：${learningState.directories.length} 个文件夹，${learningState.media.length} 个媒体`
       : "当天素材目录不存在";
   } catch (error) {
+    learningState.directories = [];
     learningState.media = [];
+    learningState.directoryId = "";
+    learningState.parentDirectoryId = "";
+    learningState.atMediaRoot = true;
+    learningState.relativeDirectory = ".";
     learningState.mediaError = error.status === 404
       ? "当前审核台服务版本过旧，请关闭后重新运行 tools/skill_reviewer/run.sh"
       : error.message;
@@ -1039,6 +1074,7 @@ async function transcribeSelectedLearningMedia() {
       method: "POST",
       body: JSON.stringify({
         date: elements.learningMediaDate.value || localDateValue(),
+        directory_id: learningState.directoryId,
         media_ids: [...learningState.selectedMediaIds]
       })
     });
@@ -1145,7 +1181,7 @@ function renderLearningDetail() {
   const preview = learningState.kind === "copy"
     ? learningState.media.find((item) => item.id === learningState.previewMediaId) : null;
   if (preview) {
-    const previewUrl = `/api/learning/media-content?date=${encodeURIComponent(elements.learningMediaDate.value || localDateValue())}&id=${encodeURIComponent(preview.id)}`;
+    const previewUrl = `/api/learning/media-content?date=${encodeURIComponent(elements.learningMediaDate.value || localDateValue())}&directory_id=${encodeURIComponent(learningState.directoryId)}&id=${encodeURIComponent(preview.id)}`;
     const audio = [".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"].includes(preview.suffix);
     const player = audio
       ? `<audio class="learning-media-player audio-player" controls preload="metadata" src="${previewUrl}"></audio>`
@@ -1305,10 +1341,17 @@ elements.learningRefresh.addEventListener("click", () => {
   loadLearningCandidates();
   if (learningState.kind === "copy") loadLearningMedia();
 });
-elements.learningMediaRefresh.addEventListener("click", loadLearningMedia);
+elements.learningMediaRefresh.addEventListener("click", () => loadLearningMedia());
+elements.learningMediaBack.addEventListener("click", () => {
+  learningState.selectedMediaIds.clear();
+  learningState.previewMediaId = "";
+  loadLearningMedia(learningState.parentDirectoryId);
+});
 elements.learningMediaDate.addEventListener("change", () => {
   learningState.selectedMediaIds.clear();
-  loadLearningMedia();
+  learningState.previewMediaId = "";
+  learningState.directoryId = "";
+  loadLearningMedia("");
 });
 elements.learningMediaSelectAll.addEventListener("change", () => {
   learningState.selectedMediaIds = elements.learningMediaSelectAll.checked
@@ -1333,6 +1376,13 @@ elements.learningMediaList.addEventListener("change", (event) => {
   }
   renderLearningMedia();
   renderLearningDetail();
+});
+elements.learningMediaList.addEventListener("click", (event) => {
+  const directory = event.target.closest("[data-learning-directory-id]");
+  if (!directory) return;
+  learningState.selectedMediaIds.clear();
+  learningState.previewMediaId = "";
+  loadLearningMedia(directory.dataset.learningDirectoryId);
 });
 elements.learningMediaTranscribe.addEventListener("click", transcribeSelectedLearningMedia);
 document.addEventListener("pointerover", (event) => {

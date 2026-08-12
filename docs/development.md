@@ -38,6 +38,8 @@ uv run avatar-prompts learning-preflight --learning-root learning
 六个生产命令都接受 `--learning-root`，并会在读取任务输入或写出产物前自动执行同一 preflight。
 若存在 approved 候选或 published 正式资源不一致，命令返回退出码 3 和完整 JSON 上下文；Codex
 必须完成语义清理、拆解、`learning-publish` 与复检后再重试，Python CLI 不会自动发布或绕过。
+文案发布清单只是 CLI 的结构化输入；正式 `volume-copy-source-blocks.md` 必须保持原有
+“块标题 + `text` 文案”格式，不得混入清单 JSON、候选 ID 或审计字段。
 
 `tools/skill_reviewer/` 是本地人工审核台。它会扫描
 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex` 下的 CSV，并自动匹配同目录
@@ -49,13 +51,14 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 每日 ASR 学习素材与上述 CSV 入口分开：默认目录为
 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。`learning-transcribe` 省略
 `--input` 时用本地日期或 `--date` 解析该目录，只扫描当前一层。学习工作台的媒体列表使用
-`GET /api/learning/media`；只有点击“创建 ASR 候选”才向
-`POST /api/learning/transcribe` 提交 date 与媒体 ID。客户端路径、嵌套文件和过期 ID 必须被
-拒绝；日期和扫描反馈显示在左栏，媒体多选显示在中间主列表。静态资源禁用缓存；若媒体 API
+`GET /api/learning/media`，逐层返回当天根目录内的文件夹与当前层媒体；页面支持进入文件夹和
+返回上一层。只有点击“创建 ASR 候选”才向 `POST /api/learning/transcribe` 提交 date、目录 ID
+与媒体 ID。客户端路径、根目录外目标和过期 ID 必须被拒绝；日期和扫描反馈显示在左栏，
+文件夹与媒体多选显示在中间主列表。静态资源禁用缓存；若媒体 API
 返回 404，页面提示关闭并重新运行 `tools/skill_reviewer/run.sh`。审核台加载、扫描、刷新和
 候选审核操作都不得自动触发转写。勾选媒体会在右侧通过
-`GET /api/learning/media-content?date=...&id=...` 打开原生视频或音频预览；接口支持单段 HTTP
-Range，并复用服务端媒体 ID 重新校验，不能接收或返回客户端路径。
+`GET /api/learning/media-content?date=...&directory_id=...&id=...` 打开原生视频或音频预览；
+接口支持单段 HTTP Range，并复用服务端目录 ID 与媒体 ID 重新校验，不能接收或返回客户端路径。
 
 真实转写前，provider 使用 `-I -B` 并清除 Python 路径、虚拟环境、`PYTHONEXECUTABLE` 和
 macOS `__PYVENV_LAUNCHER__`，然后预检
@@ -106,7 +109,7 @@ approved/published 候选；服务端移动完整目录到 trash，不得删除�
 学习功能测试默认使用可注入 fake worker，不加载真实 Paraformer。测试必须覆盖 copy/person
 隔离、原文不可变、revision 冲突、状态机、路径穿越、worker 超时与非法 JSON、缓存复用、
 单项失败、未批准拒绝发布、事务回滚、生成前 approved 门禁、published 正式块一致性、
-learned 资源进入 Prompt、空资源兼容、审核台旧 API 回归和学习 API 409。真实素材 smoke test
+统一文案库的网页发布块进入 Prompt、空资源兼容、审核台旧 API 回归和学习 API 409。真实素材 smoke test
 只在用户明确提供短媒体后运行。
 
 不得在 FunASR 仓库运行测试或格式化；执行 Prompt-owned worker 前后分别记录其

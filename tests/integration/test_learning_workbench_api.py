@@ -45,8 +45,11 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-9" in index
-    assert "styles.css?v=20260812-9" in index
+    assert 'id="learning-media-back"' in index
+    assert 'id="learning-media-directory"' in index
+    assert "可进入文件夹并选择其中媒体" in index
+    assert "app.js?v=20260812-11" in index
+    assert "styles.css?v=20260812-11" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     styles = (Path(__file__).parents[2] / "tools/skill_reviewer/styles.css").read_text(
@@ -59,6 +62,10 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert "learning-media-player" in app_js
     assert "失败素材已保留勾选" in app_js
     assert "learning-failure-list" in app_js
+    assert "data-learning-directory-id" in app_js
+    assert 'url.searchParams.set("directory_id", directoryId)' in app_js
+    assert "learningState.parentDirectoryId" in app_js
+    assert ".learning-directory-item" in styles
     assert "不会改字、猜测标点或改变原始时间轴" in app_js
     assert "删除候选" in app_js
     assert "data-learning-delete-id" in app_js
@@ -88,6 +95,8 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert "来源块用途\uff08可多选\uff09" in app_js
     assert "data-learning-description-for" in app_js
     assert "当前审核台服务版本过旧" in app_js
+    assert "payload.directory_navigation !== true" in app_js
+    assert "当前审核台后端仍是旧进程" in app_js
     assert 'cache: "no-store"' in app_js
 
 
@@ -108,7 +117,7 @@ def _request(
 
 
 @pytest.mark.integration
-def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
+def test_learning_media_api_browses_directories_and_transcribes_selected_ids(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     media_root = tmp_path / "2026"
@@ -162,10 +171,63 @@ def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
         status, listing = _request(port, "GET", "/api/learning/media?date=2026-08-12")
         assert status == 200
         assert listing["exists"] is True
+        assert listing["directory_navigation"] is True
         assert listing["count"] == 2
+        assert listing["directory_count"] == 1
+        assert listing["at_root"] is True
+        assert listing["parent_id"] == ""
         media = cast(list[dict[str, object]], listing["media"])
         assert {str(item["name"]) for item in media} == {"第一条.mp4", "第二条.wav"}
         assert all("path" not in item for item in media)
+        directories = cast(list[dict[str, object]], listing["directories"])
+        assert [str(item["name"]) for item in directories] == ["子目录"]
+        assert all("path" not in item for item in directories)
+
+        status, invalid_directory = _request(
+            port,
+            "GET",
+            "/api/learning/media?date=2026-08-12&directory_id=not-a-server-directory-id",
+        )
+        assert status == 422
+        assert "文件夹选择已失效" in str(invalid_directory["error"])
+
+        directory_id = str(directories[0]["id"])
+        status, nested_listing = _request(
+            port,
+            "GET",
+            f"/api/learning/media?date=2026-08-12&directory_id={directory_id}",
+        )
+        assert status == 200
+        assert nested_listing["at_root"] is False
+        assert nested_listing["parent_id"] == listing["directory_id"]
+        assert nested_listing["relative_directory"] == "子目录"
+        nested_media = cast(list[dict[str, object]], nested_listing["media"])
+        assert [str(item["name"]) for item in nested_media] == ["不递归.mp4"]
+        nested_id = str(nested_media[0]["id"])
+
+        status, stale_nested = _request(
+            port,
+            "POST",
+            "/api/learning/transcribe",
+            {"date": "2026-08-12", "media_ids": [nested_id]},
+        )
+        assert status == 422
+        assert "媒体选择已失效" in str(stale_nested["error"])
+
+        status, nested_result = _request(
+            port,
+            "POST",
+            "/api/learning/transcribe",
+            {
+                "date": "2026-08-12",
+                "directory_id": directory_id,
+                "media_ids": [nested_id],
+            },
+        )
+        assert status == 200
+        assert nested_result["succeeded"] == 1
+        assert transcribe_calls == [((nested / "不递归.mp4",), "2026-08-12")]
+        transcribe_calls.clear()
 
         selected_id = str(media[0]["id"])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
@@ -181,6 +243,17 @@ def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
         assert preview.getheader("Content-Range") == "bytes 1-4/9"
         assert preview.getheader("Content-Type") == "video/mp4"
         assert preview_body == b"ideo"
+        connection.close()
+
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        connection.request(
+            "GET",
+            f"/api/learning/media-content?date=2026-08-12&directory_id={directory_id}&id={nested_id}",
+            headers={"Range": "bytes=0-5"},
+        )
+        nested_preview = connection.getresponse()
+        assert nested_preview.status == 206
+        assert nested_preview.read() == b"nested"
         connection.close()
 
         status, invalid_preview = _request(
@@ -269,7 +342,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-9")
+        connection.request("GET", "/app.js?v=20260812-11")
         response = connection.getresponse()
         response.read()
         assert response.status == 200

@@ -62,13 +62,18 @@ Codex 完成语义处理。
 批准不等于发布。Codex 依据批准候选生成符合
 [learning-publication.schema.json](learning-publication.schema.json) 的清单后，才可运行
 `learning-publish`。CLI 校验 kind、candidate ID、revision、风险删除、强类型块和固定视觉
-边界，并在全部目标通过后原子更新独立 learned resource；未批准、过期或部分失败均不发布。
+边界，并在全部目标通过后把文案块按原有“块标题 + `text` 文案”格式原子追加到
+`volume-copy-source-blocks.md`；发布清单 JSON 和候选审计信息只保存在本地学习审计记录中，
+不得写进正式文案库。人物块仍写入独立人物资源。未批准、过期或部分失败均不发布。
 
 本地审核台使用同一站点的“学习审核”工作台。视频文案页通过
-`GET /api/learning/media?date=YYYY-MM-DD` 列出默认目录当前一层，用户多选后点击按钮才向
-`POST /api/learning/transcribe` 提交 date 与服务器媒体 ID；左栏只保留日期和扫描控制，媒体
-选择显示在中间主列表。静态资源禁用缓存，连接旧版服务时页面会提示重新运行审核台。客户端
-不提交路径。勾选媒体后，右侧通过受限 `media-content` Range 接口预览最后勾选的视频或音频；
+`GET /api/learning/media?date=YYYY-MM-DD&directory_id=...` 在当天素材根目录下逐层列出文件夹和
+当前层媒体；`directory_id` 省略时回到当天根目录。页面可进入后端返回的文件夹并返回上一层，
+用户多选后点击按钮才向 `POST /api/learning/transcribe` 提交 date、目录 ID 与服务器媒体 ID；
+左栏只保留日期和扫描控制，文件夹与媒体选择显示在中间主列表。静态资源禁用缓存，连接旧版
+服务且媒体列表响应缺少目录导航能力标记时，页面会清空旧目录状态，并提示在原终端停止、重新
+运行审核台；不得把缺少字段误显示为“0 个文件夹”。客户端不提交路径。勾选媒体后，右侧通过受限
+`media-content` Range 接口预览最后勾选的视频或音频；
 预览不会启动 ASR。真实转写使用清理继承变量后的 `-I -B` Python，并先预检 FunASR 模块；
 失败响应只包含素材名和原因，页面保留失败选择用于重试，成功或复用时自动打开草稿。工作台还
 提供新增人物 Prompt、保存和“提交学习”；“提交学习”是用户显式确认，会把已保存且分类完整的

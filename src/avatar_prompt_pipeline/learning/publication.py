@@ -19,6 +19,8 @@ from .store import LearningStore, RevisionConflictError, transactional_replace
 from .validation import LearningValidationError, allowed_transition, detect_risks
 
 BLOCK_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{2,95}$")
+COPY_RESOURCE_NAME = "volume-copy-source-blocks.md"
+PUBLISHED_COPY_SECTION_HEADING = "## 审核发布的网页学习块"
 FIXED_PERSON_CONSTRAINTS = (
     "竖屏9:16",
     "固定中景",
@@ -313,18 +315,22 @@ def publish_manifest(
     candidate = store.get(manifest.kind, manifest.candidate_id)
     _validate_manifest(candidate, manifest)
     allowed_transition(candidate, LearningStatus.PUBLISHED)
-    copy_path = reference_path("learned-copy-source-blocks.md", root=root)
+    copy_path = reference_path(COPY_RESOURCE_NAME, root=root)
     person_path = reference_path("person-prompt-source-blocks.md", root=root)
     contract_path = reference_path("person-prompt-block-contracts.md", root=root)
     targets: dict[Path, bytes] = {}
     block_ids: tuple[str, ...]
     if manifest.kind is CandidateKind.COPY:
-        current = _resource_text(copy_path, "审核发布的文案学习块")
+        current = _resource_text(copy_path, "真人跑量原文块")
         _ensure_no_block_collision(current, [block.block_id for block in manifest.copy_blocks])
-        additions = "".join(
-            _copy_markdown(block, manifest.candidate_id) for block in manifest.copy_blocks
-        )
-        targets[copy_path] = (current.rstrip() + "\n\n" + additions.lstrip()).encode("utf-8")
+        additions = "".join(_copy_markdown(block) for block in manifest.copy_blocks)
+        if PUBLISHED_COPY_SECTION_HEADING not in current:
+            additions = (
+                PUBLISHED_COPY_SECTION_HEADING
+                + "\n\n本节只接收人工批准并经 Codex 语义清理、发布校验的新增文案块。\n\n"
+                + additions
+            )
+        targets[copy_path] = (current.rstrip() + "\n\n" + additions.strip() + "\n").encode("utf-8")
         block_ids = tuple(block.block_id for block in manifest.copy_blocks)
     else:
         current = _resource_text(person_path, "审核发布的人物 Prompt 学习块")
@@ -332,12 +338,19 @@ def publish_manifest(
         additions = "".join(
             _person_markdown(block, manifest.candidate_id) for block in manifest.person_blocks
         )
-        targets[person_path] = (current.rstrip() + "\n\n" + additions.lstrip()).encode("utf-8")
+        targets[person_path] = (current.rstrip() + "\n\n" + additions.strip() + "\n").encode(
+            "utf-8"
+        )
         if not contract_path.exists():
             targets[contract_path] = _person_contract_text().encode("utf-8")
         block_ids = tuple(block.block_id for block in manifest.person_blocks)
     provenance_path = store.kind_root(manifest.kind) / "published" / "provenance.jsonl"
     provenance = provenance_path.read_text(encoding="utf-8") if provenance_path.exists() else ""
+    registry_blocks = (
+        [block.registry_dict(manifest.candidate_id) for block in manifest.copy_blocks]
+        if manifest.kind is CandidateKind.COPY
+        else [block.registry_dict(manifest.candidate_id) for block in manifest.person_blocks]
+    )
     record = json.dumps(
         {
             "schema_version": "1.0",
@@ -345,6 +358,7 @@ def publish_manifest(
             "candidate_id": manifest.candidate_id,
             "revision": manifest.revision,
             "block_ids": list(block_ids),
+            "blocks": registry_blocks,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -379,17 +393,8 @@ def _ensure_no_block_collision(text: str, block_ids: Sequence[str]) -> None:
             raise LearningValidationError(f"block_id 已存在：{block_id}")
 
 
-def _copy_markdown(block: LearnedCopyBlock, candidate_id: str) -> str:
-    registry = block.registry_dict(candidate_id)
-    return (
-        f"## `{block.block_id}`\n\n"
-        f"来源候选：`{candidate_id}`。\n\n"
-        "```json\n"
-        + json.dumps(registry, ensure_ascii=False, indent=2, sort_keys=True)
-        + "\n```\n\n```text\n"
-        + block.template.strip()
-        + "\n```\n\n"
-    )
+def _copy_markdown(block: LearnedCopyBlock) -> str:
+    return f"### `{block.block_id}`\n\n```text\n{block.template.strip()}\n```\n\n"
 
 
 def _person_markdown(block: LearnedPersonBlock, candidate_id: str) -> str:
@@ -416,6 +421,8 @@ def _person_contract_text() -> str:
 
 
 __all__ = [
+    "COPY_RESOURCE_NAME",
+    "PUBLISHED_COPY_SECTION_HEADING",
     "LearnedCopyBlock",
     "LearnedPersonBlock",
     "PublicationManifest",
