@@ -226,12 +226,14 @@ worker 由 FunASR 既有 Python 使用 `-B` 执行，正常 import 已安装的 
 `learned-copy-source-blocks.md` 并进入 source-block 注册表；人物 identity/hair/outfit/scene
 块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板和 validator 提供。
 
-生产生成入口前增加只读 `learning-preflight` 门禁。它同时汇总 copy/person 的 approved 与
-published 候选，核对 published 候选登记的 block ID 是否存在于正式 learned 资源。存在
-approved 候选时返回 `codex_publish_approved`，由 Codex 完成语义清理和发布；存在缺失正式块时
-返回 `repair_published_resources`。任一动作未清零时退出码为 3，原生产 CLI 不得继续。发布后
-必须复检到 `ready_for_generation=true`，从而把审核、语义发布和生产消费连成可验证闭环，同时
-保持 Python 不承担语义抽取。
+`compose`、`init-batch`、`validate-copy`、`validate-batch`、`package` 和 `export-csv` 在自身
+业务逻辑与文件写入前强制执行只读 `learning-preflight` 门禁。它同时汇总 copy/person 的
+approved 与 published 候选，核对 published 候选登记的 block ID 是否存在于正式 learned
+资源。存在 approved 候选时返回完整候选与 `codex_publish_approved`，由调用该 CLI 的 Codex
+完成语义清理和发布；存在缺失正式块时返回 `repair_published_resources`。任一动作未清零时
+退出码为 3，原生产 CLI 不得继续，普通终端也没有绕过路径。发布后必须复检到
+`ready_for_generation=true` 并重试原命令，从而把审核、语义发布和生产消费连成可验证闭环，
+同时保持 Python 不承担语义抽取。
 
 审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，候选
 操作只能提交 kind、candidate ID、revision 与允许字段；媒体操作只能提交 date 和扫描得到的

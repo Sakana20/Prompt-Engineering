@@ -8,8 +8,8 @@
 - 新增 Prompt Engineering 自有 Paraformer worker 与严格 subprocess provider，FunASR 仓库
   完全只读，现有字幕入口不变；
 - 新增九个 `avatar-prompts learning-*` 子命令、浅层媒体发现、缓存、局部失败与稳定 JSON；
-- 新增生产生成前 `learning-preflight` 门禁：检查 approved、published 与正式块一致性，要求
-  Codex 发布后复检通过才继续生产 CLI；
+- 六个生产 CLI 在业务处理与文件写入前强制执行 `learning-preflight` 门禁：检查 approved、
+  published 与正式块一致性，返回完整候选供 Codex 清理拆解，并要求发布后复检通过才重试；
 - 新增 Codex 发布清单、独立 learned 文案/人物资源、风险隔离和全有或全无发布；
 - learned 文案块进入 source-block 注册表，learned 人物块进入视觉 Prompt 指令；空资源兼容
   旧行为；

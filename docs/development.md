@@ -35,6 +35,10 @@ uv run avatar-prompts export-csv --input demo.tasks.json --preset none
 uv run avatar-prompts learning-preflight --learning-root learning
 ```
 
+六个生产命令都接受 `--learning-root`，并会在读取任务输入或写出产物前自动执行同一 preflight。
+若存在 approved 候选或 published 正式资源不一致，命令返回退出码 3 和完整 JSON 上下文；Codex
+必须完成语义清理、拆解、`learning-publish` 与复检后再重试，Python CLI 不会自动发布或绕过。
+
 `tools/skill_reviewer/` 是本地人工审核台。它会扫描
 `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材/Codex` 下的 CSV，并自动匹配同目录
 SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite 只读读取 `jobs.status`，

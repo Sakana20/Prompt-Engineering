@@ -4,8 +4,14 @@ from typing import Any
 
 import pytest
 
+from avatar_prompt_pipeline import cli as cli_module
 from avatar_prompt_pipeline.cli import run
 from avatar_prompt_pipeline.validation import REQUIRED_BENEFIT
+
+
+@pytest.fixture(autouse=True)
+def _isolated_generation_learning_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli_module, "DEFAULT_LEARNING_ROOT", tmp_path / "learning")
 
 
 @pytest.mark.e2e

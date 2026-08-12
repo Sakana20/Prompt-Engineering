@@ -178,6 +178,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "benefit_point",
         "config",
         "output",
+        "learning_root",
     }
     assert set(validate) == {
         "command",
@@ -187,6 +188,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "campaign_name",
         "benefit_point",
         "config",
+        "learning_root",
     }
     assert set(validate_batch) == {
         "command",
@@ -196,6 +198,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "campaign_name",
         "benefit_point",
         "config",
+        "learning_root",
     }
     assert set(package) == {
         "command",
@@ -208,6 +211,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "campaign_name",
         "benefit_point",
         "config",
+        "learning_root",
     }
     assert set(init_batch) == {
         "command",
@@ -216,6 +220,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "count",
         "task_prefix",
         "output",
+        "learning_root",
     }
     assert set(export_csv) == {
         "command",
@@ -227,6 +232,7 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "campaign_name",
         "benefit_point",
         "config",
+        "learning_root",
     }
     assert set(schema["$defs"]["launcher"]["properties"]) == {
         "project_root",

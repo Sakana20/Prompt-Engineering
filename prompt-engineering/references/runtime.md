@@ -23,8 +23,8 @@ schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使�
 
 ## 学习候选与发布
 
-所有生产文案、人物 Prompt、任务清单和任务包流程在调用 `compose`、`init-batch`、
-`validate-copy`、`validate-batch`、`package` 或 `export-csv` 前，必须先运行：
+`compose`、`init-batch`、`validate-copy`、`validate-batch`、`package` 和 `export-csv` 都接受
+`--learning-root`，并在自身业务处理与文件写入前自动运行等价于以下命令的门禁：
 
 ```bash
 avatar-prompts learning-preflight --learning-root learning
@@ -33,7 +33,9 @@ avatar-prompts learning-preflight --learning-root learning
 该命令一次读取 copy/person 的 `approved` 与 `published` 候选，并核对 published 候选登记的
 block ID 是否仍存在于正式 learned 资源。输出 `ready_for_generation`、`required_actions`、
 完整 approved 候选、published 候选和正式 block ID。无阻塞项时退出码为 `0`；存在待发布候选
-或正式资源缺失时退出码为 `3`，普通生成不得继续。
+或正式资源缺失时退出码为 `3`，生产命令会返回 `generation_blocked=true`、原命令名、完整候选
+以及恢复条件，不会读取任务输入或写出产物。直接在普通终端调用也不能绕过；应把输出交给
+Codex 完成语义处理。
 
 `codex_publish_approved` 只能由 Codex 处理：逐条清除样本价格、促销、平台、配送、品牌、功效、
 销量、CTA、固定画面、logo 和真人风险，生成严格发布清单并执行 `learning-publish`。Python CLI

@@ -220,8 +220,8 @@ tools/skill_reviewer/run.sh
   `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材` 当前一层；不修改 FunASR，
   不进入现有字幕入口；
 - `learning-add-person-prompt`：只在用户主动输入人物 Prompt 时创建人物候选，不调用 ASR；
-- `learning-preflight`：在生产 CLI/Codex 生成前汇总 approved/published 候选并核对正式块；有
-  待发布或资源不一致时以退出码 3 阻止继续；
+- `learning-preflight`：汇总 approved/published 候选并核对正式块；六个生产 CLI 会在自身
+  业务逻辑和文件写入前自动执行同一门禁，有待发布或资源不一致时以退出码 3 阻止继续；
 - `learning-list/update/submit-review/approve/reject`：按 kind 与 revision 管理不可变原文、
   编辑稿和审计记录；
 - `learning-publish`：只接收 Codex 为已批准候选生成的合法清单，并全有或全无地发布到独立
@@ -256,12 +256,13 @@ tools/skill_reviewer/run.sh
    候选直接进入 `approved`，等待 Codex 发布。
 5. 对不满意且尚未批准/发布的候选点击“删除”；候选进入 `learning/<kind>/trash/`，源媒体不动。
 6. 删除完成后，该媒体重新显示“未识别”，可再次勾选并创建一个全新候选。
-7. 在下一次生产文案或任务包 CLI 前运行 `learning-preflight`；若报告
-   `codex_publish_approved`，停止原命令。
+7. 下一次运行任一生产 CLI 时，命令会自动执行 `learning-preflight`；若报告
+   `codex_publish_approved`，CLI 在读写业务文件前停止，并把完整 approved 候选返回给 Codex。
 8. Codex 逐条清除不可复用事实与风险、生成发布清单并执行 `learning-publish`；Python 不自动
    做语义清洗或批准。
-9. 再次运行 `learning-preflight`；只有退出码 0、`ready_for_generation=true` 且
-   `required_actions=[]` 时才继续生成。
+9. Codex 再次运行 `learning-preflight`；只有退出码 0、`ready_for_generation=true` 且
+   `required_actions=[]` 时才重试并继续原生产命令。直接在普通终端运行时也不能绕过该门禁，
+   只会收到需要交由 Codex 处理的退出码 3 和 JSON 上下文。
 
 例如，ASR 原文为：
 

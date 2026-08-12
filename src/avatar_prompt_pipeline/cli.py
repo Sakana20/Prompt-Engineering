@@ -56,6 +56,16 @@ PACKAGE_FORMATS = (
     "csv",
     "libtv_omnihuman_package",
 )
+GENERATION_COMMANDS = frozenset(
+    {
+        "compose",
+        "init-batch",
+        "validate-copy",
+        "validate-batch",
+        "package",
+        "export-csv",
+    }
+)
 
 
 def _add_campaign_arguments(parser: argparse.ArgumentParser) -> None:
@@ -74,6 +84,15 @@ def _add_campaign_arguments(parser: argparse.ArgumentParser) -> None:
         help="已确认利益点，可重复传入；提供后覆盖预设利益点",
     )
     parser.add_argument("--config", help="项目配置 JSON；传入后使用配置中的商品和活动口径")
+
+
+def _add_generation_learning_gate_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--learning-root",
+        type=Path,
+        default=DEFAULT_LEARNING_ROOT,
+        help="生成前学习门禁根目录；存在待 Codex 发布内容时退出码为 3",
+    )
 
 
 def _has_campaign_overrides(args: argparse.Namespace) -> bool:
@@ -140,6 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_batch.add_argument("--count", type=int, default=1, help="任务数量，默认 1")
     init_batch.add_argument("--task-prefix", default="TASK", help="ASCII task_id 前缀")
     init_batch.add_argument("--output", type=Path, required=True, help="模板 JSON 输出路径")
+    _add_generation_learning_gate_argument(init_batch)
     compose = commands.add_parser("compose", help="根据商品资料生成 Prompt 包")
     compose.add_argument("--category", help="商品品类")
     compose.add_argument("--product-name", default=None, help="具体商品名称")
@@ -151,12 +171,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compose.add_argument("--output", help="输出 JSON 路径；省略时打印到标准输出")
     _add_campaign_arguments(compose)
+    _add_generation_learning_gate_argument(compose)
     validate = commands.add_parser("validate-copy", help="校验一段已生成口播")
     validate.add_argument("text", help="待校验口播正文")
     _add_campaign_arguments(validate)
+    _add_generation_learning_gate_argument(validate)
     validate_batch = commands.add_parser("validate-batch", help="校验 Codex 生成的任务清单")
     validate_batch.add_argument("--input", required=True, help="生成结果 JSON 清单")
     _add_campaign_arguments(validate_batch)
+    _add_generation_learning_gate_argument(validate_batch)
     package = commands.add_parser("package", help="校验并输出 Skill 任务产物")
     package.add_argument("--input", required=True, help="生成结果 JSON 清单")
     package.add_argument(
@@ -174,6 +197,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     package.add_argument("--date", help="输出日期，格式 YYYYMMDD；默认使用本地日期")
     _add_campaign_arguments(package)
+    _add_generation_learning_gate_argument(package)
     export_csv = commands.add_parser("export-csv", help="从已填写清单生成 Oceanengine CSV")
     export_csv.add_argument("--input", required=True, help="已填写的任务清单 JSON")
     export_csv.add_argument(
@@ -184,6 +208,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     export_csv.add_argument("--date", help="输出日期，格式 YYYYMMDD；默认使用本地日期")
     _add_campaign_arguments(export_csv)
+    _add_generation_learning_gate_argument(export_csv)
     transcribe = commands.add_parser(
         "learning-transcribe", help="从显式本地媒体创建 ASR 文案学习候选"
     )
@@ -431,8 +456,42 @@ def _write_selected_formats(
     return written
 
 
+def _run_generation_learning_gate(args: argparse.Namespace) -> int | None:
+    command = str(args.command)
+    if command not in GENERATION_COMMANDS:
+        return None
+    service = LearningService.from_root(args.learning_root)
+    report = inspect_learning_preflight(service.store)
+    if report.ready_for_generation:
+        return None
+    payload = report.to_dict()
+    payload.update(
+        {
+            "generation_blocked": True,
+            "blocked_command": command,
+            "codex_semantic_processing_required": report.publication_required,
+            "message": (
+                "生产 CLI 已暂停：必须先由 Codex 完成语义清理、结构拆解和学习发布，"
+                "再复检 published 正式资源并重试原命令。"
+            ),
+            "resume_condition": {
+                "learning_preflight_exit_code": 0,
+                "ready_for_generation": True,
+                "required_actions": [],
+            },
+        }
+    )
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return PREFLIGHT_BLOCKED_EXIT_CODE
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if str(args.command).startswith("learning-"):
+        return _run_learning_command(args)
+    gate_result = _run_generation_learning_gate(args)
+    if gate_result is not None:
+        return gate_result
     if args.command == "init-batch":
         try:
             destination = write_task_batch_template(
@@ -456,8 +515,6 @@ def run(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
-    if str(args.command).startswith("learning-"):
-        return _run_learning_command(args)
     config = _load_config_from_args(args)
     campaign = _campaign_from_args(args, config)
     validation_config = (

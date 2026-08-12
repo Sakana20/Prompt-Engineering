@@ -10,22 +10,26 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 
 ## Generation Learning Gate
 
-Before generating copy or avatar prompts, or running `compose`, `init-batch`, `validate-copy`,
-`validate-batch`, `package`, or `export-csv`, run `learning-preflight` against the active project
-learning root. Do not run this gate before `learning-*` management commands, help, tests, or Skill
-validation.
+Before generating copy or avatar prompts, use the active project learning root. The `compose`,
+`init-batch`, `validate-copy`, `validate-batch`, `package`, and `export-csv` commands enforce
+`learning-preflight` internally before their business logic or file writes; do not run a duplicate
+manual preflight before them. For generation performed without one of those commands, run
+`learning-preflight` explicitly. Do not run this gate before `learning-*` management commands,
+help, tests, or Skill validation.
 
 - If `ready_for_generation` is `true`, read the reported formal learned resources and continue.
-- If `required_actions` contains `codex_publish_approved`, stop the production command. Read every
-  approved candidate returned by the report, remove sample price, promotion, platform, delivery,
+- If a production command exits with code `3`, treat its JSON as the preflight report and keep that
+  command stopped. If `required_actions` contains `codex_publish_approved`, read every approved
+  candidate returned by the report, remove sample price, promotion, platform, delivery,
   brand, efficacy, sales, CTA, fixed-frame, logo, and real-person risks, create a matching
   `learning-publication.schema.json` manifest, and run `learning-publish` with the exact kind,
   candidate ID, and revision. Never infer reusable product or campaign facts from the sample.
 - If `required_actions` contains `repair_published_resources`, stop and repair the formal-resource
   inconsistency before generating anything; never silently ignore missing published block IDs.
 - After all approved candidates publish, run `learning-preflight` again. Continue only when it
-  returns exit code `0`, `ready_for_generation=true`, and an empty `required_actions` list. Exit
-  code `3` is an intentional generation gate, not permission to skip publication.
+  returns exit code `0`, `ready_for_generation=true`, and an empty `required_actions` list, then
+  retry the original production command. Exit code `3` is an intentional generation gate, not
+  permission to skip publication.
 - A successful publication changes the distributed Skill resources. Complete the repository's
   required tests, Skill validation, recoverable installed-Skill backup, local Skill sync, directory
   comparison, and installed CLI verification before treating the learned blocks as available to

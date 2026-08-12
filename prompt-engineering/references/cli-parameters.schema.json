@@ -50,7 +50,8 @@
           "x-cli": "--config",
           "description": "项目配置 JSON；传入后使用其中的商品和活动口径"
         },
-        "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"}
+        "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {
@@ -80,7 +81,8 @@
           "default": null,
           "x-cli": "--config",
           "description": "项目配置 JSON；传入后使用其中的活动校验契约"
-        }
+        },
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {
@@ -105,7 +107,8 @@
           "x-cli": "--benefit-point",
           "x-repeatable": true
         },
-        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {
@@ -142,7 +145,8 @@
           "x-cli": "--benefit-point",
           "x-repeatable": true
         },
-        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {
@@ -161,7 +165,8 @@
           "default": "TASK",
           "x-cli": "--task-prefix"
         },
-        "output": {"type": "string", "minLength": 1, "x-cli": "--output"}
+        "output": {"type": "string", "minLength": 1, "x-cli": "--output"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {
@@ -188,7 +193,8 @@
           "x-cli": "--benefit-point",
           "x-repeatable": true
         },
-        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },
     {

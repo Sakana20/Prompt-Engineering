@@ -282,8 +282,9 @@ learning-publish --kind copy|person --candidate-id ... --expected-revision ... -
 - `publish` 只接受 `approved`，且 manifest 中的 candidate ID、kind 和 revision 必须完全一致；
 - `reject` 保留原始内容和审计记录，不物理删除；
 - 所有命令输出稳定 JSON，成功为 0、验证失败为 1、参数/输入错误为 2；
-- `learning-preflight` 在有 approved 候选或 published 正式块不一致时返回 3，并输出 Codex
-  必须完成的 `required_actions`；
+- 六个生产命令在业务处理前自动执行 `learning-preflight`；有 approved 候选或 published 正式
+  块不一致时返回 3，输出完整候选和 Codex 必须完成的 `required_actions`，且不读取或写入原
+  生产命令的业务文件；
 - 新参数必须出现在 CLI schema 和 Skill 透明启动器帮助中。
 
 ### Step 4：发布清单与正式资源
