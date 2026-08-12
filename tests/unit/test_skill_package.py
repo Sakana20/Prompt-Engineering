@@ -35,6 +35,8 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert "Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv" in skill
     assert "/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材" in skill
     assert "创建 ASR 候选" in skill
+    assert "Preserve the FunASR `.venv/bin/python` symlink path" in skill
+    assert "never resolve it to the base interpreter" in skill
     assert "browser-supplied" in skill
     assert "filesystem path" in skill
 

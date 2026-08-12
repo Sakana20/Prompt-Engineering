@@ -240,7 +240,11 @@ and the candidate/publication schemas before operating them.
   copy-learning workbench may list the configured date directory and transcribe only media IDs the
   user explicitly selects before clicking `创建 ASR 候选`; it must never accept a browser-supplied
   filesystem path. Selecting a listed item may preview the last-selected video or audio through the
-  server-revalidated media ID; previewing must never start transcription.
+  server-revalidated media ID; previewing must never start transcription. Run the worker with an
+  isolated inherited environment and preflight its FunASR imports. Surface each failed media name
+  and backend reason in the workbench, preserve failed selections for retry, and open a successful
+  or reused candidate as the review draft. Preserve the FunASR `.venv/bin/python` symlink path;
+  never resolve it to the base interpreter.
 - Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
   only `person` candidates and never calls ASR.
 - Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed

@@ -45,7 +45,7 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
     assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
-    assert "app.js?v=20260812-3" in index
+    assert "app.js?v=20260812-4" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     assert '"/api/learning/media"' in app_js
@@ -53,6 +53,8 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
     assert '"/api/learning/media-content"' not in app_js
     assert "/api/learning/media-content?date=" in app_js
     assert "learning-media-player" in app_js
+    assert "失败素材已保留勾选" in app_js
+    assert "learning-failure-list" in app_js
     assert "当前审核台服务版本过旧" in app_js
     assert 'cache: "no-store"' in app_js
 
@@ -179,6 +181,45 @@ def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
         )
         assert status == 422
         assert "未知字段" in str(invalid["error"])
+
+        class FakeFailureService(FakeLearningService):
+            def transcribe(
+                self, inputs: tuple[Path, ...], *, source_date: object
+            ) -> dict[str, object]:
+                return {
+                    "schema_version": "1.0",
+                    "kind": "copy",
+                    "date": str(source_date),
+                    "succeeded": 0,
+                    "reused": 0,
+                    "failed": 1,
+                    "candidate_ids": [],
+                    "succeeded_candidate_ids": [],
+                    "reused_candidate_ids": [],
+                    "failures": [
+                        {
+                            "source_media": str(inputs[0]),
+                            "error": "FunASR 环境预检失败：测试错误",
+                        }
+                    ],
+                }
+
+        monkeypatch.setitem(reviewer.__dict__, "LearningService", FakeFailureService)
+        status, failed = _request(
+            port,
+            "POST",
+            "/api/learning/transcribe",
+            {"date": "2026-08-12", "media_ids": [selected_id]},
+        )
+        assert status == 200
+        failures = cast(list[dict[str, object]], failed["failures"])
+        assert failures == [
+            {
+                "name": str(media[0]["name"]),
+                "error": "FunASR 环境预检失败：测试错误",
+            }
+        ]
+        assert "source_media" not in failures[0]
     finally:
         httpd.shutdown()
         httpd.server_close()
@@ -196,7 +237,7 @@ def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
     try:
         port = int(httpd.server_address[1])
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        connection.request("GET", "/app.js?v=20260812-3")
+        connection.request("GET", "/app.js?v=20260812-4")
         response = connection.getresponse()
         response.read()
         assert response.status == 200

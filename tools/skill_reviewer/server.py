@@ -646,7 +646,18 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
             media_ids = _body_string_tuple(data, "media_ids")
             inputs = _resolve_learning_media(source_date, media_ids)
             result = self._learning_service().transcribe(inputs, source_date=source_date)
-            self._send_json(result)
+            response = dict(result)
+            failures = result.get("failures", [])
+            if isinstance(failures, list):
+                response["failures"] = [
+                    {
+                        "name": Path(str(item.get("source_media", ""))).name,
+                        "error": str(item.get("error", "识别失败")),
+                    }
+                    for item in failures
+                    if isinstance(item, dict)
+                ]
+            self._send_json(response)
         except (OSError, LearningValidationError) as error:
             self._handle_learning_error(
                 error

@@ -1009,9 +1009,25 @@ async function transcribeSelectedLearningMedia() {
       })
     });
     const completion = `完成：新建 ${result.succeeded}，缓存复用 ${result.reused}，失败 ${result.failed}`;
-    learningState.selectedMediaIds.clear();
+    const failures = Array.isArray(result.failures) ? result.failures : [];
+    const failedNames = new Set(failures.map((failure) => failure.name));
+    learningState.selectedMediaIds = new Set(
+      learningState.media
+        .filter((item) => failedNames.has(item.name))
+        .map((item) => item.id)
+    );
+    if (result.candidate_ids?.length) {
+      learningState.selectedId = result.candidate_ids[0];
+      learningState.previewMediaId = "";
+    }
     await Promise.all([loadLearningCandidates(), loadLearningMedia()]);
-    elements.learningMediaStatus.textContent = completion;
+    if (failures.length) {
+      const details = failures.map((failure) => `<li><strong>${escapeHtml(failure.name || "未知素材")}</strong><br />${escapeHtml(failure.error || "识别失败")}</li>`).join("");
+      elements.learningMediaStatus.innerHTML = `<div>${escapeHtml(completion)}</div><ul class="learning-failure-list">${details}</ul><div>失败素材已保留勾选，可修复后直接重试。</div>`;
+      elements.learningMediaStatus.classList.add("error");
+    } else {
+      elements.learningMediaStatus.textContent = completion;
+    }
   } catch (error) {
     elements.learningMediaStatus.textContent = error.message;
     elements.learningMediaStatus.classList.add("error");

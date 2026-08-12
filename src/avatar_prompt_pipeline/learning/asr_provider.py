@@ -32,12 +32,33 @@ class AsrWorkerConfig:
     timeout_seconds: float = 900.0
     command_prefix: tuple[str, ...] | None = None
 
+    def worker_prefix(self, worker: Path) -> tuple[str, ...]:
+        if self.command_prefix is not None:
+            return self.command_prefix
+        return (
+            str(self.python_executable.expanduser().absolute()),
+            "-I",
+            "-B",
+            str(worker),
+        )
+
+    def preflight_command(self) -> tuple[str, ...] | None:
+        if self.command_prefix is not None:
+            return None
+        return (
+            str(self.python_executable.expanduser().absolute()),
+            "-I",
+            "-B",
+            "-c",
+            ("import funasr_timeline.audio; import funasr_timeline.asr.paraformer_zh_service"),
+        )
+
     def cache_fingerprint(self) -> str:
         parts = [
-            str(self.python_executable.expanduser().resolve()),
+            str(self.python_executable.expanduser().absolute()),
             str(self.model_dir.expanduser().resolve()),
             self.device,
-            "worker-schema-1.0",
+            "worker-schema-1.1-isolated-python",
         ]
         if self.command_prefix is not None:
             parts.extend(self.command_prefix)
@@ -95,6 +116,56 @@ def cache_key(source_fingerprint: str, config: AsrWorkerConfig) -> str:
 class ParaformerSubprocessProvider:
     def __init__(self, config: AsrWorkerConfig | None = None) -> None:
         self.config = config or AsrWorkerConfig()
+        self._preflight_complete = False
+        self._preflight_error = ""
+
+    @staticmethod
+    def _worker_environment() -> dict[str, str]:
+        environment = dict(os.environ)
+        for inherited in (
+            "PYTHONHOME",
+            "PYTHONPATH",
+            "PYTHONEXECUTABLE",
+            "VIRTUAL_ENV",
+            "__PYVENV_LAUNCHER__",
+        ):
+            environment.pop(inherited, None)
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["PYTHONNOUSERSITE"] = "1"
+        return environment
+
+    def _preflight(self, work_dir: Path) -> None:
+        if self._preflight_complete:
+            return
+        if self._preflight_error:
+            raise AsrProviderError(self._preflight_error)
+        command = self.config.preflight_command()
+        if command is None:
+            self._preflight_complete = True
+            return
+        try:
+            completed = subprocess.run(
+                command,
+                shell=False,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=min(self.config.timeout_seconds, 30.0),
+                env=self._worker_environment(),
+                cwd=work_dir,
+            )
+        except subprocess.TimeoutExpired as exc:
+            self._preflight_error = "FunASR 环境预检超时"
+            raise AsrProviderError(self._preflight_error) from exc
+        except OSError as exc:
+            self._preflight_error = "无法启动 FunASR Python 环境预检"
+            raise AsrProviderError(self._preflight_error) from exc
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout or "无法导入 funasr_timeline").strip()
+            last_line = detail.splitlines()[-1][-800:]
+            self._preflight_error = f"FunASR 环境预检失败：{last_line}"
+            raise AsrProviderError(self._preflight_error)
+        self._preflight_complete = True
 
     def transcribe(self, media_path: Path, work_dir: Path) -> AsrWorkerResult:
         source = media_path.expanduser().resolve()
@@ -104,15 +175,12 @@ class ParaformerSubprocessProvider:
             raise AsrProviderError(f"不支持的媒体格式：{source.suffix}")
         resolved_work = work_dir.expanduser().resolve()
         resolved_work.mkdir(parents=True, exist_ok=True)
+        self._preflight(resolved_work)
         output = resolved_work / "worker-result.json"
         if output.exists():
             output.unlink()
         worker = Path(__file__).resolve().with_name("funasr_worker.py")
-        prefix = self.config.command_prefix or (
-            str(self.config.python_executable.expanduser().resolve()),
-            "-B",
-            str(worker),
-        )
+        prefix = self.config.worker_prefix(worker)
         command = [
             *prefix,
             "--input",
@@ -126,8 +194,7 @@ class ParaformerSubprocessProvider:
             "--device",
             self.config.device,
         ]
-        environment = dict(os.environ)
-        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment = self._worker_environment()
         try:
             completed = subprocess.run(
                 command,

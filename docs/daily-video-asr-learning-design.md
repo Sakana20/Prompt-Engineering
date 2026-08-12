@@ -346,6 +346,9 @@ prompt-engineering/references/person-prompt-block-contracts.md
 - 用户点击“创建 ASR 候选”后才转写已选媒体，完成后显示新增、缓存复用和失败数量并刷新候选；
 - 勾选媒体后在右侧预览最后勾选项；视频和音频使用浏览器原生控件，媒体内容接口支持 Range，
   只能使用服务端扫描得到的 date + media ID，预览不得启动 ASR；
+- worker 必须清理继承的 Python 环境、使用隔离参数并在识别前预检 FunASR 模块导入；预检或
+  识别失败时，页面逐项显示素材名和后端原因并保留失败选择，不得只显示失败数量；FunASR
+  `.venv/bin/python` 必须保留符号链接路径，不能 `resolve()` 成基础解释器；
 - 文案页显示媒体来源、不可变原文、可编辑稿、风险、相似项、revision 和状态动作；
 - 人物页支持“新增人物 Prompt”，并显示不可变原文、可编辑稿、结构化字段、风险、相似项、
   revision 和状态动作；

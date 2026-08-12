@@ -18,6 +18,61 @@ def _worker(path: Path, body: str) -> Path:
     return path
 
 
+def test_default_worker_uses_isolated_python_and_preflight(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    venv_python = tmp_path / "funasr-venv" / "bin" / "python"
+    venv_python.parent.mkdir(parents=True)
+    venv_python.symlink_to(sys.executable)
+    config = AsrWorkerConfig(python_executable=venv_python)
+    worker = Path("/tmp/prompt-owned-worker.py")
+
+    expected_python = str(venv_python.absolute())
+    assert config.worker_prefix(worker) == (
+        expected_python,
+        "-I",
+        "-B",
+        "/tmp/prompt-owned-worker.py",
+    )
+    preflight = config.preflight_command()
+    assert preflight is not None
+    assert preflight[:4] == (expected_python, "-I", "-B", "-c")
+    assert Path(preflight[0]).is_symlink()
+    assert Path(preflight[0]).resolve() != Path(preflight[0])
+    assert "funasr_timeline.audio" in preflight[4]
+    monkeypatch.setenv("VIRTUAL_ENV", "/tmp/wrong-parent-environment")
+    monkeypatch.setenv("__PYVENV_LAUNCHER__", "/tmp/wrong-parent-python")
+    monkeypatch.setenv("PYTHONEXECUTABLE", "/tmp/wrong-python")
+    environment = ParaformerSubprocessProvider._worker_environment()
+    assert "VIRTUAL_ENV" not in environment
+    assert "__PYVENV_LAUNCHER__" not in environment
+    assert "PYTHONEXECUTABLE" not in environment
+
+
+@pytest.mark.integration
+def test_default_worker_preflight_failure_is_reported_per_media(tmp_path: Path) -> None:
+    media = tmp_path / "sample.mp4"
+    media.write_bytes(b"video")
+    provider = ParaformerSubprocessProvider(
+        AsrWorkerConfig(
+            python_executable=tmp_path / "missing-python",
+            model_dir=tmp_path / "model",
+            timeout_seconds=5,
+        )
+    )
+    service = LearningService(LearningStore(tmp_path / "learning"), asr_provider=provider)
+
+    result = service.transcribe((media,), source_date=date(2026, 8, 12))
+
+    assert result["succeeded"] == 0
+    assert result["failed"] == 1
+    failures = result["failures"]
+    assert isinstance(failures, list)
+    assert "无法启动 FunASR Python 环境预检" in str(failures[0]["error"])
+    assert not (tmp_path / "learning" / "copy" / "candidates").exists()
+
+
 @pytest.mark.integration
 def test_injected_asr_worker_success_and_archive(tmp_path: Path) -> None:
     media = tmp_path / "sample.mp4"

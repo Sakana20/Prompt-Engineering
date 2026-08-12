@@ -47,7 +47,9 @@ schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使�
 `POST /api/learning/transcribe` 提交 date 与服务器媒体 ID；左栏只保留日期和扫描控制，媒体
 选择显示在中间主列表。静态资源禁用缓存，连接旧版服务时页面会提示重新运行审核台。客户端
 不提交路径。勾选媒体后，右侧通过受限 `media-content` Range 接口预览最后勾选的视频或音频；
-预览不会启动 ASR。工作台还提供
+预览不会启动 ASR。真实转写使用清理继承变量后的 `-I -B` Python，并先预检 FunASR 模块；
+失败响应只包含素材名和原因，页面保留失败选择用于重试，成功或复用时自动打开草稿。工作台还
+提供
 新增人物 Prompt、保存、提交、批准和驳回，但不提供发布、导入、下游视频生成或付费提交按钮。
 
 ## 配置

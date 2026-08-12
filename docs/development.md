@@ -52,6 +52,13 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 `GET /api/learning/media-content?date=...&id=...` 打开原生视频或音频预览；接口支持单段 HTTP
 Range，并复用服务端媒体 ID 重新校验，不能接收或返回客户端路径。
 
+真实转写前，provider 使用 `-I -B` 并清除 Python 路径、虚拟环境、`PYTHONEXECUTABLE` 和
+macOS `__PYVENV_LAUNCHER__`，然后预检
+`funasr_timeline.audio`、`funasr_timeline.asr.paraformer_zh_service`。不得用 `sys.path` 指向
+FunASR 源码补救，也不得对 `.venv/bin/python` 调用 `Path.resolve()`，以免解析符号链接后退出
+虚拟环境。审核台批次响应将失败项收敛为 `name` 与 `error`；前端必须逐项展示并保留
+失败选择，不能只显示失败数量或清空选择。
+
 ## 代码标准
 
 - Python 3.12+，公共边界完整类型标注；
