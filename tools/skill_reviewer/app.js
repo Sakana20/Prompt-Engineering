@@ -126,6 +126,7 @@ Object.assign(elements, {
   learningMediaList: document.getElementById("learning-media-list"),
   learningMediaTranscribe: document.getElementById("learning-media-transcribe"),
   learningMediaStatus: document.getElementById("learning-media-status"),
+  learningCopyBrowser: document.getElementById("learning-copy-browser"),
   learningAddPersonPanel: document.getElementById("learning-add-person-panel"),
   learningNewSource: document.getElementById("learning-new-source"),
   learningNewPrompt: document.getElementById("learning-new-prompt"),
@@ -142,6 +143,8 @@ const learningState = {
   selectedId: "",
   media: [],
   selectedMediaIds: new Set(),
+  mediaLoading: false,
+  mediaError: "",
   transcribing: false
 };
 
@@ -873,6 +876,7 @@ function updateLearningPanelVisibility() {
   const learning = learningState.workbench === "learning";
   elements.learningAddPersonPanel.classList.toggle("hidden", !(learning && learningState.kind === "person"));
   elements.learningMediaPanel.classList.toggle("hidden", !(learning && learningState.kind === "copy"));
+  elements.learningCopyBrowser.classList.toggle("hidden", !(learning && learningState.kind === "copy"));
 }
 
 function learningStatusTone(status) {
@@ -883,11 +887,22 @@ function learningStatusTone(status) {
 }
 
 async function learningRequest(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-  });
-  const payload = await response.json();
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+    });
+  } catch (_error) {
+    throw new Error("无法连接审核台服务，请确认 tools/skill_reviewer/run.sh 正在运行");
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (_error) {
+    throw new Error("审核台服务响应异常，请重启 tools/skill_reviewer/run.sh 后刷新页面");
+  }
   if (!response.ok) {
     const error = new Error(payload.error || "学习审核请求失败");
     error.status = response.status;
@@ -914,7 +929,17 @@ function renderLearningMedia() {
   elements.learningMediaSelectAll.indeterminate = learningState.selectedMediaIds.size > 0
     && learningState.selectedMediaIds.size < learningState.media.length;
   elements.learningMediaTranscribe.disabled = learningState.transcribing
-    || learningState.selectedMediaIds.size === 0;
+    || learningState.mediaLoading || learningState.selectedMediaIds.size === 0;
+  elements.learningMediaRefresh.disabled = learningState.mediaLoading;
+  elements.learningMediaRefresh.textContent = learningState.mediaLoading ? "扫描中..." : "扫描";
+  if (learningState.mediaLoading) {
+    elements.learningMediaList.innerHTML = `<div class="status-line">正在扫描当天目录...</div>`;
+    return;
+  }
+  if (learningState.mediaError) {
+    elements.learningMediaList.innerHTML = `<div class="error media-error">${escapeHtml(learningState.mediaError)}</div>`;
+    return;
+  }
   if (!learningState.media.length) {
     elements.learningMediaList.innerHTML = `<div class="status-line">当天目录没有发现受支持的视频或音频</div>`;
     return;
@@ -937,24 +962,31 @@ function renderLearningMedia() {
 
 async function loadLearningMedia() {
   if (learningState.kind !== "copy" || learningState.workbench !== "learning") return;
+  if (learningState.mediaLoading) return;
   const url = new URL("/api/learning/media", window.location.origin);
   url.searchParams.set("date", elements.learningMediaDate.value || localDateValue());
-  elements.learningMediaList.innerHTML = `<div class="status-line">正在扫描当天目录...</div>`;
+  learningState.mediaLoading = true;
+  learningState.mediaError = "";
   elements.learningMediaStatus.classList.remove("error");
-  elements.learningMediaStatus.textContent = "";
+  elements.learningMediaStatus.textContent = "正在扫描当天目录...";
+  renderLearningMedia();
   try {
     const payload = await learningRequest(url);
     learningState.media = payload.media || [];
     elements.learningMediaRoot.textContent = payload.root || elements.learningMediaRoot.textContent;
-    if (!payload.exists) {
-      elements.learningMediaStatus.textContent = "当天素材目录不存在";
-    }
-    renderLearningMedia();
+    elements.learningMediaStatus.textContent = payload.exists
+      ? `扫描完成：发现 ${learningState.media.length} 个媒体`
+      : "当天素材目录不存在";
   } catch (error) {
     learningState.media = [];
-    renderLearningMedia();
-    elements.learningMediaStatus.textContent = error.message;
+    learningState.mediaError = error.status === 404
+      ? "当前审核台服务版本过旧，请关闭后重新运行 tools/skill_reviewer/run.sh"
+      : error.message;
+    elements.learningMediaStatus.textContent = `扫描失败：${learningState.mediaError}`;
     elements.learningMediaStatus.classList.add("error");
+  } finally {
+    learningState.mediaLoading = false;
+    renderLearningMedia();
   }
 }
 

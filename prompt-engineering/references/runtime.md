@@ -44,7 +44,9 @@ schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使�
 
 本地审核台使用同一站点的“学习审核”工作台。视频文案页通过
 `GET /api/learning/media?date=YYYY-MM-DD` 列出默认目录当前一层，用户多选后点击按钮才向
-`POST /api/learning/transcribe` 提交 date 与服务器媒体 ID；客户端不提交路径。工作台还提供
+`POST /api/learning/transcribe` 提交 date 与服务器媒体 ID；左栏只保留日期和扫描控制，媒体
+选择显示在中间主列表。静态资源禁用缓存，连接旧版服务时页面会提示重新运行审核台。客户端
+不提交路径。工作台还提供
 新增人物 Prompt、保存、提交、批准和驳回，但不提供发布、导入、下游视频生成或付费提交按钮。
 
 ## 配置

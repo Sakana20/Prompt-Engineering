@@ -412,6 +412,11 @@ def _database_statuses(path: Path) -> dict[str, str]:
 class SkillReviewerHandler(SimpleHTTPRequestHandler):
     server_version = "SkillReviewer/1.0"
 
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        super().end_headers()
+
     def translate_path(self, path: str) -> str:
         parsed = urlparse(path)
         requested = parsed.path.lstrip("/") or "index.html"

@@ -38,14 +38,20 @@ def test_learning_workbench_shows_daily_media_default_without_transcribe_action(
         encoding="utf-8"
     )
 
-    assert "/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材" in index
+    assert "等待扫描当天素材目录" in index
     assert 'id="learning-media-list"' in index
     assert 'id="learning-media-transcribe"' in index
+    assert 'id="learning-copy-browser"' in index
+    assert index.index('id="learning-copy-browser"') < index.index('id="learning-list"')
+    assert index.index('id="learning-media-list"') > index.index('id="learning-workspace"')
     assert "learning-transcribe" not in index
+    assert "app.js?v=20260812-2" in index
 
     app_js = (Path(__file__).parents[2] / "tools/skill_reviewer/app.js").read_text(encoding="utf-8")
     assert '"/api/learning/media"' in app_js
     assert '"/api/learning/transcribe"' in app_js
+    assert "当前审核台服务版本过旧" in app_js
+    assert 'cache: "no-store"' in app_js
 
 
 def _request(
@@ -152,6 +158,30 @@ def test_learning_media_api_lists_one_level_and_transcribes_selected_ids(
         httpd.server_close()
         thread.join(timeout=5)
         reviewer.__dict__["DAILY_MEDIA_ROOT"] = previous_media_root
+
+
+@pytest.mark.integration
+def test_reviewer_static_assets_disable_browser_cache(tmp_path: Path) -> None:
+    previous_root = cast(Path, reviewer.__dict__["LEARNING_ROOT"])
+    reviewer.__dict__["LEARNING_ROOT"] = tmp_path / "learning"
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), reviewer.SkillReviewerHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        port = int(httpd.server_address[1])
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        connection.request("GET", "/app.js?v=20260812-2")
+        response = connection.getresponse()
+        response.read()
+        assert response.status == 200
+        assert response.getheader("Cache-Control") == "no-store, max-age=0"
+        assert response.getheader("Pragma") == "no-cache"
+        connection.close()
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        reviewer.__dict__["LEARNING_ROOT"] = previous_root
 
 
 @pytest.mark.integration

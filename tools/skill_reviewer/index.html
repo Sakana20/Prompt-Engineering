@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Skill CSV / Database Reviewer</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317191e'/%3E%3Cpath d='M8 10h16M8 16h16M8 22h10' stroke='%236ee7b7' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260812-2" />
   </head>
   <body>
     <main class="app-shell">
@@ -106,17 +106,9 @@
           </div>
           <label for="learning-media-date">素材日期</label>
           <input id="learning-media-date" class="field" type="date" />
-          <div id="learning-media-root" class="source-root">/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材</div>
-          <div class="media-select-row">
-            <label class="switch-row"><input id="learning-media-select-all" type="checkbox" />全选</label>
-            <span id="learning-media-count" class="helper-text">0 个媒体</span>
-          </div>
-          <div id="learning-media-list" class="learning-media-list">
-            <div class="status-line">选择日期后扫描当天目录</div>
-          </div>
-          <button id="learning-media-transcribe" type="button" disabled>创建 ASR 候选</button>
+          <div id="learning-media-root" class="source-root">等待扫描当天素材目录</div>
           <div id="learning-media-status" class="status-line"></div>
-          <div class="helper-text">只读取该目录当前一层；打开或刷新页面不会自动转写。</div>
+          <div class="helper-text">扫描结果和素材选择显示在右侧主列表；扫描不会自动转写。</div>
         </section>
 
         <section id="learning-add-person-panel" class="panel compact learning-workbench hidden">
@@ -162,8 +154,30 @@
         </div>
 
         <div id="learning-workspace" class="learning-review-grid learning-workbench hidden">
-          <section class="rows-panel">
-            <div id="learning-list" class="row-list"><div class="status-line">正在加载候选...</div></div>
+          <section class="rows-panel learning-rows-panel">
+            <div id="learning-copy-browser" class="learning-copy-browser">
+              <div class="learning-section-title">
+                <div>
+                  <h2>当天素材</h2>
+                  <div class="helper-text">勾选素材后才会启用转写</div>
+                </div>
+                <div class="media-select-row">
+                  <label class="switch-row"><input id="learning-media-select-all" type="checkbox" />全选</label>
+                  <span id="learning-media-count" class="helper-text">0 个媒体</span>
+                </div>
+              </div>
+              <div id="learning-media-list" class="learning-media-list">
+                <div class="status-line">正在扫描当天目录...</div>
+              </div>
+              <button id="learning-media-transcribe" type="button" disabled>创建 ASR 候选</button>
+              <div class="helper-text">只读取当天目录当前一层；打开或刷新页面不会自动转写。</div>
+            </div>
+            <div class="learning-candidate-section">
+              <div class="learning-section-title learning-candidate-title">
+                <h2>学习候选</h2>
+              </div>
+              <div id="learning-list" class="row-list learning-candidate-list"><div class="status-line">正在加载候选...</div></div>
+            </div>
           </section>
           <section class="detail-panel">
             <div id="learning-detail" class="detail-content">
@@ -174,6 +188,6 @@
       </section>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260812-2"></script>
   </body>
 </html>
