@@ -190,9 +190,119 @@
         },
         "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"}
       }
+    },
+    {
+      "title": "learning-transcribe",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command"],
+      "properties": {
+        "command": {"const": "learning-transcribe"},
+        "input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "description": "显式媒体文件或一级目录；省略时解析当天 /Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材", "x-cli": "--input", "x-repeatable": true},
+        "learning_root": {"$ref": "#/$defs/learning_root"},
+        "date": {"type": ["string", "null"], "format": "date", "x-cli": "--date"},
+        "funasr_python": {"type": "string", "x-cli": "--funasr-python"},
+        "model_dir": {"type": "string", "x-cli": "--model-dir"},
+        "device": {"type": "string", "default": "mps", "x-cli": "--device"},
+        "timeout": {"type": "number", "exclusiveMinimum": 0, "default": 900, "x-cli": "--timeout"}
+      }
+    },
+    {
+      "title": "learning-add-person-prompt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "source_label"],
+      "oneOf": [{"required": ["text"]}, {"required": ["input"]}],
+      "properties": {
+        "command": {"const": "learning-add-person-prompt"},
+        "text": {"type": "string", "minLength": 1, "x-cli": "--text"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "source_label": {"type": "string", "default": "用户人工样本", "x-cli": "--source-label"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "learning-list",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "kind"],
+      "properties": {
+        "command": {"const": "learning-list"},
+        "kind": {"$ref": "#/$defs/learning_kind"},
+        "status": {"enum": ["pending", "editing", "ready_for_review", "approved", "rejected", "published"]},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "learning-update",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "kind", "candidate_id", "expected_revision", "edited_file"],
+      "properties": {
+        "command": {"const": "learning-update"},
+        "kind": {"$ref": "#/$defs/learning_kind"},
+        "candidate_id": {"$ref": "#/$defs/candidate_id"},
+        "expected_revision": {"$ref": "#/$defs/expected_revision"},
+        "edited_file": {"type": "string", "x-cli": "--edited-file"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "learning-submit-review",
+      "$ref": "#/$defs/candidate_action",
+      "properties": {"command": {"const": "learning-submit-review"}}
+    },
+    {
+      "title": "learning-approve",
+      "$ref": "#/$defs/candidate_action",
+      "properties": {"command": {"const": "learning-approve"}}
+    },
+    {
+      "title": "learning-reject",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "kind", "candidate_id", "expected_revision", "reason"],
+      "properties": {
+        "command": {"const": "learning-reject"},
+        "kind": {"$ref": "#/$defs/learning_kind"},
+        "candidate_id": {"$ref": "#/$defs/candidate_id"},
+        "expected_revision": {"$ref": "#/$defs/expected_revision"},
+        "reason": {"type": "string", "minLength": 1, "x-cli": "--reason"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "learning-publish",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "kind", "candidate_id", "expected_revision", "manifest"],
+      "properties": {
+        "command": {"const": "learning-publish"},
+        "kind": {"$ref": "#/$defs/learning_kind"},
+        "candidate_id": {"$ref": "#/$defs/candidate_id"},
+        "expected_revision": {"$ref": "#/$defs/expected_revision"},
+        "manifest": {"type": "string", "minLength": 1, "x-cli": "--manifest"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
     }
   ],
   "$defs": {
+    "learning_kind": {"enum": ["copy", "person"], "x-cli": "--kind"},
+    "learning_root": {"type": "string", "default": "learning", "x-cli": "--learning-root"},
+    "candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{7,95}$", "x-cli": "--candidate-id"},
+    "expected_revision": {"type": "integer", "minimum": 1, "x-cli": "--expected-revision"},
+    "candidate_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "kind", "candidate_id", "expected_revision"],
+      "properties": {
+        "command": {"type": "string"},
+        "kind": {"$ref": "#/$defs/learning_kind"},
+        "candidate_id": {"$ref": "#/$defs/candidate_id"},
+        "expected_revision": {"$ref": "#/$defs/expected_revision"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
     "launcher": {
       "type": "object",
       "additionalProperties": false,

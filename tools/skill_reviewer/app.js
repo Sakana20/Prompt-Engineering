@@ -1,4 +1,5 @@
 const STORAGE_KEY = "promptEngineeringSkillReviewerSettingsV1";
+const WORKBENCH_STORAGE_KEY = "promptEngineeringSkillReviewerWorkbenchV1";
 const DEFAULT_SETTINGS = {
   categories: {
     clothing: {
@@ -109,6 +110,27 @@ const elements = {
   detailContent: document.getElementById("detail-content"),
   exportSettings: document.getElementById("export-settings"),
   settingsInput: document.getElementById("settings-input")
+};
+
+Object.assign(elements, {
+  workbenchToggle: document.getElementById("workbench-toggle"),
+  workbenchSubtitle: document.getElementById("workbench-subtitle"),
+  learningRefresh: document.getElementById("learning-refresh"),
+  learningStatusFilter: document.getElementById("learning-status-filter"),
+  learningAddPersonPanel: document.getElementById("learning-add-person-panel"),
+  learningNewSource: document.getElementById("learning-new-source"),
+  learningNewPrompt: document.getElementById("learning-new-prompt"),
+  learningAddPerson: document.getElementById("learning-add-person"),
+  learningAddStatus: document.getElementById("learning-add-status"),
+  learningList: document.getElementById("learning-list"),
+  learningDetail: document.getElementById("learning-detail")
+});
+
+const learningState = {
+  workbench: localStorage.getItem(WORKBENCH_STORAGE_KEY) === "learning" ? "learning" : "task",
+  kind: "copy",
+  candidates: [],
+  selectedId: ""
 };
 
 function clone(value) {
@@ -804,5 +826,241 @@ elements.nextPage.addEventListener("click", async () => {
   await loadActiveTable();
 });
 
+function setWorkbench(value) {
+  learningState.workbench = value;
+  localStorage.setItem(WORKBENCH_STORAGE_KEY, value);
+  const learning = value === "learning";
+  document.querySelectorAll(".task-workbench").forEach((element) => element.classList.toggle("hidden", learning));
+  document.querySelectorAll(".learning-workbench").forEach((element) => element.classList.toggle("hidden", !learning));
+  elements.workbenchToggle.textContent = learning ? "返回任务审核" : "切换到学习审核";
+  elements.workbenchSubtitle.textContent = learning ? "学习审核" : "CSV 审核与状态预览";
+  if (learning) {
+    renderLearningHeader();
+    updatePersonCreateVisibility();
+    loadLearningCandidates();
+  } else {
+    renderDatasetHeaderForTask();
+  }
+}
+
+function renderLearningHeader() {
+  elements.datasetTitle.textContent = learningState.kind === "copy" ? "学习审核 · 视频文案" : "学习审核 · 人物 Prompt";
+  elements.datasetMeta.textContent = "原始内容只读，所有保存使用 revision 冲突保护";
+}
+
+function renderDatasetHeaderForTask() {
+  const total = state.rows.length;
+  elements.datasetTitle.textContent = state.displayLabel || state.sourceName || "还没有数据";
+  elements.datasetMeta.textContent = total
+    ? `${state.sourceType || "数据"} · ${total} 行 · ${state.columns.length} 列`
+    : "导入后会自动识别字段并高亮可审核内容";
+}
+
+function updatePersonCreateVisibility() {
+  const visible = learningState.workbench === "learning" && learningState.kind === "person";
+  elements.learningAddPersonPanel.classList.toggle("hidden", !visible);
+}
+
+function learningStatusTone(status) {
+  if (status === "published" || status === "approved") return "done";
+  if (status === "rejected") return "failed";
+  if (status === "ready_for_review") return "running";
+  return "idle";
+}
+
+async function learningRequest(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = new Error(payload.error || "学习审核请求失败");
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+async function loadLearningCandidates() {
+  const url = new URL("/api/learning/candidates", window.location.origin);
+  url.searchParams.set("kind", learningState.kind);
+  if (elements.learningStatusFilter.value) {
+    url.searchParams.set("status", elements.learningStatusFilter.value);
+  }
+  elements.learningList.innerHTML = `<div class="status-line">正在加载候选...</div>`;
+  try {
+    const payload = await learningRequest(url);
+    learningState.candidates = payload.candidates || [];
+    if (!learningState.candidates.some((item) => item.candidate_id === learningState.selectedId)) {
+      learningState.selectedId = learningState.candidates[0]?.candidate_id || "";
+    }
+    renderLearningList();
+    renderLearningDetail();
+  } catch (error) {
+    elements.learningList.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function renderLearningList() {
+  if (!learningState.candidates.length) {
+    elements.learningList.innerHTML = `<div class="empty-state compact-empty"><p>暂无候选</p></div>`;
+    return;
+  }
+  elements.learningList.innerHTML = learningState.candidates.map((candidate) => {
+    const active = candidate.candidate_id === learningState.selectedId ? " active" : "";
+    const summary = learningState.kind === "copy" ? candidate.edited_transcript : candidate.edited_prompt;
+    const source = learningState.kind === "copy" ? candidate.source_date : candidate.source_label;
+    return `<button type="button" class="row-card${active}" data-learning-id="${escapeHtml(candidate.candidate_id)}">
+      <div class="row-title"><span>${escapeHtml(source || candidate.candidate_id)}</span>
+      <span class="status-badge ${learningStatusTone(candidate.status)}">${escapeHtml(candidate.status)}</span></div>
+      <div class="row-summary">revision ${candidate.revision} · ${escapeHtml(summary || "")}</div>
+    </button>`;
+  }).join("");
+}
+
+function structuredField(name, label, candidate) {
+  const value = Array.isArray(candidate[name]) ? candidate[name].join("，") : (candidate[name] || "");
+  return `<label class="learning-field"><span>${escapeHtml(label)}</span>
+    <input class="field" data-learning-field="${escapeHtml(name)}" value="${escapeHtml(value)}" /></label>`;
+}
+
+function renderLearningDetail() {
+  const candidate = learningState.candidates.find((item) => item.candidate_id === learningState.selectedId);
+  if (!candidate) {
+    elements.learningDetail.innerHTML = `<div class="empty-state compact-empty"><p>选择一条学习候选查看详情</p></div>`;
+    return;
+  }
+  const isCopy = learningState.kind === "copy";
+  const raw = isCopy ? candidate.raw_transcript : candidate.raw_prompt;
+  const edited = isCopy ? candidate.edited_transcript : candidate.edited_prompt;
+  const structured = isCopy
+    ? [
+        structuredField("category_family", "品类族", candidate),
+        structuredField("consumption_need", "消费需求", candidate),
+        structuredField("season", "季节限制", candidate),
+        structuredField("source_usage", "来源块用途（逗号分隔）", candidate)
+      ]
+    : [
+        structuredField("identity_traits", "人物身份（逗号分隔）", candidate),
+        structuredField("hair_traits", "发型（逗号分隔）", candidate),
+        structuredField("outfit_traits", "服装（逗号分隔）", candidate),
+        structuredField("scene_traits", "场景（逗号分隔）", candidate),
+        structuredField("forbidden_traits", "禁止复用（逗号分隔）", candidate)
+      ];
+  const canSave = ["pending", "editing", "rejected"].includes(candidate.status);
+  const canSubmit = ["pending", "editing"].includes(candidate.status);
+  const canReview = candidate.status === "ready_for_review";
+  const sourceMeta = isCopy
+    ? `媒体：${escapeHtml(candidate.source_media)}<br />指纹：${escapeHtml(candidate.source_fingerprint)}<br />识别：${escapeHtml(candidate.provider)} · ${escapeHtml(candidate.model)}`
+    : `来源：${escapeHtml(candidate.source_label)}`;
+  const publicationHint = candidate.status === "approved"
+    ? `<div class="publication-hint">待 Codex 生成发布清单并通过 CLI 发布</div>` : "";
+  elements.learningDetail.innerHTML = `<article class="learning-form" data-candidate-id="${escapeHtml(candidate.candidate_id)}" data-revision="${candidate.revision}">
+    <div class="learning-meta"><strong>${escapeHtml(candidate.candidate_id)}</strong><span>revision ${candidate.revision} · ${escapeHtml(candidate.status)}</span></div>
+    <div class="field-value">${sourceMeta}</div>
+    <section class="field-block"><div class="field-name">不可变原文</div><div class="field-value raw-content">${escapeHtml(raw)}</div></section>
+    <label class="field-block"><span class="field-name">可编辑稿</span><textarea id="learning-edited-text" class="field textarea" rows="10" ${canSave ? "" : "disabled"}>${escapeHtml(edited)}</textarea></label>
+    <div class="learning-structured">${structured.join("")}</div>
+    <section class="field-block"><div class="field-name">风险</div><div class="field-value">${escapeHtml((candidate.risk_tags || []).join("、") || "无")}</div></section>
+    <section class="field-block"><div class="field-name">相似项</div><div class="field-value">${escapeHtml((candidate.similarity_hits || []).join("、") || "无")}</div></section>
+    ${publicationHint}
+    <div class="learning-actions">
+      <button type="button" data-learning-action="save" ${canSave ? "" : "disabled"}>保存修改</button>
+      <button type="button" data-learning-action="submit-review" ${canSubmit ? "" : "disabled"}>提交审核</button>
+      <button type="button" data-learning-action="approve" ${canReview ? "" : "disabled"}>批准</button>
+      <button type="button" data-learning-action="reject" ${canReview ? "" : "disabled"}>驳回</button>
+    </div>
+    <div id="learning-action-status" class="status-line"></div>
+  </article>`;
+}
+
+function splitStructuredValue(value) {
+  return value.split(/[，,\n]/).map((item) => item.trim()).filter(Boolean);
+}
+
+async function runLearningAction(action) {
+  const candidate = learningState.candidates.find((item) => item.candidate_id === learningState.selectedId);
+  if (!candidate) return;
+  const status = document.getElementById("learning-action-status");
+  const base = `/api/learning/candidates/${learningState.kind}/${encodeURIComponent(candidate.candidate_id)}`;
+  let url = base;
+  let method = "POST";
+  let body = { expected_revision: candidate.revision };
+  if (action === "save") {
+    method = "PUT";
+    body.edited_text = document.getElementById("learning-edited-text").value;
+    document.querySelectorAll("[data-learning-field]").forEach((input) => {
+      const listFields = ["source_usage", "identity_traits", "hair_traits", "outfit_traits", "scene_traits", "forbidden_traits"];
+      body[input.dataset.learningField] = listFields.includes(input.dataset.learningField)
+        ? splitStructuredValue(input.value) : input.value.trim();
+    });
+  } else if (action === "reject") {
+    const reason = window.prompt("请输入驳回原因");
+    if (!reason) return;
+    body.reason = reason;
+    url += "/reject";
+  } else {
+    url += `/${action}`;
+  }
+  status.textContent = "正在提交...";
+  try {
+    const updated = await learningRequest(url, { method, body: JSON.stringify(body) });
+    const index = learningState.candidates.findIndex((item) => item.candidate_id === updated.candidate_id);
+    learningState.candidates[index] = updated;
+    renderLearningList();
+    renderLearningDetail();
+  } catch (error) {
+    if (error.status === 409) {
+      window.alert("revision 冲突：候选已被其他操作更新，请重新加载后再保存。");
+      await loadLearningCandidates();
+      return;
+    }
+    status.textContent = error.message;
+    status.classList.add("error");
+  }
+}
+
+elements.workbenchToggle.addEventListener("click", () => setWorkbench(learningState.workbench === "task" ? "learning" : "task"));
+document.querySelectorAll('input[name="learning-kind"]').forEach((radio) => radio.addEventListener("change", () => {
+  learningState.kind = radio.value;
+  learningState.selectedId = "";
+  renderLearningHeader();
+  updatePersonCreateVisibility();
+  loadLearningCandidates();
+}));
+elements.learningStatusFilter.addEventListener("change", loadLearningCandidates);
+elements.learningRefresh.addEventListener("click", loadLearningCandidates);
+elements.learningList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-learning-id]");
+  if (!button) return;
+  learningState.selectedId = button.dataset.learningId;
+  renderLearningList();
+  renderLearningDetail();
+});
+elements.learningDetail.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-learning-action]");
+  if (button && !button.disabled) runLearningAction(button.dataset.learningAction);
+});
+elements.learningAddPerson.addEventListener("click", async () => {
+  const text = elements.learningNewPrompt.value.trim();
+  if (!text) {
+    elements.learningAddStatus.textContent = "请输入人物 Prompt 正文";
+    return;
+  }
+  try {
+    const created = await learningRequest("/api/learning/person-candidates", {
+      method: "POST",
+      body: JSON.stringify({ text, source_label: elements.learningNewSource.value.trim() || "用户人工样本" })
+    });
+    elements.learningNewPrompt.value = "";
+    learningState.selectedId = created.candidate_id;
+    await loadLearningCandidates();
+  } catch (error) {
+    elements.learningAddStatus.textContent = error.message;
+  }
+});
+
 renderSettings();
 loadDailySources();
+setWorkbench(learningState.workbench);

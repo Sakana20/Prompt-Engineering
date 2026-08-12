@@ -165,6 +165,11 @@ Codex 是唯一语义生成器。Skill 必须向 Codex 提供事实边界、生�
 `jobs.status` 合并成行状态徽标。审核台不写回 CSV 或数据库，不调用 Auto Oceanengine，
 不执行导入、生成或付费提交。
 
+学习工作台显示独立的每日媒体默认目录
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。它只承担候选审核；转写仍由 Codex
+或 CLI 明确启动。`learning-transcribe` 未提供 `--input` 时按本地日期解析该目录，并只发现
+当前一层的受支持媒体，不影响任务 CSV 的 `/素材/Codex` 入口。
+
 ### LibTV OmniHuman
 
 LibTV 是新增输出适配器，不替换 Auto Oceanengine。首版只生成可审阅任务包，不创建画布、
@@ -203,6 +208,25 @@ logo。静态人物图和 LibTV 首帧必须优先定义为数字人口播
 不得驱动人物做准备、收拾、换鞋、低头看桌面、看包或看商品等动作。商品不得由人物手持，
 必须放在人物面前的桌面、餐桌、台面或办公桌上；不得放在人物身后、背景里、远处、侧后方、
 沙发、玄关或购物袋中。人物不看商品、不接触商品，商品只能作为环境中的静态可见物出现。
+
+## 审核式学习架构
+
+学习域位于 `src/avatar_prompt_pipeline/learning/`。`copy` 与 `person` 共用安全 ID、原子写入、
+revision 和审计事件基础设施，但拥有独立 dataclass、目录、schema、状态记录和正式资源。
+原始 `raw_transcript`/`raw_prompt` 不可更新；所有可写操作都要求 `expected_revision`。
+
+ASR 主进程通过参数数组和 `shell=False` 调用 Prompt Engineering 自有 `funasr_worker.py`。
+worker 由 FunASR 既有 Python 使用 `-B` 执行，正常 import 已安装的 `funasr_timeline`，只把
+转换音频与 JSON 写到 `learning/copy/work/`。FunASR 源码、锁文件、缓存与现有字幕入口保持
+只读。内容指纹与 worker 配置共同缓存，单项失败落独立报告。
+
+候选经工作台或 CLI 人工批准后仍不能自动进入生产。Codex 负责语义拆解并生成发布清单；
+`learning-publish` 只做确定性校验、风险隔离、冲突检查和多目标事务写入。文案块发布到
+`learned-copy-source-blocks.md` 并进入 source-block 注册表；人物 identity/hair/outfit/scene
+块发布到独立资源并进入视觉 Prompt 指令，固定画面约束仍由原模板和 validator 提供。
+
+审核台复用原站点外壳。任务工作台继续只读 CSV/SQLite；学习工作台使用专用受限 API，客户端
+只能提交 kind、candidate ID、revision 与允许字段，不能提交目标路径，也不能触发发布或视频。
 
 ## 安全与可恢复性
 

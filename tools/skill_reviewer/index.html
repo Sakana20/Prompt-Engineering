@@ -14,11 +14,12 @@
           <div class="brand-mark">CSV</div>
           <div>
             <h1>Skill 审核台</h1>
-            <p>CSV 审核与状态预览</p>
+            <p id="workbench-subtitle">CSV 审核与状态预览</p>
           </div>
+          <button id="workbench-toggle" class="workbench-toggle" type="button">切换到学习审核</button>
         </header>
 
-        <section class="panel compact">
+        <section class="panel compact task-workbench">
           <div class="panel-title-row">
             <h2>每日文件</h2>
             <button id="refresh-sources" type="button">刷新</button>
@@ -29,7 +30,7 @@
           </div>
         </section>
 
-        <section class="panel compact">
+        <section class="panel compact task-workbench">
           <h2>选择导入</h2>
           <label class="drop-zone" for="file-input">
             <input id="file-input" type="file" accept=".csv,text/csv" />
@@ -39,7 +40,7 @@
           <div id="source-status" class="status-line">等待导入文件</div>
         </section>
 
-        <section id="db-panel" class="panel compact hidden">
+        <section id="db-panel" class="panel compact task-workbench hidden">
           <h2>数据库表</h2>
           <select id="table-select" class="field"></select>
           <div class="pager">
@@ -48,7 +49,7 @@
           </div>
         </section>
 
-        <section class="panel compact">
+        <section class="panel compact task-workbench">
           <h2>筛选</h2>
           <input id="search-input" class="field" type="search" placeholder="搜索 task_id / 文案 / prompt" />
           <label class="switch-row">
@@ -61,7 +62,7 @@
           </label>
         </section>
 
-        <section class="panel">
+        <section class="panel task-workbench">
           <div class="panel-title-row">
             <h2>高亮颜色</h2>
             <button id="reset-settings" type="button">重置</button>
@@ -69,7 +70,7 @@
           <div id="category-controls" class="category-controls"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel task-workbench">
           <h2>自定义高亮</h2>
           <form id="custom-form" class="custom-form">
             <input id="custom-term" class="field" type="text" placeholder="词语或短句" />
@@ -77,6 +78,37 @@
             <button type="submit">添加</button>
           </form>
           <div id="custom-list" class="custom-list"></div>
+        </section>
+
+        <section class="panel compact learning-workbench hidden">
+          <div class="panel-title-row">
+            <h2>学习类型</h2>
+            <button id="learning-refresh" type="button">刷新</button>
+          </div>
+          <label class="switch-row"><input type="radio" name="learning-kind" value="copy" checked />视频文案</label>
+          <label class="switch-row"><input type="radio" name="learning-kind" value="person" />人物 Prompt</label>
+          <div class="source-root">每日视频素材：/Users/sakana/Desktop/Work/2026/MM.DD/淘宝闪购/素材</div>
+          <div class="helper-text">由 Codex 或 CLI 明确启动转写；只读取所选日期目录当前一层的媒体。</div>
+          <label for="learning-status-filter">状态筛选</label>
+          <select id="learning-status-filter" class="field">
+            <option value="">全部状态</option>
+            <option value="pending">pending</option>
+            <option value="editing">editing</option>
+            <option value="ready_for_review">ready_for_review</option>
+            <option value="approved">approved</option>
+            <option value="rejected">rejected</option>
+            <option value="published">published</option>
+          </select>
+        </section>
+
+        <section id="learning-add-person-panel" class="panel compact learning-workbench hidden">
+          <h2>新增人物 Prompt</h2>
+          <label for="learning-new-source">来源说明</label>
+          <input id="learning-new-source" class="field" type="text" value="用户人工样本" />
+          <label for="learning-new-prompt">Prompt 正文</label>
+          <textarea id="learning-new-prompt" class="field textarea" rows="7"></textarea>
+          <button id="learning-add-person" type="button">新增人物 Prompt</button>
+          <div id="learning-add-status" class="status-line"></div>
         </section>
       </aside>
 
@@ -86,7 +118,7 @@
             <div id="dataset-title" class="dataset-title">还没有数据</div>
             <div id="dataset-meta" class="dataset-meta">导入后会自动识别字段并高亮可审核内容</div>
           </div>
-          <div class="toolbar-actions">
+          <div class="toolbar-actions task-workbench">
             <button id="export-settings" type="button">导出配置</button>
             <label class="import-settings">
               导入配置
@@ -95,17 +127,30 @@
           </div>
         </header>
 
-        <div id="empty-state" class="empty-state">
-          <h2>把任务文件放进来，马上开始审。</h2>
-          <p>支持即创 CSV 和 LibTV CSV；同目录数据库会自动作为状态来源。人物特征、服装、利益点和自定义短语会用不同颜色标记。</p>
+        <div id="task-workspace" class="task-workbench">
+          <div id="empty-state" class="empty-state">
+            <h2>把任务文件放进来，马上开始审。</h2>
+            <p>支持即创 CSV 和 LibTV CSV；同目录数据库会自动作为状态来源。人物特征、服装、利益点和自定义短语会用不同颜色标记。</p>
+          </div>
+
+          <div id="review-grid" class="review-grid hidden">
+            <section class="rows-panel">
+              <div id="row-list" class="row-list"></div>
+            </section>
+            <section class="detail-panel">
+              <div id="detail-content" class="detail-content"></div>
+            </section>
+          </div>
         </div>
 
-        <div id="review-grid" class="review-grid hidden">
+        <div id="learning-workspace" class="learning-review-grid learning-workbench hidden">
           <section class="rows-panel">
-            <div id="row-list" class="row-list"></div>
+            <div id="learning-list" class="row-list"><div class="status-line">正在加载候选...</div></div>
           </section>
           <section class="detail-panel">
-            <div id="detail-content" class="detail-content"></div>
+            <div id="learning-detail" class="detail-content">
+              <div class="empty-state compact-empty"><p>选择一条学习候选查看详情</p></div>
+            </div>
           </section>
         </div>
       </section>

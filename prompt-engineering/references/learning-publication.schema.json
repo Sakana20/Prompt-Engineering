@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/learning-publication.schema.json",
+  "title": "Codex learning publication manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "candidate_id", "revision"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"enum": ["copy", "person"]},
+    "candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{7,95}$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "source_fingerprint": {"type": "string"},
+    "copy_blocks": {"type": "array", "items": {"$ref": "#/$defs/copy_block"}},
+    "person_blocks": {"type": "array", "items": {"$ref": "#/$defs/person_block"}}
+  },
+  "$defs": {
+    "strings": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "optional_strings": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "copy_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block_id", "template", "slots", "category_families", "consumption_needs", "seasons", "allowed_modes", "removed_risks", "diversity_tags"],
+      "properties": {
+        "block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,95}$"},
+        "template": {"type": "string", "minLength": 1},
+        "slots": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "value_type"], "properties": {"name": {"type": "string"}, "value_type": {"type": "string"}}}},
+        "category_families": {"$ref": "#/$defs/strings"},
+        "consumption_needs": {"$ref": "#/$defs/strings"},
+        "seasons": {"$ref": "#/$defs/strings"},
+        "allowed_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["source_fill", "human_rewrite"]}},
+        "removed_risks": {"$ref": "#/$defs/optional_strings"},
+        "solid_food_only": {"type": "boolean", "default": false},
+        "diversity_tags": {"type": "object", "additionalProperties": false, "required": ["opening_type", "rhythm", "need", "emotion"], "properties": {"opening_type": {"type": "string"}, "rhythm": {"type": "string"}, "need": {"type": "string"}, "emotion": {"type": "string"}}}
+      }
+    },
+    "person_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block_id", "block_type", "description", "compatible_with", "incompatible_with", "removed_constraints", "removed_risks", "diversity_tags"],
+      "properties": {
+        "block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,95}$"},
+        "block_type": {"enum": ["identity", "hair", "outfit", "scene"]},
+        "description": {"type": "string", "minLength": 1},
+        "compatible_with": {"$ref": "#/$defs/optional_strings"},
+        "incompatible_with": {"$ref": "#/$defs/optional_strings"},
+        "removed_constraints": {"$ref": "#/$defs/optional_strings"},
+        "removed_risks": {"$ref": "#/$defs/optional_strings"},
+        "diversity_tags": {"$ref": "#/$defs/strings"}
+      }
+    }
+  }
+}

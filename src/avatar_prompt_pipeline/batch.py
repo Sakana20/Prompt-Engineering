@@ -39,6 +39,12 @@ _ALLOWED_TASK_KEYS = {
     "source_block_id",
     "source_slot_values",
     "rewrite_anchor_phrases",
+    "opening_type",
+    "rhythm_type",
+    "need_type",
+    "emotion_type",
+    "identity_tags",
+    "outfit_tags",
 }
 
 
@@ -116,6 +122,12 @@ class GeneratedTaskRecord:
     source_block_id: str = ""
     source_slot_values: tuple[str, ...] | None = None
     rewrite_anchor_phrases: tuple[str, ...] = ()
+    opening_type: str = ""
+    rhythm_type: str = ""
+    need_type: str = ""
+    emotion_type: str = ""
+    identity_tags: tuple[str, ...] = ()
+    outfit_tags: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not _TASK_ID_PATTERN.fullmatch(self.task_id):
@@ -204,6 +216,12 @@ def _task_from_mapping(data: dict[str, Any], *, index: int) -> GeneratedTaskReco
         source_block_id=_expect_string(data, "source_block_id"),
         source_slot_values=_expect_optional_string_tuple(data, "source_slot_values"),
         rewrite_anchor_phrases=_expect_string_tuple(data, "rewrite_anchor_phrases"),
+        opening_type=_expect_string(data, "opening_type"),
+        rhythm_type=_expect_string(data, "rhythm_type"),
+        need_type=_expect_string(data, "need_type"),
+        emotion_type=_expect_string(data, "emotion_type"),
+        identity_tags=_expect_string_tuple(data, "identity_tags"),
+        outfit_tags=_expect_string_tuple(data, "outfit_tags"),
     )
 
 
@@ -272,6 +290,12 @@ def task_batch_template(
                 "source_block_id": "",
                 "source_slot_values": [],
                 "rewrite_anchor_phrases": [],
+                "opening_type": "",
+                "rhythm_type": "",
+                "need_type": "",
+                "emotion_type": "",
+                "identity_tags": [],
+                "outfit_tags": [],
             }
         )
     return {

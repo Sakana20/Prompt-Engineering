@@ -211,6 +211,27 @@ tools/skill_reviewer/run.sh
 `reference_image_*` 字段会在列表中显示“参考图/默认图”徽标，并在详情页展示参考图预览、
 素材 URI、签名 URL 和 PID。审核台不写回 CSV、SQLite 或下游项目。
 
+## 审核式学习
+
+`avatar-prompts` 现在包含两套完全隔离的学习流程：
+
+- `learning-transcribe`：只识别用户显式传入的本地媒体，调用 Prompt Engineering 自有
+  worker，并使用 FunASR 既有环境；省略 `--input` 时按本地日期使用
+  `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材` 当前一层；不修改 FunASR，
+  不进入现有字幕入口；
+- `learning-add-person-prompt`：只在用户主动输入人物 Prompt 时创建人物候选，不调用 ASR；
+- `learning-list/update/submit-review/approve/reject`：按 kind 与 revision 管理不可变原文、
+  编辑稿和审计记录；
+- `learning-publish`：只接收 Codex 为已批准候选生成的合法清单，并全有或全无地发布到独立
+  learned 资源。
+
+默认运行根位于仓库 `learning/`（已忽略版本控制）。同一审核台顶部可切换“任务审核”和
+“学习审核”；任务审核继续只读，学习审核可保存、提交、批准和驳回，但不提供发布、下游导入、
+视频生成或付费提交按钮。网页只显示每日视频素材默认目录；打开或刷新网页不会自动启动 ASR。
+
+真实 Paraformer smoke test 需要用户提供短媒体样本；默认测试使用可注入 fake worker，不加载
+模型。
+
 ## Skill 分发
 
 可分发 skill 位于：

@@ -41,6 +41,11 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 作为次级信息展示。高亮颜色和自定义短语保存在浏览器 `localStorage`，不写回 CSV、数据库
 或下游项目。
 
+每日 ASR 学习素材与上述 CSV 入口分开：默认目录为
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`。`learning-transcribe` 省略
+`--input` 时用本地日期或 `--date` 解析该目录，只扫描当前一层。审核台加载、刷新和审核操作
+都不得自动触发转写。
+
 ## 代码标准
 
 - Python 3.12+，公共边界完整类型标注；
@@ -57,6 +62,14 @@ SQLite 作为状态来源；也支持用户在页面里手动选择 CSV。SQLite
 - 日志及测试夹具不得包含凭据或真实业务敏感数据。
 
 ## 测试策略
+
+学习功能测试默认使用可注入 fake worker，不加载真实 Paraformer。测试必须覆盖 copy/person
+隔离、原文不可变、revision 冲突、状态机、路径穿越、worker 超时与非法 JSON、缓存复用、
+单项失败、未批准拒绝发布、事务回滚、learned 资源进入 Prompt、空资源兼容、审核台旧 API
+回归和学习 API 409。真实素材 smoke test 只在用户明确提供短媒体后运行。
+
+不得在 FunASR 仓库运行测试或格式化；执行 Prompt-owned worker 前后分别记录其
+`git status --short`，结果必须完全相同。
 
 ### 单元测试
 

@@ -1,0 +1,103 @@
+import sys
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+from avatar_prompt_pipeline.learning.asr_provider import (
+    AsrProviderError,
+    AsrWorkerConfig,
+    ParaformerSubprocessProvider,
+)
+from avatar_prompt_pipeline.learning.service import LearningService
+from avatar_prompt_pipeline.learning.store import LearningStore
+
+
+def _worker(path: Path, body: str) -> Path:
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+@pytest.mark.integration
+def test_injected_asr_worker_success_and_archive(tmp_path: Path) -> None:
+    media = tmp_path / "sample.mp4"
+    media.write_bytes(b"video")
+    script = _worker(
+        tmp_path / "fake_worker.py",
+        """import argparse, json
+from pathlib import Path
+p=argparse.ArgumentParser()
+for name in ('input','output','work-dir','model-dir','device'):
+    p.add_argument('--'+name, required=True)
+a=p.parse_args()
+payload={'schema_version':'1.0','provider':'paraformer-zh','model':'fake','source_media':str(Path(a.input).resolve()),'asr_audio':str(Path(a.input).resolve()),'audio_conversion':{},'text':'测试识别','tokens':[{'index':0,'text':'测试','start_ms':0,'end_ms':120,'source':'paraformer-zh'}]}
+Path(a.output).write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+""",
+    )
+    config = AsrWorkerConfig(command_prefix=(sys.executable, str(script)), timeout_seconds=5)
+
+    result = ParaformerSubprocessProvider(config).transcribe(media, tmp_path / "work")
+
+    assert result.text == "测试识别"
+    assert (tmp_path / "work" / "worker-result.archived.json").is_file()
+
+
+@pytest.mark.integration
+def test_injected_asr_worker_rejects_invalid_json_and_times_out(tmp_path: Path) -> None:
+    media = tmp_path / "sample.mp4"
+    media.write_bytes(b"video")
+    invalid = _worker(
+        tmp_path / "invalid.py",
+        """import argparse
+from pathlib import Path
+p=argparse.ArgumentParser()
+for name in ('input','output','work-dir','model-dir','device'):
+    p.add_argument('--'+name, required=True)
+a=p.parse_args(); Path(a.output).write_text('not-json', encoding='utf-8')
+""",
+    )
+    with pytest.raises(AsrProviderError, match="非法 JSON"):
+        ParaformerSubprocessProvider(
+            AsrWorkerConfig(command_prefix=(sys.executable, str(invalid)), timeout_seconds=5)
+        ).transcribe(media, tmp_path / "invalid-work")
+
+    slow = _worker(
+        tmp_path / "slow.py",
+        "import time\ntime.sleep(2)\n",
+    )
+    with pytest.raises(AsrProviderError, match="超时"):
+        ParaformerSubprocessProvider(
+            AsrWorkerConfig(command_prefix=(sys.executable, str(slow)), timeout_seconds=0.05)
+        ).transcribe(media, tmp_path / "slow-work")
+
+
+@pytest.mark.integration
+def test_transcribe_cache_reuses_copy_candidate_without_creating_person(tmp_path: Path) -> None:
+    media = tmp_path / "sample.mp4"
+    media.write_bytes(b"video")
+    marker = tmp_path / "calls.txt"
+    script = _worker(
+        tmp_path / "cache_worker.py",
+        f"""import argparse, json
+from pathlib import Path
+p=argparse.ArgumentParser()
+for name in ('input','output','work-dir','model-dir','device'):
+    p.add_argument('--'+name, required=True)
+a=p.parse_args(); marker=Path({str(marker)!r})
+marker.write_text((marker.read_text() if marker.exists() else '')+'call\\n')
+payload={{'schema_version':'1.0','provider':'paraformer-zh','model':'fake','source_media':str(Path(a.input).resolve()),'asr_audio':str(Path(a.input).resolve()),'audio_conversion':{{}},'text':'缓存识别','tokens':[{{'index':0,'text':'缓存','start_ms':0,'end_ms':100,'source':'paraformer-zh'}}]}}
+Path(a.output).write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+""",
+    )
+    provider = ParaformerSubprocessProvider(
+        AsrWorkerConfig(command_prefix=(sys.executable, str(script)), timeout_seconds=5)
+    )
+    service = LearningService(LearningStore(tmp_path / "learning"), asr_provider=provider)
+
+    first = service.transcribe((media,), source_date=date(2026, 8, 11))
+    second = service.transcribe((media,), source_date=date(2026, 8, 11))
+
+    assert first["succeeded"] == 1
+    assert second["reused"] == 1
+    assert marker.read_text().splitlines() == ["call"]
+    assert not (tmp_path / "learning" / "person").exists()

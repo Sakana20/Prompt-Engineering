@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/person-prompt-learning-candidate.schema.json",
+  "title": "Person prompt learning candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "kind", "candidate_id", "status", "revision", "created_at",
+    "updated_at", "source_label", "raw_prompt", "edited_prompt", "identity_traits",
+    "hair_traits", "outfit_traits", "scene_traits", "forbidden_traits", "risk_tags",
+    "similarity_hits", "published_block_ids", "rejection_reason"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "person_prompt"},
+    "candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{7,95}$"},
+    "status": {"enum": ["pending", "editing", "ready_for_review", "approved", "rejected", "published"]},
+    "revision": {"type": "integer", "minimum": 1},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "source_label": {"type": "string", "minLength": 1},
+    "raw_prompt": {"type": "string", "minLength": 1, "readOnly": true},
+    "edited_prompt": {"type": "string", "minLength": 1},
+    "identity_traits": {"$ref": "#/$defs/strings"},
+    "hair_traits": {"$ref": "#/$defs/strings"},
+    "outfit_traits": {"$ref": "#/$defs/strings"},
+    "scene_traits": {"$ref": "#/$defs/strings"},
+    "forbidden_traits": {"$ref": "#/$defs/strings"},
+    "risk_tags": {"$ref": "#/$defs/strings"},
+    "similarity_hits": {"$ref": "#/$defs/strings"},
+    "published_block_ids": {"$ref": "#/$defs/strings"},
+    "rejection_reason": {"type": "string"}
+  },
+  "$defs": {"strings": {"type": "array", "items": {"type": "string"}}}
+}

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
+from .learning.publication import reference_path
 from .models import CampaignSpec, LanguageStyle, ProductBrief, PromptPackage, ValidationConfig
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
 from .template_loader import TEMPLATE_VERSION, load_template
@@ -42,6 +44,14 @@ def compose_prompt_package(
     copywriting_prompt = copywriting_prompt.replace(
         "{{TEMPORAL_CONTEXT}}", temporal_context(reference_date)
     )
+    copywriting_prompt += _learned_resource_context(
+        reference_path("learned-copy-source-blocks.md"),
+        heading="审核发布的 learned 文案块",
+    )
+    avatar_template += _learned_resource_context(
+        reference_path("person-prompt-source-blocks.md"),
+        heading="审核发布的 learned 人物变量块",
+    )
     return PromptPackage(
         schema_version="1.0",
         template_version=TEMPLATE_VERSION,
@@ -59,4 +69,18 @@ def render_avatar_prompt(script: str) -> str:
     cleaned_script = strip_no_split_markers(script.replace("\x00", "")).strip()
     if not cleaned_script:
         raise ValueError("口播文案不能为空")
-    return load_template("avatar_prompt.txt").replace("{{SCRIPT}}", cleaned_script)
+    template = load_template("avatar_prompt.txt")
+    template += _learned_resource_context(
+        reference_path("person-prompt-source-blocks.md"),
+        heading="审核发布的 learned 人物变量块",
+    )
+    return template.replace("{{SCRIPT}}", cleaned_script)
+
+
+def _learned_resource_context(path: Path, *, heading: str) -> str:
+    if not path.is_file():
+        return ""
+    text = path.read_text(encoding="utf-8").strip()
+    if '"block_id"' not in text:
+        return ""
+    return f"\n\n【{heading}】\n{text}"

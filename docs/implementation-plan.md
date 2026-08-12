@@ -2,6 +2,23 @@
 
 ## 当前状态
 
+### Phase 13：每日视频 ASR 与按需人物 Prompt 审核式学习（已完成）
+
+- 新增两套独立候选模型、目录、schema、revision、审计和状态机；原始内容不可更新；
+- 新增 Prompt Engineering 自有 Paraformer worker 与严格 subprocess provider，FunASR 仓库
+  完全只读，现有字幕入口不变；
+- 新增八个 `avatar-prompts learning-*` 子命令、浅层媒体发现、缓存、局部失败与稳定 JSON；
+- 新增 Codex 发布清单、独立 learned 文案/人物资源、风险隔离和全有或全无发布；
+- learned 文案块进入 source-block 注册表，learned 人物块进入视觉 Prompt 指令；空资源兼容
+  旧行为；
+- 新增文案结构与人物/服装标签集中度预警，保留现有硬校验和三模式比例；
+- 在原审核台增加无刷新工作台切换、学习候选编辑、409 冲突、状态动作和人物 Prompt 新增；
+- 补齐单元、集成、E2E、API、Skill/schema 与回归测试。真实模型 smoke test 仍以用户提供短
+  媒体为前提，不作为默认测试门禁。
+
+验收：两个流程互不创建或读取对方候选；未批准不得发布；发布失败不部分修改正式资源；
+不触发下游导入、视频生成或付费提交。
+
 ### Phase 12：淘宝闪购无数字金额合规配置（已完成）
 
 - 新增 `taobao-instant-commerce-compliance.json`，沿用 25 元项目的美食外卖品类、福利前置
@@ -182,6 +199,15 @@
 - 保留配置、批处理、Codex 插件声明、安全调试输出；
 - 保留 text、JSON、CSV、Markdown、segmentation_manuscript 输出约定；
 - 通过官方 Skill 校验后安装到 `$CODEX_HOME/skills/prompt-engineering`。
+
+### Phase 7：审核式学习（已完成）
+
+- 每日 ASR、人物 Prompt 候选、revision 审核和原子发布已落地；
+- 用户指定每日媒体默认目录为
+  `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`；省略 `--input` 时按本地日期解析，
+  只扫描当前一层；
+- `/素材/Codex` 继续仅用于原任务 CSV 审核，不被每日媒体默认值替换；
+- 网页加载、刷新、保存或批准均不会自动启动 ASR，转写仍需用户或 Codex 明确执行命令。
 
 ## 未决策项
 

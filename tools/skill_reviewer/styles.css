@@ -27,7 +27,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -69,6 +70,11 @@ button:hover,
   gap: 12px;
   margin-bottom: 18px;
   min-width: 0;
+}
+
+.workbench-toggle {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .brand-block > div:last-child {
@@ -136,6 +142,13 @@ h2 {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.helper-text {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 6px 0 12px;
 }
 
 .daily-source-list {
@@ -266,6 +279,11 @@ h2 {
   padding: 8px 10px;
 }
 
+.textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
 .switch-row {
   gap: 8px;
   color: #d9dde5;
@@ -363,6 +381,63 @@ input[type="color"] {
   grid-template-columns: minmax(360px, 44%) minmax(0, 1fr);
   gap: 16px;
   min-height: calc(100vh - 100px);
+}
+
+.learning-review-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 36%) minmax(0, 1fr);
+  gap: 16px;
+  min-height: calc(100vh - 100px);
+}
+
+.learning-form,
+.learning-structured {
+  display: grid;
+  gap: 14px;
+}
+
+.learning-meta,
+.learning-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.learning-meta span {
+  color: var(--muted);
+}
+
+.learning-field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.raw-content {
+  background: #0f1217;
+}
+
+.publication-hint {
+  border: 1px solid #166534;
+  border-radius: 8px;
+  background: #12301f;
+  color: #86efac;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.compact-empty {
+  min-height: 180px;
 }
 
 .rows-panel,
@@ -659,6 +734,10 @@ input[type="color"] {
     grid-template-columns: 1fr;
   }
 
+  .learning-review-grid {
+    grid-template-columns: 1fr;
+  }
+
   .row-list,
   .detail-content {
     height: auto;
@@ -682,6 +761,12 @@ input[type="color"] {
 
   .brand-block {
     align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .workbench-toggle {
+    width: 100%;
+    margin-left: 0;
   }
 
   .brand-mark {

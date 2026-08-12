@@ -70,6 +70,20 @@
             "items": {"type": "string", "minLength": 1},
             "description": "human_rewrite 成稿实际保留的至少两个真人原文字眼",
             "default": []
+          },
+          "opening_type": {"type": "string", "default": ""},
+          "rhythm_type": {"type": "string", "default": ""},
+          "need_type": {"type": "string", "default": ""},
+          "emotion_type": {"type": "string", "default": ""},
+          "identity_tags": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "default": []
+          },
+          "outfit_tags": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "default": []
           }
         }
       }

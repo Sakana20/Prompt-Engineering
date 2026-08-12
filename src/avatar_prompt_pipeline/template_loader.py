@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-08-06-adaptive-three-mode-v19"
+TEMPLATE_VERSION = "2026-08-11-audited-learning-v20"
 
 
 def load_template(name: str) -> str:

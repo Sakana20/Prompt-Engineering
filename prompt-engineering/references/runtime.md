@@ -11,11 +11,39 @@ python scripts/run_cli.py -- init-batch --task-name watermelon-batch --category 
 python scripts/run_cli.py -- export-csv --input watermelon.tasks.json --config configs/projects/example.json
 python scripts/run_cli.py -- validate-batch --input generated-task-batch.json --config configs/projects/example.json
 python scripts/run_cli.py -- package --input generated-task-batch.json --format json --format csv --preset none
+python scripts/run_cli.py -- learning-transcribe --input /path/video.mp4 --learning-root learning --date 2026-08-11
+python scripts/run_cli.py -- learning-transcribe --learning-root learning --date 2026-08-12
+python scripts/run_cli.py -- learning-add-person-prompt --text "人物 Prompt" --source-label "用户人工样本" --learning-root learning
 ```
 
 `AVATAR_PROMPT_PROJECT` 可覆盖项目根目录。`--project-root` 优先级更高。现有 CLI 参数完整
 schema 见 [cli-parameters.schema.json](cli-parameters.schema.json)。默认使用 `uv run`；
 `--python-executable` 或 `AVATAR_PROMPT_PYTHON` 可指定已经安装本项目的 Python 环境。
+
+## 学习候选与发布
+
+`learning-transcribe` 传入 `--input` 时只处理显式本地文件或目录当前一层。省略 `--input` 时，
+按本地日期（或 `--date`）解析用户指定的默认目录
+`/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`，仍然只扫描当前一层，不递归。
+命令必须由用户或 Codex 明确运行；打开审核台不会自动转写。该命令只创建
+`learning/copy/` 内容。
+内容指纹与 worker 配置共同决定缓存；单项失败写入 copy failure report，不中断同批其他媒体。
+默认 worker 使用 FunASR 既有 `.venv/bin/python -B` 执行 Prompt Engineering 自有
+`funasr_worker.py`，主进程使用参数数组、`shell=False`、超时和严格 JSON 校验。FunASR 仓库
+保持只读，现有字幕入口不参与此流程。
+
+`learning-add-person-prompt` 的 `--text` 与 `--input` 互斥，只创建 `learning/person/` 候选，
+不读取 copy 目录且不调用 ASR。`learning-list`、`learning-update`、
+`learning-submit-review`、`learning-approve`、`learning-reject` 按 kind 操作独立候选；所有更新
+必须携带 `expected_revision`，冲突不会覆盖新版本。原始识别稿和原始人物 Prompt 不可修改。
+
+批准不等于发布。Codex 依据批准候选生成符合
+[learning-publication.schema.json](learning-publication.schema.json) 的清单后，才可运行
+`learning-publish`。CLI 校验 kind、candidate ID、revision、风险删除、强类型块和固定视觉
+边界，并在全部目标通过后原子更新独立 learned resource；未批准、过期或部分失败均不发布。
+
+本地审核台使用同一站点的“学习审核”工作台，只提供新增人物 Prompt、保存、提交、批准和
+驳回，不提供发布、导入、视频生成或付费提交按钮。
 
 ## 配置
 

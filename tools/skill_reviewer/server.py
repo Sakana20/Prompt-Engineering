@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import mimetypes
+import os
 import re
 import sqlite3
 import tempfile
@@ -14,6 +15,14 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from avatar_prompt_pipeline.learning.models import CandidateKind, LearningStatus
+from avatar_prompt_pipeline.learning.service import LearningService
+from avatar_prompt_pipeline.learning.store import (
+    CandidateNotFoundError,
+    RevisionConflictError,
+)
+from avatar_prompt_pipeline.learning.validation import LearningValidationError
+
 APP_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = Path(tempfile.gettempdir()) / "prompt-engineering-skill-reviewer"
 DAILY_SOURCE_ROOT = Path("/Users/sakana/Desktop/Work/2026")
@@ -23,6 +32,9 @@ SOURCE_FILE_SUFFIXES = {".csv", ".db", ".sqlite", ".sqlite3"}
 SQLITE_SUFFIXES = {".db", ".sqlite", ".sqlite3"}
 DATABASES: dict[str, Path] = {}
 SOURCE_FILES: dict[str, Path] = {}
+DEFAULT_LEARNING_ROOT = Path(__file__).resolve().parents[2] / "learning"
+LEARNING_ROOT = DEFAULT_LEARNING_ROOT
+MAX_JSON_BODY_BYTES = 1024 * 1024
 
 
 def _json_bytes(payload: object) -> bytes:
@@ -190,9 +202,18 @@ def _daily_source_files() -> list[dict[str, object]]:
 
     return sorted(
         files,
-        key=lambda item: (str(item["date"]), float(item["modified"]), str(item["name"])),
+        key=_source_sort_key,
         reverse=True,
     )
+
+
+def _source_sort_key(item: dict[str, object]) -> tuple[str, float, str]:
+    modified = item["modified"]
+    if isinstance(modified, bool) or not isinstance(modified, (int, float)):
+        modified_value = 0.0
+    else:
+        modified_value = float(modified)
+    return str(item["date"]), modified_value, str(item["name"])
 
 
 def _source_path_from_query(query: str) -> Path | None:
@@ -308,6 +329,13 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/sqlite/table":
             self._handle_sqlite_table(parsed.query)
             return
+        if parsed.path == "/api/learning/candidates":
+            self._handle_learning_list(parsed.query)
+            return
+        learning_route = _learning_candidate_route(parsed.path)
+        if learning_route is not None and learning_route[2] == "":
+            self._handle_learning_detail(learning_route[0], learning_route[1])
+            return
         if parsed.path.startswith("/api/"):
             self._send_json({"error": "Unknown API route"}, HTTPStatus.NOT_FOUND)
             return
@@ -318,14 +346,30 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/sqlite/open":
             self._handle_sqlite_open()
             return
+        if parsed.path == "/api/learning/person-candidates":
+            self._handle_learning_create_person()
+            return
+        learning_route = _learning_candidate_route(parsed.path)
+        if learning_route is not None and learning_route[2]:
+            self._handle_learning_action(*learning_route)
+            return
         self._send_json({"error": "Unknown API route"}, HTTPStatus.NOT_FOUND)
 
-    def guess_type(self, path: str) -> str:
-        if path.endswith(".js"):
+    def do_PUT(self) -> None:
+        parsed = urlparse(self.path)
+        learning_route = _learning_candidate_route(parsed.path)
+        if learning_route is not None and learning_route[2] == "":
+            self._handle_learning_update(learning_route[0], learning_route[1])
+            return
+        self._send_json({"error": "Unknown API route"}, HTTPStatus.NOT_FOUND)
+
+    def guess_type(self, path: str | os.PathLike[str]) -> str:
+        rendered = os.fspath(path)
+        if rendered.endswith(".js"):
             return "text/javascript; charset=utf-8"
-        if path.endswith(".css"):
+        if rendered.endswith(".css"):
             return "text/css; charset=utf-8"
-        return mimetypes.guess_type(path)[0] or "application/octet-stream"
+        return mimetypes.guess_type(rendered)[0] or "application/octet-stream"
 
     def _send_json(self, payload: object, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = _json_bytes(payload)
@@ -336,8 +380,170 @@ class SkillReviewerHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _read_body(self) -> bytes:
-        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError as exc:
+            raise LearningValidationError("Content-Length 无效") from exc
+        if length < 0 or length > MAX_JSON_BODY_BYTES:
+            raise LearningValidationError("JSON body 超过大小限制")
         return self.rfile.read(length)
+
+    def _read_json_object(self) -> dict[str, object]:
+        body = self._read_body()
+        if not body:
+            raise LearningValidationError("请求 body 不能为空")
+        try:
+            value = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise LearningValidationError("请求 body 必须是 UTF-8 JSON 对象") from exc
+        if not isinstance(value, dict):
+            raise LearningValidationError("请求 body 顶层必须是 JSON 对象")
+        return {str(key): item for key, item in value.items()}
+
+    def _learning_service(self) -> LearningService:
+        return LearningService.from_root(LEARNING_ROOT)
+
+    def _handle_learning_error(self, error: Exception) -> None:
+        if isinstance(error, RevisionConflictError):
+            status = HTTPStatus.CONFLICT
+            message = "revision 冲突，请重新加载候选后再保存"
+        elif isinstance(error, CandidateNotFoundError):
+            status = HTTPStatus.NOT_FOUND
+            message = "候选不存在"
+        elif isinstance(error, LearningValidationError):
+            status = HTTPStatus.UNPROCESSABLE_ENTITY
+            message = str(error)
+        else:
+            status = HTTPStatus.INTERNAL_SERVER_ERROR
+            message = "学习审核操作失败"
+        self._send_json({"error": message}, status)
+
+    def _handle_learning_list(self, query: str) -> None:
+        try:
+            params = parse_qs(query)
+            kind = CandidateKind(params.get("kind", ["copy"])[0])
+            status_value = params.get("status", [""])[0]
+            status = LearningStatus(status_value) if status_value else None
+            candidates = self._learning_service().list(kind, status=status)
+            self._send_json(
+                {
+                    "schema_version": "1.0",
+                    "kind": kind.value,
+                    "count": len(candidates),
+                    "candidates": [candidate.to_dict() for candidate in candidates],
+                }
+            )
+        except (ValueError, LearningValidationError) as error:
+            self._handle_learning_error(_as_learning_error(error, "kind/status 参数无效"))
+
+    def _handle_learning_detail(self, kind_value: str, candidate_id: str) -> None:
+        try:
+            candidate = self._learning_service().get(CandidateKind(kind_value), candidate_id)
+            self._send_json(candidate.to_dict())
+        except (ValueError, LearningValidationError, CandidateNotFoundError) as error:
+            self._handle_learning_error(_as_learning_error(error, "kind 参数无效"))
+
+    def _handle_learning_create_person(self) -> None:
+        try:
+            data = self._read_json_object()
+            _strict_keys(data, allowed={"text", "source_label"}, required={"text"})
+            text = _body_string(data, "text")
+            source_label = _body_string(data, "source_label", default="用户人工样本")
+            candidate = self._learning_service().add_person_prompt(text, source_label=source_label)
+            self._send_json(candidate.to_dict(), HTTPStatus.CREATED)
+        except (LearningValidationError, RevisionConflictError) as error:
+            self._handle_learning_error(error)
+
+    def _handle_learning_update(self, kind_value: str, candidate_id: str) -> None:
+        try:
+            data = self._read_json_object()
+            allowed = {
+                "expected_revision",
+                "edited_text",
+                "category_family",
+                "consumption_need",
+                "season",
+                "source_usage",
+                "identity_traits",
+                "hair_traits",
+                "outfit_traits",
+                "scene_traits",
+                "forbidden_traits",
+            }
+            _strict_keys(
+                data,
+                allowed=allowed,
+                required={"expected_revision", "edited_text"},
+            )
+            kind = CandidateKind(kind_value)
+            fields: dict[str, tuple[str, ...] | str] = {}
+            string_fields = {"category_family", "consumption_need", "season"}
+            tuple_fields = {
+                "source_usage",
+                "identity_traits",
+                "hair_traits",
+                "outfit_traits",
+                "scene_traits",
+                "forbidden_traits",
+            }
+            for field in string_fields & data.keys():
+                fields[field] = _body_string(data, field)
+            for field in tuple_fields & data.keys():
+                fields[field] = _body_string_tuple(data, field)
+            candidate = self._learning_service().update(
+                kind,
+                candidate_id,
+                expected_revision=_body_revision(data),
+                edited_text=_body_string(data, "edited_text"),
+                structured_fields=fields,
+            )
+            self._send_json(candidate.to_dict())
+        except (
+            ValueError,
+            LearningValidationError,
+            CandidateNotFoundError,
+            RevisionConflictError,
+        ) as error:
+            self._handle_learning_error(_as_learning_error(error, "kind 参数无效"))
+
+    def _handle_learning_action(
+        self,
+        kind_value: str,
+        candidate_id: str,
+        action: str,
+    ) -> None:
+        try:
+            data = self._read_json_object()
+            required = (
+                {"expected_revision", "reason"} if action == "reject" else {"expected_revision"}
+            )
+            allowed = required
+            _strict_keys(data, allowed=allowed, required=required)
+            kind = CandidateKind(kind_value)
+            revision = _body_revision(data)
+            service = self._learning_service()
+            if action == "submit-review":
+                candidate = service.submit_review(kind, candidate_id, expected_revision=revision)
+            elif action == "approve":
+                candidate = service.approve(kind, candidate_id, expected_revision=revision)
+            elif action == "reject":
+                candidate = service.reject(
+                    kind,
+                    candidate_id,
+                    expected_revision=revision,
+                    reason=_body_string(data, "reason"),
+                )
+            else:
+                self._send_json({"error": "Unknown learning action"}, HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(candidate.to_dict())
+        except (
+            ValueError,
+            LearningValidationError,
+            CandidateNotFoundError,
+            RevisionConflictError,
+        ) as error:
+            self._handle_learning_error(_as_learning_error(error, "kind 参数无效"))
 
     def _handle_sqlite_open(self) -> None:
         body = self._read_body()
@@ -453,7 +659,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Serve the local Skill CSV/SQLite reviewer.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8765, type=int)
+    parser.add_argument("--learning-root", type=Path, default=DEFAULT_LEARNING_ROOT)
     args = parser.parse_args()
+
+    if args.host not in {"127.0.0.1", "localhost", "::1"}:
+        raise SystemExit("审核台只允许绑定 loopback host")
+    global LEARNING_ROOT
+    LEARNING_ROOT = args.learning_root.expanduser().resolve()
 
     server = ThreadingHTTPServer((args.host, args.port), SkillReviewerHandler)
     print(f"Skill reviewer: http://{args.host}:{args.port}")
@@ -461,6 +673,60 @@ def main() -> None:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopping skill reviewer.")
+
+
+def _learning_candidate_route(path: str) -> tuple[str, str, str] | None:
+    match = re.fullmatch(
+        r"/api/learning/candidates/(copy|person)/([A-Za-z0-9][A-Za-z0-9_-]{7,95})(?:/(submit-review|approve|reject))?",
+        path,
+    )
+    if match is None:
+        return None
+    return match.group(1), match.group(2), match.group(3) or ""
+
+
+def _strict_keys(
+    data: dict[str, object],
+    *,
+    allowed: set[str],
+    required: set[str],
+) -> None:
+    unknown = set(data) - allowed
+    missing = required - set(data)
+    if unknown:
+        raise LearningValidationError("请求包含未知字段：" + "、".join(sorted(unknown)))
+    if missing:
+        raise LearningValidationError("请求缺少字段：" + "、".join(sorted(missing)))
+
+
+def _body_string(data: dict[str, object], field: str, *, default: str = "") -> str:
+    value = data.get(field, default)
+    if not isinstance(value, str):
+        raise LearningValidationError(f"{field} 必须是字符串")
+    return value
+
+
+def _body_string_tuple(data: dict[str, object], field: str) -> tuple[str, ...]:
+    value = data.get(field)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise LearningValidationError(f"{field} 必须是字符串数组")
+    return tuple(value)
+
+
+def _body_revision(data: dict[str, object]) -> int:
+    value = data.get("expected_revision")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise LearningValidationError("expected_revision 必须是正整数")
+    return value
+
+
+def _as_learning_error(error: Exception, fallback: str) -> Exception:
+    if isinstance(
+        error,
+        (LearningValidationError, CandidateNotFoundError, RevisionConflictError),
+    ):
+        return error
+    return LearningValidationError(fallback)
 
 
 if __name__ == "__main__":

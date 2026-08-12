@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/copy-learning-candidate.schema.json",
+  "title": "Copy transcript learning candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "kind", "candidate_id", "status", "revision", "created_at",
+    "updated_at", "source_media", "source_fingerprint", "source_date", "asr_cache_key",
+    "provider", "model", "raw_transcript", "edited_transcript", "word_timeline",
+    "audio_conversion", "risk_tags", "similarity_hits", "category_family",
+    "consumption_need", "season", "source_usage", "published_block_ids", "rejection_reason"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "copy_transcript"},
+    "candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{7,95}$"},
+    "status": {"enum": ["pending", "editing", "ready_for_review", "approved", "rejected", "published"]},
+    "revision": {"type": "integer", "minimum": 1},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "source_media": {"type": "string", "minLength": 1},
+    "source_fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_date": {"type": "string", "format": "date"},
+    "asr_cache_key": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "provider": {"const": "paraformer-zh"},
+    "model": {"type": "string", "minLength": 1},
+    "raw_transcript": {"type": "string", "minLength": 1, "readOnly": true},
+    "edited_transcript": {"type": "string", "minLength": 1},
+    "word_timeline": {"type": "array", "items": {"$ref": "#/$defs/token"}},
+    "audio_conversion": {"type": "array", "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "minItems": 2, "maxItems": 2}},
+    "risk_tags": {"$ref": "#/$defs/strings"},
+    "similarity_hits": {"$ref": "#/$defs/strings"},
+    "category_family": {"type": "string"},
+    "consumption_need": {"type": "string"},
+    "season": {"type": "string"},
+    "source_usage": {"$ref": "#/$defs/strings"},
+    "published_block_ids": {"$ref": "#/$defs/strings"},
+    "rejection_reason": {"type": "string"}
+  },
+  "$defs": {
+    "strings": {"type": "array", "items": {"type": "string"}},
+    "token": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "text", "start_ms", "end_ms", "source", "confidence"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 0},
+        "text": {"type": "string", "minLength": 1},
+        "start_ms": {"type": "integer", "minimum": 0},
+        "end_ms": {"type": "integer", "minimum": 0},
+        "source": {"type": "string", "minLength": 1},
+        "confidence": {"type": ["number", "null"]}
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: prompt-engineering
-description: Generate natural Chinese product short-video copy, avatar prompts, SmartSplit manuscripts, and Auto Oceanengine-compatible task CSVs from user-provided 商品、利益点、活动口径 or product facts. Use for 通用商品口播、淘宝闪购口播、生活化文案、数字人 Prompt、即创任务包、批量视频素材；supports configurable benefits, no-benefit tasks, and the existing 淘宝闪购默认利益点 preset.
+description: Generate natural Chinese product short-video copy, avatar prompts, SmartSplit manuscripts, and Auto Oceanengine-compatible task CSVs; also manage audited local-video ASR copy learning and on-demand person Prompt learning. Use for 通用商品口播、淘宝闪购口播、生活化文案、数字人 Prompt、即创任务包、批量视频素材、每日视频 ASR 学习、人物 Prompt 学习与学习审核发布；supports configurable benefits, no-benefit tasks, and the existing 淘宝闪购默认利益点 preset.
 ---
 
 # Prompt Engineering
@@ -13,6 +13,10 @@ all semantic analysis and generation directly as Codex. Do not call another LLM.
 1. Read [campaign-contract.md](references/campaign-contract.md),
    [copywriting-rules.md](references/copywriting-rules.md), and
    [avatar-rules.md](references/avatar-rules.md).
+   When approved learned resources contain blocks, also read
+   [learned-copy-source-blocks.md](references/learned-copy-source-blocks.md),
+   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md), and
+   [person-prompt-block-contracts.md](references/person-prompt-block-contracts.md).
    For production-volume copy based on the supplied human-written samples, also read
    [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md) and
    [source-block-contracts.md](references/source-block-contracts.md). Classify the product and its
@@ -219,6 +223,36 @@ For batches, keep a one-to-one mapping among source facts, copy, avatar prompt, 
 row. Preserve the full avatar prompt in the audit record even though the current Oceanengine chain
 only consumes the static `person_prompt` and `script`, and the current LibTV chain consumes
 `image_prompt`, `audio_prompt`, and the separate interface configuration.
+
+## Audited Learning Workflow
+
+Use the learning commands only for user-supplied local inputs. Read [runtime.md](references/runtime.md)
+and the candidate/publication schemas before operating them.
+
+- The user-configured daily media template is
+  `/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材`. When the user explicitly asks to
+  transcribe today's/daily materials without supplying another path, run `learning-transcribe`
+  without `--input`; the CLI resolves the local date directory and scans only its current level.
+  An explicit `--input` file or one-level directory always overrides that default. It creates only
+  `copy` candidates and calls the Prompt Engineering-owned worker with the existing FunASR
+  environment; never modify the FunASR repository or the existing subtitle entry point. Merely
+  opening or reviewing the workbench must never start transcription.
+- Run `learning-add-person-prompt` only when the user actively supplies a person Prompt. It creates
+  only `person` candidates and never calls ASR.
+- Treat `raw_transcript` and `raw_prompt` as immutable. Save only edited content and allowed typed
+  fields, always using the current expected revision.
+- Never approve automatically. The workbench or CLI may save, submit, approve, or reject; publication
+  remains a separate Codex step.
+- After human approval, remove sample price, promotion, platform, delivery, brand, efficacy, sales,
+  CTA, fixed-frame, logo, and real-person risks, then create a manifest conforming to
+  [learning-publication.schema.json](references/learning-publication.schema.json).
+- Run `learning-publish` with matching kind, candidate ID, and revision. Never publish an unapproved
+  candidate, and never write a partial formal resource.
+- Keep learned copy and person resources independent. Learned copy blocks retain typed slots and
+  campaign isolation. Learned person blocks supplement only identity, hair, outfit, and scene;
+  fixed visual and product constraints remain authoritative.
+- Treat diversity concentration results as review warnings. Continue enforcing batch-unique
+  `identity_key` and `outfit_key` and all existing copy/visual validators.
 
 ## Safety Boundary
 

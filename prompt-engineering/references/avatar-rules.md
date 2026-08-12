@@ -20,6 +20,12 @@
 生成前为每条记录简短的 `identity_key` 与 `outfit_key`；两组键在同一批次中都不得重复。
 禁止写“同一人物”“相同五官”“固定人物”“保持脸部特征一致”等连续性描述。
 
+若 [person-prompt-source-blocks.md](person-prompt-source-blocks.md) 存在审核发布块，按
+[person-prompt-block-contracts.md](person-prompt-block-contracts.md) 从 identity、hair、outfit、
+scene 中选择兼容变量组合。learned 块不得重复或覆盖本文件的固定镜头、商品摆放、不手持、
+不看不接触商品、logo 和无字幕约束，也不得复刻具体真人。人物身份标签和服装标签集中度只作
+预警；批次内 `identity_key`、`outfit_key` 唯一性仍是硬校验。空 learned 资源保持旧行为。
+
 ## 场景与商品
 
 - Prompt 开头必须先写 `竖屏9:16，固定中景，手机实拍，数字人口播首帧`，不是生活方式抓拍；

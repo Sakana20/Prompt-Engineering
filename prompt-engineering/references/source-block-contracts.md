@@ -39,3 +39,9 @@
 兼容块或已确认商品资料不足时，剩余条目使用 `natural_generate`，不阻断整批生成。
 `natural_generate` 不登记 `source_block_id`、`source_slot_values` 或
 `rewrite_anchor_phrases`，不声称使用了真人原文。
+
+## 审核发布的 learned 块
+
+`learned-copy-source-blocks.md` 中通过 `learning-publish` 登记的块进入同一验证注册表。每块
+必须声明品类族、消费需求、季节、适用模式、强类型插槽、已删除风险与多样性标签；选块仍先
+判断品类和需求，不能因为是 learned 块而绕过本文件规则。

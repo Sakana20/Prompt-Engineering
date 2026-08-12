@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Sequence
 from datetime import date
 
@@ -751,6 +752,85 @@ def validate_visual_diversity(
         else:
             seen_outfits[outfit] = index
     return tuple(issues)
+
+
+def validate_learning_diversity(
+    *,
+    opening_types: Sequence[str],
+    rhythm_types: Sequence[str],
+    need_types: Sequence[str],
+    emotion_types: Sequence[str],
+    identity_tags: Sequence[Sequence[str]],
+    outfit_tags: Sequence[Sequence[str]],
+    concentration_threshold: float = 0.6,
+) -> tuple[ValidationIssue, ...]:
+    """Return non-blocking concentration warnings for learned diversity metadata."""
+    if not 0.0 < concentration_threshold <= 1.0:
+        raise ValueError("集中度阈值必须在 0 到 1 之间")
+    lengths = {
+        len(opening_types),
+        len(rhythm_types),
+        len(need_types),
+        len(emotion_types),
+        len(identity_tags),
+        len(outfit_tags),
+    }
+    if len(lengths) != 1:
+        raise ValueError("多样性标签数量必须一致")
+    issues: list[ValidationIssue] = []
+    copy_dimensions = (
+        ("opening", opening_types),
+        ("rhythm", rhythm_types),
+        ("need", need_types),
+        ("emotion", emotion_types),
+    )
+    for dimension, values in copy_dimensions:
+        issue = _concentration_issue(
+            values,
+            dimension=dimension,
+            threshold=concentration_threshold,
+            code=IssueCode.COPY_TAG_CONCENTRATION,
+        )
+        if issue is not None:
+            issues.append(issue)
+    identity_issue = _concentration_issue(
+        [tags[0] if tags else "" for tags in identity_tags],
+        dimension="identity",
+        threshold=concentration_threshold,
+        code=IssueCode.PERSON_TAG_CONCENTRATION,
+    )
+    if identity_issue is not None:
+        issues.append(identity_issue)
+    outfit_issue = _concentration_issue(
+        [tags[0] if tags else "" for tags in outfit_tags],
+        dimension="outfit",
+        threshold=concentration_threshold,
+        code=IssueCode.OUTFIT_TAG_CONCENTRATION,
+    )
+    if outfit_issue is not None:
+        issues.append(outfit_issue)
+    return tuple(issues)
+
+
+def _concentration_issue(
+    values: Sequence[str],
+    *,
+    dimension: str,
+    threshold: float,
+    code: IssueCode,
+) -> ValidationIssue | None:
+    populated = [value.strip() for value in values if value.strip()]
+    if len(populated) < 4:
+        return None
+    value, count = Counter(populated).most_common(1)[0]
+    concentration = count / len(populated)
+    if concentration <= threshold:
+        return None
+    return ValidationIssue(
+        code,
+        f"批次 {dimension} 标签集中度过高：{concentration:.2f}",
+        value,
+    )
 
 
 def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:

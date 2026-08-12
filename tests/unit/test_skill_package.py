@@ -21,12 +21,19 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "oceanengine-contract.md").is_file()
     assert (SKILL_ROOT / "references" / "runtime.md").is_file()
     assert (SKILL_ROOT / "references" / "generated-task-batch.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "copy-learning-candidate.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "person-prompt-learning-candidate.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "learning-publication.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "learned-copy-source-blocks.md").is_file()
+    assert (SKILL_ROOT / "references" / "person-prompt-source-blocks.md").is_file()
+    assert (SKILL_ROOT / "references" / "person-prompt-block-contracts.md").is_file()
     assert (SKILL_ROOT / "references" / "validation-config.schema.json").is_file()
     assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
     assert "$smartsplit" not in skill.lower()
     assert "invoke smartsplit" not in skill.lower()
     assert "<task_id>.smartsplit.txt" in skill
     assert "Prompt Engineering/<YYYYMMDD>/<task>/<task>.csv" in skill
+    assert "/Users/sakana/Desktop/Work/2026/<MM.DD>/淘宝闪购/素材" in skill
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
