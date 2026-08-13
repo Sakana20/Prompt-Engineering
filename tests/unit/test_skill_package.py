@@ -58,6 +58,12 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert "ready_for_generation" in skill
     assert "codex_publish_approved" in skill
     assert "`提交学习` is that approval action" in skill
+    person_resource = (SKILL_ROOT / "references" / "person-prompt-source-blocks.md").read_text(
+        encoding="utf-8"
+    )
+    assert "```json" not in person_resource
+    assert "source_candidate_id" not in person_resource
+    assert "```text" in person_resource
 
 
 def test_skill_ui_prompt_explicitly_invokes_skill() -> None:

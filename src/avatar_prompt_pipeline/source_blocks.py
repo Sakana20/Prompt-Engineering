@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
+import hashlib
 import re
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import cast
 
 from .learning.publication import (
     COPY_RESOURCE_NAME,
@@ -24,6 +23,23 @@ class SourceBlockContract:
     block_id: str
     solid_food_only: bool
     minimum_source_slot_values: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class PersonSourceBlock:
+    block_id: str
+    block_type: str
+    description: str
+
+
+PERSON_BLOCK_LIMITS = {
+    "identity": 2,
+    "hair": 2,
+    "outfit": 4,
+    "scene": 2,
+}
+PERSON_CONTEXT_CHARACTER_LIMIT = 4500
+PERSON_CONTEXT_HEADING = "\n\n【本次筛选的人物学习块】\n"
 
 
 _BEVERAGE_CATEGORY_TERMS = (
@@ -96,21 +112,6 @@ def source_fill_is_compatible(category: str, contract: SourceBlockContract) -> b
     return not (contract.solid_food_only and category_family(category) is CategoryFamily.BEVERAGE)
 
 
-def _json_fences(path: Path) -> tuple[dict[str, object], ...]:
-    if not path.is_file():
-        return ()
-    text = path.read_text(encoding="utf-8")
-    records: list[dict[str, object]] = []
-    for match in re.finditer(r"```json\s*(\{.*?\})\s*```", text, flags=re.DOTALL):
-        try:
-            value = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            continue
-        if isinstance(value, dict):
-            records.append(cast(dict[str, object], value))
-    return tuple(records)
-
-
 def published_copy_block_contracts(path: Path | None = None) -> dict[str, SourceBlockContract]:
     resource = path or reference_path(COPY_RESOURCE_NAME)
     if not resource.is_file():
@@ -138,6 +139,115 @@ def published_copy_block_contracts(path: Path | None = None) -> dict[str, Source
     return contracts
 
 
-def learned_person_blocks(path: Path | None = None) -> tuple[dict[str, object], ...]:
+def learned_person_blocks(path: Path | None = None) -> tuple[PersonSourceBlock, ...]:
     resource = path or reference_path("person-prompt-source-blocks.md")
-    return _json_fences(resource)
+    if not resource.is_file():
+        return ()
+    pattern = re.compile(
+        r"^### `(?P<block_id>[a-z0-9][a-z0-9-]{2,95})` · "
+        r"`(?P<block_type>identity|hair|outfit|scene)`[ \t]*\n+"
+        r"[ \t]*```text[ \t]*\n(?P<description>.*?)\n```(?=\n|$)",
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    blocks = tuple(
+        PersonSourceBlock(
+            block_id=match.group("block_id"),
+            block_type=match.group("block_type"),
+            description=match.group("description").strip(),
+        )
+        for match in pattern.finditer(resource.read_text(encoding="utf-8"))
+    )
+    if len({block.block_id for block in blocks}) != len(blocks):
+        raise ValueError("人物正式资源包含重复 block ID")
+    return blocks
+
+
+def select_person_blocks(
+    context: str,
+    path: Path | None = None,
+) -> tuple[PersonSourceBlock, ...]:
+    grouped: dict[str, list[PersonSourceBlock]] = {
+        block_type: [] for block_type in PERSON_BLOCK_LIMITS
+    }
+    for block in learned_person_blocks(path):
+        grouped[block.block_type].append(block)
+
+    selected: list[PersonSourceBlock] = []
+    character_count = len(PERSON_CONTEXT_HEADING)
+    for block_type, limit in PERSON_BLOCK_LIMITS.items():
+        compatible = [
+            block
+            for block in grouped[block_type]
+            if _person_season_is_compatible(block.description, context)
+        ]
+        ranked = sorted(
+            compatible,
+            key=lambda block: (
+                hashlib.sha256(f"{context}|{block.block_id}".encode()).hexdigest(),
+                block.block_id,
+            ),
+        )
+        selected_in_type = 0
+        for block in ranked:
+            separator_size = 2 if selected else 0
+            projected = character_count + separator_size + len(_render_person_block(block))
+            if projected > PERSON_CONTEXT_CHARACTER_LIMIT:
+                continue
+            selected.append(block)
+            character_count = projected
+            selected_in_type += 1
+            if selected_in_type == limit:
+                break
+    return tuple(selected)
+
+
+def _person_season_is_compatible(description: str, context: str) -> bool:
+    seasons = {
+        "春季": (
+            "冬季",
+            "冬天",
+            "冬日",
+            "寒冬",
+            "夏季",
+            "夏天",
+            "夏日",
+            "盛夏",
+            "秋季",
+            "秋天",
+            "秋日",
+        ),
+        "夏季": ("冬季", "冬天", "冬日", "寒冬", "春季", "春天", "春日", "秋季", "秋天", "秋日"),
+        "秋季": (
+            "冬季",
+            "冬天",
+            "冬日",
+            "寒冬",
+            "春季",
+            "春天",
+            "春日",
+            "夏季",
+            "夏天",
+            "夏日",
+            "盛夏",
+        ),
+        "冬季": ("春季", "春天", "春日", "夏季", "夏天", "夏日", "盛夏", "秋季", "秋天", "秋日"),
+    }
+    for current, incompatible in seasons.items():
+        if current in context:
+            return not any(term in description for term in incompatible)
+    return True
+
+
+def render_person_block_context(blocks: tuple[PersonSourceBlock, ...]) -> str:
+    if not blocks:
+        return ""
+    rendered = "\n\n".join(_render_person_block(block) for block in blocks)
+    return PERSON_CONTEXT_HEADING + rendered
+
+
+def _render_person_block(block: PersonSourceBlock) -> str:
+    return f"### `{block.block_id}` · `{block.block_type}`\n\n```text\n{block.description}\n```"
+
+
+def person_block_context(context: str, path: Path | None = None) -> str:
+    return render_person_block_context(select_person_blocks(context, path))

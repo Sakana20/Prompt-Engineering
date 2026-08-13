@@ -5,7 +5,11 @@ import pytest
 from avatar_prompt_pipeline.learning.publication import reference_path
 from avatar_prompt_pipeline.models import ProductBrief
 from avatar_prompt_pipeline.service import compose_prompt_package
-from avatar_prompt_pipeline.source_blocks import published_copy_block_contracts
+from avatar_prompt_pipeline.source_blocks import (
+    learned_person_blocks,
+    published_copy_block_contracts,
+    select_person_blocks,
+)
 
 
 @pytest.mark.integration
@@ -21,7 +25,7 @@ def test_empty_learned_resources_keep_existing_prompt_compatible(
     package = compose_prompt_package(ProductBrief(category="雨伞"))
 
     assert "【审核发布的文案块】" not in package.copywriting_prompt
-    assert "【审核发布的 learned 人物变量块】" not in package.avatar_prompt_template
+    assert "【本次筛选的人物学习块】" not in package.avatar_prompt_template
 
 
 @pytest.mark.integration
@@ -70,3 +74,43 @@ def test_published_copy_section_is_loaded_from_unified_volume_resource(
     assert "【审核发布的文案块】" in package.copywriting_prompt
     assert "learned-copy-unified-001" in package.copywriting_prompt
     assert "仅用于检测的旧库说明" not in package.copywriting_prompt
+
+
+@pytest.mark.integration
+def test_person_resource_uses_plain_blocks_and_injects_only_bounded_selection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("AVATAR_PROMPT_PROJECT", str(tmp_path))
+    refs = tmp_path / "prompt-engineering" / "references"
+    refs.mkdir(parents=True)
+    reference_path("volume-copy-source-blocks.md").write_text("# empty\n", encoding="utf-8")
+    person_resource = reference_path("person-prompt-source-blocks.md")
+    rendered_blocks = []
+    for index in range(20):
+        for block_type in ("identity", "hair", "outfit", "scene"):
+            rendered_blocks.append(
+                f"### `person-{index:02d}-{block_type}` · `{block_type}`\n\n"
+                f"```text\n{block_type} 描述 {index}\n```\n"
+            )
+    person_resource.write_text("# 人物学习块\n\n" + "\n".join(rendered_blocks), encoding="utf-8")
+
+    package = compose_prompt_package(ProductBrief(category="雨伞"))
+    selected = select_person_blocks("雨伞", person_resource)
+
+    assert len(learned_person_blocks(person_resource)) == 80
+    assert len(selected) == 10
+    assert len(package.selected_person_block_ids) == 10
+    assert package.person_learning_context_character_count < 4500
+    assert "【本次筛选的人物学习块】" in package.avatar_prompt_template
+    assert (
+        sum(
+            block_id in package.avatar_prompt_template
+            for block_id in package.selected_person_block_ids
+        )
+        == 10
+    )
+    assert "```json" not in package.avatar_prompt_template
+    unselected_ids = {block.block_id for block in learned_person_blocks(person_resource)} - set(
+        package.selected_person_block_ids
+    )
+    assert all(block_id not in package.avatar_prompt_template for block_id in unselected_ids)

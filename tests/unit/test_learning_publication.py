@@ -71,7 +71,11 @@ def test_only_approved_candidate_publishes_four_person_resources(tmp_path: Path)
     resource = tmp_path / "prompt-engineering" / "references" / "person-prompt-source-blocks.md"
     assert published.status.value == "published"
     assert len(published.published_block_ids) == 4
-    assert "person-identity-001" in resource.read_text(encoding="utf-8")
+    formal_text = resource.read_text(encoding="utf-8")
+    assert "### `person-identity-001` · `identity`" in formal_text
+    assert "```text\n年轻鹅蛋脸，眉眼清爽，邻家审美\n```" in formal_text
+    assert "```json" not in formal_text
+    assert candidate_id not in formal_text
 
 
 def test_unapproved_candidate_cannot_publish(tmp_path: Path) -> None:

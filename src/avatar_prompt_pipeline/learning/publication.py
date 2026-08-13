@@ -398,14 +398,10 @@ def _copy_markdown(block: LearnedCopyBlock) -> str:
 
 
 def _person_markdown(block: LearnedPersonBlock, candidate_id: str) -> str:
+    del candidate_id
     return (
-        f"## `{block.block_id}`\n\n"
-        f"来源候选：`{candidate_id}`。\n\n"
-        "```json\n"
-        + json.dumps(
-            block.registry_dict(candidate_id), ensure_ascii=False, indent=2, sort_keys=True
-        )
-        + "\n```\n\n"
+        f"### `{block.block_id}` · `{block.block_type}`\n\n"
+        f"```text\n{block.description.strip()}\n```\n\n"
     )
 
 

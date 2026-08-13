@@ -43,8 +43,10 @@ help, tests, or Skill validation.
    [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md), and
    [source-block-contracts.md](references/source-block-contracts.md). The volume-copy resource is
    the single formal copy library for both historical human blocks and newly audited web learning
-   blocks. When person resources contain published blocks, also read
-   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md) and
+   blocks. When person resources contain published blocks, use only the bounded person blocks
+   embedded by `compose`; do not read the complete
+   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md) during normal
+   generation. Read the complete resource only for publication, repair, or audit, together with
    [person-prompt-block-contracts.md](references/person-prompt-block-contracts.md).
    For production-volume copy, classify the product and its
    consumption need before selecting a block. For a batch, assign exactly `floor(N/2)` rows to
@@ -304,8 +306,11 @@ and the candidate/publication schemas before operating them.
   `### block-id` plus fenced `text` format; do not append JSON, source candidate IDs, provenance, or
   registry fields to that Markdown file. Keep structured publication metadata only in the local
   `learning/<kind>/published/provenance.jsonl` audit record. Published copy blocks retain typed
-  slots and campaign isolation. Keep person blocks in their independent resource, supplementing only
-  identity, hair, outfit, and scene; fixed visual and product constraints remain authoritative.
+  slots and campaign isolation. Write person blocks in the same readable heading plus fenced
+  `text` format in their independent resource; never write registry JSON, candidate IDs, provenance,
+  or risk metadata into that formal resource. During generation use only the bounded selection
+  embedded by `compose`, not the full person library. Person blocks supplement only identity, hair,
+  outfit, and scene; fixed visual and product constraints remain authoritative.
 - Treat diversity concentration results as review warnings. Continue enforcing batch-unique
   `identity_key` and `outfit_key` and all existing copy/visual validators.
 

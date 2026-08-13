@@ -18,10 +18,8 @@ def _candidate_payload(candidate: LearningCandidate) -> dict[str, object]:
 def _person_block_ids(path: Path) -> tuple[str, ...]:
     block_ids: set[str] = set()
     for block in learned_person_blocks(path):
-        block_id = block.get("block_id")
-        block_type = block.get("block_type")
-        if isinstance(block_id, str) and block_type in {"identity", "hair", "outfit", "scene"}:
-            block_ids.add(block_id)
+        if block.block_type in {"identity", "hair", "outfit", "scene"}:
+            block_ids.add(block.block_id)
     return tuple(sorted(block_ids))
 
 

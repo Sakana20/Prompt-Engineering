@@ -10,6 +10,7 @@ from .learning.publication import (
 )
 from .models import CampaignSpec, LanguageStyle, ProductBrief, PromptPackage, ValidationConfig
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
+from .source_blocks import render_person_block_context, select_person_blocks
 from .template_loader import TEMPLATE_VERSION, load_template
 from .validation import DEFAULT_VALIDATION_CONFIG, strip_no_split_markers, temporal_context
 
@@ -49,10 +50,12 @@ def compose_prompt_package(
         "{{TEMPORAL_CONTEXT}}", temporal_context(reference_date)
     )
     copywriting_prompt += _published_copy_resource_context(reference_path(COPY_RESOURCE_NAME))
-    avatar_template += _learned_resource_context(
+    person_blocks = select_person_blocks(
+        "|".join((brief.category, brief.product_name, temporal_context(reference_date))),
         reference_path("person-prompt-source-blocks.md"),
-        heading="审核发布的 learned 人物变量块",
     )
+    person_context = render_person_block_context(person_blocks)
+    avatar_template += person_context
     return PromptPackage(
         schema_version="1.0",
         template_version=TEMPLATE_VERSION,
@@ -63,6 +66,8 @@ def compose_prompt_package(
         copywriting_prompt=copywriting_prompt,
         avatar_prompt_template=avatar_template,
         review_required=True,
+        selected_person_block_ids=tuple(block.block_id for block in person_blocks),
+        person_learning_context_character_count=len(person_context),
     )
 
 
@@ -71,20 +76,12 @@ def render_avatar_prompt(script: str) -> str:
     if not cleaned_script:
         raise ValueError("口播文案不能为空")
     template = load_template("avatar_prompt.txt")
-    template += _learned_resource_context(
+    person_blocks = select_person_blocks(
+        cleaned_script + "|" + temporal_context(),
         reference_path("person-prompt-source-blocks.md"),
-        heading="审核发布的 learned 人物变量块",
     )
+    template += render_person_block_context(person_blocks)
     return template.replace("{{SCRIPT}}", cleaned_script)
-
-
-def _learned_resource_context(path: Path, *, heading: str) -> str:
-    if not path.is_file():
-        return ""
-    text = path.read_text(encoding="utf-8").strip()
-    if '"block_id"' not in text:
-        return ""
-    return f"\n\n【{heading}】\n{text}"
 
 
 def _published_copy_resource_context(path: Path) -> str:

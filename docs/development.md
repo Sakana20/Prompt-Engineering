@@ -112,6 +112,12 @@ approved/published 候选；服务端移动完整目录到 trash，不得删除�
 统一文案库的网页发布块进入 Prompt、空资源兼容、审核台旧 API 回归和学习 API 409。真实素材 smoke test
 只在用户明确提供短媒体后运行。
 
+人物正式资源与文案正式资源统一使用可读 Markdown 文本块。人物块标题同时登记 block ID 与
+identity/hair/outfit/scene 类型，正文使用 fenced `text`；结构化兼容标签、来源候选和风险清理
+只保存在 `learning/person/published/provenance.jsonl`。`compose` 与人物 Prompt 渲染不会加载
+完整人物库，而是按当前任务和季节稳定选择 identity 2、hair 2、outfit 4、scene 2，并在
+PromptPackage 中登记所选 ID 和字符数。
+
 不得在 FunASR 仓库运行测试或格式化；执行 Prompt-owned worker 前后分别记录其
 `git status --short`，结果必须完全相同。
 

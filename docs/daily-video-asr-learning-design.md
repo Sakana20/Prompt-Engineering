@@ -328,6 +328,8 @@ prompt-engineering/references/person-prompt-block-contracts.md
 - `SKILL.md`、copywriting rules 和生产模板必须从这一统一文案资源读取新增块；
 - `source_blocks.py` 的验证注册表必须能识别已发布文案块，不能只更新 Markdown；
 - 人物块必须真正进入人物 Prompt 生成指令，不能只保存不使用；
+- 人物正式资源与文案一样使用块标题加 fenced `text`，结构化发布信息只保存在 provenance；
+  正常生成按类型限量选择，不读取完整人物库；
 - 固定人物画面约束始终由现有模板和 validator 提供，learned 人物块只能补充变量；
 - 发布前先在内存中生成所有目标内容并完成全部校验，再执行原子替换；
 - 任一目标失败时全部保持原样；

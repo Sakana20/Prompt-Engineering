@@ -53,8 +53,10 @@ CSV 或 LibTV 三件套。完整视频 Prompt 与身份/服装键保留在审计
 以“大额红包”为必填利益点，允许优惠价、活动价、福利价等无金额描述；它引用的
 `ValidationConfig` 单独开启数字红包金额拦截，不改变其他项目。
 
-`PromptPackage` 包含 schema 版本、模板版本、输入资料、文案 Prompt、数字人 Prompt 模板
-和审核标记。JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQLite。
+`PromptPackage` 包含 schema 版本、模板版本、输入资料、文案 Prompt、数字人 Prompt 模板、
+审核标记，以及本次选择的人物学习 block ID 和上下文字符数。人物正式库完整保存全部已发布块，
+但编排时按当前任务与季节只注入 identity 2、hair 2、outfit 4、scene 2；正常生成不读取全文。
+JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQLite。
 
 `LanguageStyle` 描述项目级语言风格，包括语气、叙述视角、句式节奏、表达重点、避免套话
 和额外风格规则。它从项目配置文件进入文案 Prompt，用于指导 Codex 生成；确定性校验不
