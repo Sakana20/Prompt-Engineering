@@ -72,7 +72,10 @@ help, tests, or Skill validation.
    Treat current rain, snow, wind, sunshine, cooling, or warming as unconfirmed unless the current
    task explicitly supplies that weather fact. Within each copy mode, do not repeat a
    `source_block_id`. `natural_generate` has no source block, source slot values, or rewrite
-   anchors.
+   anchors. Keep this allocation in the batch manifest and validator, not in every creative
+   Prompt. Compose each task for its actual mode: `natural_generate` receives no copy block;
+   `source_fill` and `human_rewrite` receive exactly one final selected block through
+   `--source-block-id`.
    For CLI, configuration, batching, plugins, debug output, or output-format requests, also read
    [runtime.md](references/runtime.md) and its linked schemas.
 2. Normalize the user's facts into product facts and a campaign:
@@ -82,7 +85,7 @@ help, tests, or Skill validation.
    - forbidden or unknown claims;
    - platform and campaign name, if supplied;
    - zero to three user-confirmed benefit points;
-   - project language style, if supplied;
+   - project creative brief, if supplied;
    - requested quantity, defaulting to one.
 3. If only a category is supplied, generate a draft using generic situations and observable
    category-level properties. Do not invent material, performance, price, brand, sales, efficacy,
@@ -92,14 +95,14 @@ help, tests, or Skill validation.
    wording after the complete product passage; never use campaign facts as product components.
    Food-only blocks cannot be filled with beverages, and combination blocks require confirmed
    product components. If compatible blocks or product facts are insufficient, use
-   `natural_generate` for the remaining non-rewrite rows without claiming a human source. The source block overrides
-   the usual 20/50/30 heuristic. In `human_rewrite`, change the
+   `natural_generate` for the remaining non-rewrite rows without claiming a human source. Do not
+   impose fixed content ratios or a fixed hook-to-close sequence. In `human_rewrite`, change the
    concrete situation and wording while staying visibly close to the selected block's vocabulary,
    pauses, repetition, direct questions, or abrupt turns. Avoid tidy explanatory transitions and
    abstract summaries such as “刚好满足需求”, “这个时候很合适”, “具体体验”, or “选择理由”.
    For every rewrite, record at least two retained phrases in `rewrite_anchor_phrases`; each must
    appear verbatim in the final script or batch validation fails. If
-   either mode cannot reach 80–100 Chinese characters without invented facts, choose another block
+   either mode cannot reach the active validation length without invented facts, choose another block
    or request more product facts.
    Before validation, review product-to-need, noun-to-action, coordination level, and closing
    reference. A beverage must not retain hunger/meal reasoning, and “add / add another / comes
@@ -119,7 +122,9 @@ help, tests, or Skill validation.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` with
    matching `--benefit-point` arguments or `--preset none`, and revise any failing copy before
    generating its avatar prompt. Sample-inspired copy is not exempt: use the exact current project
-   configuration, and never export a candidate that has not passed validation.
+   configuration, and never export a candidate that has not passed validation. Feed back only the
+   issues from the failed validation run when revising; do not append the entire validation rule
+   set to the creative Prompt again.
 7. Remove `[[NO_SPLIT]]` tags before generating an avatar video prompt; they are not spoken text.
    Generate one avatar video prompt per accepted copy. Use the copy as the sole semantic basis.
    Give every prompt a different Chinese young woman and a different outfit. Vary face shape,
@@ -241,8 +246,10 @@ Compatibility defaults:
   amount for this project.
 - If the user provides a project configuration file, treat it as the complete project mouthpiece:
   use its product facts, campaign facts, benefit points, forbidden expressions, and disclosures.
-  Use its language style to guide tone, viewpoint, sentence rhythm, emphasis, phrases to avoid,
-  and extra style rules.
+  Use its `creative_brief` to guide audience, communication goal, voice, and at most three creative
+  preferences. New project configurations must not use fixed story sequences, action catalogs, or
+  long phrase-avoidance lists. Legacy `language_style` remains readable for compatibility and is
+  converted to a compact creative brief before Prompt rendering; never inject its full field list.
   Use the referenced validation configuration to determine banned expressions, CTA rules,
   character limits, and format rules.
   Do not combine it with the default preset or unrelated campaign arguments.

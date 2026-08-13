@@ -51,6 +51,19 @@
           "description": "项目配置 JSON；传入后使用其中的商品和活动口径"
         },
         "output": {"type": ["string", "null"], "default": null, "x-cli": "--output"},
+        "count": {"type": "integer", "minimum": 1, "default": 1, "x-cli": "--count"},
+        "copy_mode": {
+          "enum": ["source_fill", "human_rewrite", "natural_generate"],
+          "default": "natural_generate",
+          "x-cli": "--copy-mode",
+          "description": "只把当前模式所需合同注入创作 Prompt"
+        },
+        "source_block_id": {
+          "type": "string",
+          "default": "",
+          "x-cli": "--source-block-id",
+          "description": "source_fill 或 human_rewrite 使用的单个正式原文块 ID"
+        },
         "learning_root": {"$ref": "#/$defs/learning_root"}
       }
     },

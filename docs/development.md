@@ -115,9 +115,10 @@ approved/published 候选；服务端移动完整目录到 trash，不得删除�
 人物正式资源与文案正式资源统一使用可读 Markdown 文本块。人物块标题同时登记 block ID 与
 identity/hair/outfit/scene 类型，正文使用 fenced `text`；结构化兼容标签、来源候选和风险清理
 只保存在 `learning/person/published/provenance.jsonl`。`compose` 不会加载完整文案或人物正式库；
-文案按当前任务和数量限量选择，人物 Prompt 渲染不会加载
-完整人物库，而是按当前任务和季节稳定选择 identity 2、hair 2、outfit 4、scene 2，并在
-PromptPackage 中登记所选 ID 和字符数。
+文案按当前 `copy_mode` 动态选择：`natural_generate` 不加载真人文案资源，来源模式只加载
+显式或确定性选中的一个块。人物 Prompt 渲染不会加载完整人物库，而是按当前任务和季节稳定
+选择 identity 2、hair 2、outfit 4、scene 2，并在 PromptPackage 中登记所选 ID 和字符数。
+修改模式组装时要分别测试三种模式，确认无关合同和候选块没有泄漏进当前 Prompt。
 
 不得在 FunASR 仓库运行测试或格式化；执行 Prompt-owned worker 前后分别记录其
 `git status --short`，结果必须完全相同。

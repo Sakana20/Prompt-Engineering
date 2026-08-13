@@ -212,6 +212,55 @@ def select_copy_blocks(
     return tuple(selected)
 
 
+def select_copy_block(
+    category: str,
+    context: str,
+    path: Path | None = None,
+    *,
+    block_id: str = "",
+    require_source_fill_compatible: bool = False,
+) -> CopySourceBlock:
+    candidates = select_copy_blocks(category, context, path, batch_size=1)
+    if block_id:
+        candidates = tuple(
+            block
+            for block in (
+                CopySourceBlock(
+                    item.block_id,
+                    item.template,
+                    item.contract,
+                    "、".join(
+                        reason
+                        for reason in (
+                            "品类不兼容"
+                            if not source_fill_is_compatible(category, item.contract)
+                            else "",
+                            "需重建季节"
+                            if not _copy_season_is_compatible(item.template, context)
+                            else "",
+                        )
+                        if reason
+                    ),
+                )
+                for item in learned_copy_blocks(path)
+                if item.block_id == block_id
+            )
+        )
+        if not candidates:
+            raise ValueError(f"未找到真人原文块：{block_id}")
+    if require_source_fill_compatible:
+        incompatible = tuple(block for block in candidates if block.source_fill_restriction)
+        candidates = tuple(block for block in candidates if not block.source_fill_restriction)
+        if not candidates and incompatible and block_id:
+            raise ValueError(
+                f"真人原文块 {block_id} 不适用于 source_fill："
+                f"{incompatible[0].source_fill_restriction}"
+            )
+    if not candidates:
+        raise ValueError("没有符合当前品类与季节的真人原文块")
+    return candidates[0]
+
+
 def _copy_season_is_compatible(template: str, context: str) -> bool:
     return _person_season_is_compatible(template, context)
 

@@ -98,12 +98,34 @@ def test_compose_cli_uses_project_config_without_default_campaign(
     assert output["campaign"]["forbidden_expressions"] == ["最高12元无门槛红包"]
     assert output["validation_config"]["call_to_actions"] == ["直播间", "立即购买"]
     assert output["language_style"]["name"] == "benefit-forward-promo"
-    assert "风格名称：benefit-forward-promo" in output["copywriting_prompt"]
+    assert "表达声音：自然直接" in output["copywriting_prompt"]
+    assert output["copy_mode"] == "natural_generate"
     assert "禁止出现以下行动引导：直播间、立即购买" in output["copywriting_prompt"]
     assert (
         f"利益点[primary-benefit]：[[NO_SPLIT]]{REQUIRED_BENEFIT}"
         not in output["copywriting_prompt"]
     )
+
+
+@pytest.mark.e2e
+def test_compose_cli_accepts_dynamic_source_mode(capsys: pytest.CaptureFixture[str]) -> None:
+    result = run(
+        [
+            "compose",
+            "--category",
+            "炸鸡",
+            "--copy-mode",
+            "human_rewrite",
+            "--source-block-id",
+            "learn-008-evening",
+        ]
+    )
+
+    output: dict[str, Any] = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert output["copy_mode"] == "human_rewrite"
+    assert output["selected_copy_block_ids"] == ["learn-008-evening"]
+    assert "本条模式：human_rewrite" in output["copywriting_prompt"]
 
 
 @pytest.mark.e2e

@@ -7,6 +7,7 @@ from avatar_prompt_pipeline.models import (
     BenefitPoint,
     BriefValidationError,
     CampaignSpec,
+    CreativeBrief,
     LibtvOmniHumanTask,
     OceanengineTask,
     ProductBrief,
@@ -36,6 +37,22 @@ def test_product_brief_without_selling_points_is_draft_only() -> None:
 def test_product_brief_rejects_empty_category() -> None:
     with pytest.raises(BriefValidationError, match="商品品类不能为空"):
         ProductBrief(category=" \x00 ")
+
+
+def test_creative_brief_limits_preferences_and_renders_context() -> None:
+    brief = CreativeBrief(
+        audience=" 家庭 用户 ",
+        communication_goal="让分享需求成立",
+        voice="轻松自然",
+        preferences=("具体动作", "批次差异"),
+    )
+
+    assert brief.audience == "家庭 用户"
+    assert "传播目标：让分享需求成立" in brief.context()
+    assert "创意偏好：具体动作；批次差异" in brief.context()
+
+    with pytest.raises(BriefValidationError, match="最多支持 3 条"):
+        CreativeBrief(preferences=("一", "二", "三", "四"))
 
 
 def test_campaign_orders_and_renders_configured_benefits() -> None:

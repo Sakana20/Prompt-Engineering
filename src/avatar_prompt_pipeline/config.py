@@ -9,6 +9,7 @@ from .models import (
     BenefitPoint,
     BriefValidationError,
     CampaignSpec,
+    CreativeBrief,
     LanguageStyle,
     ProductBrief,
     ValidationConfig,
@@ -25,6 +26,7 @@ class ProjectConfig:
     brief: ProductBrief
     campaign: CampaignSpec
     validation_config: ValidationConfig
+    creative_brief: CreativeBrief
     language_style: LanguageStyle
 
 
@@ -43,6 +45,7 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "required_disclosures",
     "confirmed_claims",
     "validation_config_path",
+    "creative_brief",
     "language_style",
 }
 
@@ -63,6 +66,13 @@ _ALLOWED_LANGUAGE_STYLE_KEYS = {
     "emphasis",
     "avoid_phrases",
     "extra_rules",
+}
+
+_ALLOWED_CREATIVE_BRIEF_KEYS = {
+    "audience",
+    "communication_goal",
+    "voice",
+    "preferences",
 }
 
 _ALLOWED_VALIDATION_CONFIG_KEYS = {
@@ -210,6 +220,39 @@ def _parse_language_style(value: Any) -> LanguageStyle:
     )
 
 
+def _parse_creative_brief(
+    value: Any, legacy_style: LanguageStyle, *, legacy_style_supplied: bool
+) -> CreativeBrief:
+    if value is None:
+        return legacy_style.to_creative_brief() if legacy_style_supplied else CreativeBrief()
+    brief_data = _expect_mapping(value, context="creative_brief")
+    unknown_keys = set(brief_data) - _ALLOWED_CREATIVE_BRIEF_KEYS
+    if unknown_keys:
+        unknown = "、".join(sorted(unknown_keys))
+        raise ProjectConfigError(f"creative_brief 包含未知字段：{unknown}")
+    default_brief = CreativeBrief()
+    return CreativeBrief(
+        audience=_expect_string(
+            brief_data.get("audience"),
+            field="creative_brief.audience",
+            default=default_brief.audience,
+        ),
+        communication_goal=_expect_string(
+            brief_data.get("communication_goal"),
+            field="creative_brief.communication_goal",
+            default=default_brief.communication_goal,
+        ),
+        voice=_expect_string(
+            brief_data.get("voice"), field="creative_brief.voice", default=default_brief.voice
+        ),
+        preferences=(
+            _expect_string_tuple(brief_data.get("preferences"), field="creative_brief.preferences")
+            if "preferences" in brief_data
+            else default_brief.preferences
+        ),
+    )
+
+
 def validation_config_from_mapping(data: dict[str, Any]) -> ValidationConfig:
     unknown_keys = set(data) - _ALLOWED_VALIDATION_CONFIG_KEYS
     if unknown_keys:
@@ -313,7 +356,14 @@ def project_config_from_mapping(
             ),
         )
         validation_config = _load_project_validation_config(data, base_path)
+        if data.get("creative_brief") is not None and data.get("language_style") is not None:
+            raise ProjectConfigError("creative_brief 与兼容字段 language_style 不能同时配置")
         language_style = _parse_language_style(data.get("language_style"))
+        creative_brief = _parse_creative_brief(
+            data.get("creative_brief"),
+            language_style,
+            legacy_style_supplied=data.get("language_style") is not None,
+        )
     except BriefValidationError as exc:
         raise ProjectConfigError(str(exc)) from exc
     return ProjectConfig(
@@ -321,6 +371,7 @@ def project_config_from_mapping(
         brief=brief,
         campaign=campaign,
         validation_config=validation_config,
+        creative_brief=creative_brief,
         language_style=language_style,
     )
 

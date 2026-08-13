@@ -182,7 +182,8 @@ class CampaignSpec:
         )
 
     def campaign_context(self) -> str:
-        lines = [f"平台：{self.platform or '未指定'}"]
+        platform = f"{self.platform}，必须逐字出现" if self.platform else "未指定"
+        lines = [f"平台：{platform}"]
         if self.campaign_name:
             lines.append(f"活动：{self.campaign_name}")
         if not self.benefit_points:
@@ -271,6 +272,8 @@ class ValidationConfig:
 
 @dataclass(frozen=True, slots=True)
 class LanguageStyle:
+    """Legacy project style input retained for configuration compatibility."""
+
     name: str = "product-led-conversational"
     tone: str = "普通人分享购买理由和使用体验，保留生活感，但商品必须是表达重点"
     point_of_view: str = "像同事或朋友随口分享"
@@ -332,6 +335,53 @@ class LanguageStyle:
             lines.append("额外规则：" + "；".join(self.extra_rules))
         return "\n".join(lines)
 
+    def to_creative_brief(self) -> CreativeBrief:
+        preferences = (*self.emphasis, *self.extra_rules)
+        return CreativeBrief(
+            audience=self.point_of_view,
+            communication_goal=(
+                preferences[0] if preferences else "让商品需求和活动利益点自然成立"
+            ),
+            voice=self.tone or self.sentence_style,
+            preferences=preferences[:3],
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CreativeBrief:
+    audience: str = "日常消费用户"
+    communication_goal: str = "让用户理解一个真实购买或使用需求，并自然感知当前活动利益点"
+    voice: str = "像朋友随口分享，具体、自然、清楚，不喊麦"
+    preferences: tuple[str, ...] = (
+        "从最贴合商品的生活切口进入",
+        "利益点自然进入购买决定，不压过商品",
+        "批量内容在人设、切口、节奏或情绪上拉开差异",
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "audience", _clean(self.audience))
+        object.__setattr__(self, "communication_goal", _clean(self.communication_goal))
+        object.__setattr__(self, "voice", _clean(self.voice))
+        object.__setattr__(
+            self,
+            "preferences",
+            tuple(value for item in self.preferences if (value := _clean(item))),
+        )
+        if len(self.preferences) > 3:
+            raise BriefValidationError("creative_brief.preferences 最多支持 3 条")
+
+    def context(self) -> str:
+        lines: list[str] = []
+        if self.audience:
+            lines.append(f"受众：{self.audience}")
+        if self.communication_goal:
+            lines.append(f"传播目标：{self.communication_goal}")
+        if self.voice:
+            lines.append(f"表达声音：{self.voice}")
+        if self.preferences:
+            lines.append("创意偏好：" + "；".join(self.preferences))
+        return "\n".join(lines)
+
 
 @dataclass(frozen=True, slots=True)
 class PromptPackage:
@@ -340,7 +390,9 @@ class PromptPackage:
     brief: ProductBrief
     campaign: CampaignSpec
     validation_config: ValidationConfig
+    creative_brief: CreativeBrief
     language_style: LanguageStyle
+    copy_mode: str
     copywriting_prompt: str
     avatar_prompt_template: str
     review_required: bool

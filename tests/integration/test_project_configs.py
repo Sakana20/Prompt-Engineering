@@ -24,9 +24,10 @@ def test_repository_project_configs_are_loadable() -> None:
         assert config.brief.category
         assert config.campaign.platform == "淘宝闪购"
         assert config.campaign.benefit_points[0].id == "primary-benefit"
-        assert config.language_style.name
-        assert config.language_style.tone
-        assert any("眼睛必须直视镜头" in rule for rule in config.language_style.extra_rules)
+        assert config.creative_brief.audience
+        assert config.creative_brief.communication_goal
+        assert config.creative_brief.voice
+        assert len(config.creative_brief.preferences) <= 3
 
 
 @pytest.mark.integration
@@ -40,21 +41,9 @@ def test_taobao_redpacket_project_configs_forbid_each_other() -> None:
     assert twelve.campaign.benefit_points[0].no_split is False
     assert twelve.campaign.no_split_phrases == ("淘宝闪购有最高12元无门槛红包",)
     assert twelve.campaign.forbidden_expressions == ("最高25元无门槛红包",)
-    assert twelve.language_style.name == "need-first-infeed-conversational"
-    assert "真实生活需求" in twelve.language_style.tone
-    assert "红包只是让这次购买更顺手" in twelve.language_style.tone
-    assert "先讲自己的处境，再用完整保护段自然带出淘宝闪购" in (twelve.language_style.point_of_view)
-    assert "每条开头都要换一种钩子" in twelve.language_style.sentence_style
-    assert any("生活需求占主要原因" in rule for rule in twelve.language_style.emphasis)
-    assert any("不同人群、生活事件和表达方式" in rule for rule in twelve.language_style.emphasis)
-    assert any("平台必须后置为解决方案" in rule for rule in twelve.language_style.extra_rules)
-    assert any("保护段前后不要再次写淘宝闪购" in rule for rule in twelve.language_style.extra_rules)
-    assert any("自由组织" in rule for rule in twelve.language_style.extra_rules)
-    assert any("红包成为唯一购买理由" in rule for rule in twelve.language_style.extra_rules)
-    assert "我在淘宝闪购看" in twelve.language_style.avoid_phrases
-    assert "用淘宝闪购补" in twelve.language_style.avoid_phrases
-    assert "用淘宝闪购买" in twelve.language_style.avoid_phrases
-    assert "看到红包就买了" in twelve.language_style.avoid_phrases
+    assert twelve.creative_brief.audience == "日常即时零售用户"
+    assert "真实购买需求" in twelve.creative_brief.communication_goal
+    assert "红包只是促成购买的补充理由" in twelve.creative_brief.preferences
     assert twenty_five.campaign.benefit_points[0].text == "最高25元无门槛红包"
     assert twenty_five.brief.category == "咖啡奶茶炸鸡等淘宝闪购商品"
     assert [benefit.text for benefit in twenty_five.campaign.benefit_points] == [
@@ -69,9 +58,8 @@ def test_taobao_redpacket_project_configs_forbid_each_other() -> None:
     assert "价格、津贴和商品范围以实际活动页面为准" not in twenty_five.campaign.campaign_context()
     assert "可提及配送到家或外卖到家" in twenty_five.campaign.confirmed_claims
     assert twenty_five.validation_config.call_to_actions == ()
-    assert twenty_five.language_style.name == "benefit-forward-promo"
-    assert "行动引导必须出现，并且要自然落在口播结尾" in twenty_five.language_style.emphasis
-    assert any("不要写披露语" in rule for rule in twenty_five.language_style.extra_rules)
+    assert "即时外卖用户" in twenty_five.creative_brief.audience
+    assert "结尾自然给出行动引导" in twenty_five.creative_brief.preferences
 
 
 @pytest.mark.integration
@@ -124,7 +112,6 @@ def test_taobao_compliance_project_uses_fuzzy_benefit_and_rejects_amounts() -> N
     assert config.campaign.no_split_phrases == ()
     assert config.validation_config.call_to_actions == ()
     assert config.validation_config.forbid_numeric_redpacket_amounts is True
-    assert config.language_style.name == "benefit-forward-promo"
-    assert any("不得写零售日用品" in item for item in config.language_style.emphasis)
+    assert "只使用已确认的美食外卖场景" in config.creative_brief.preferences
     assert compliant_report.is_valid is True
     assert any(issue.code.value == "NUMERIC_REDPACKET_AMOUNT" for issue in numeric_report.issues)

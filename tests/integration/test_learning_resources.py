@@ -71,9 +71,13 @@ def test_published_copy_section_is_loaded_from_unified_volume_resource(
     )
     reference_path("person-prompt-source-blocks.md").write_text("# empty\n", encoding="utf-8")
 
-    package = compose_prompt_package(ProductBrief(category="饮品"))
+    package = compose_prompt_package(
+        ProductBrief(category="饮品"),
+        copy_mode="human_rewrite",
+        source_block_id="learned-copy-unified-001",
+    )
 
-    assert "【本次筛选的真人原文块】" in package.copywriting_prompt
+    assert "本条模式：human_rewrite" in package.copywriting_prompt
     assert "learned-copy-unified-001" in package.copywriting_prompt
     assert "仅用于检测的旧库说明" not in package.copywriting_prompt
 
@@ -93,16 +97,18 @@ def test_copy_resource_injects_only_bounded_task_selection(
     copy_resource.write_text("# 文案学习块\n\n" + "\n".join(rendered_blocks), encoding="utf-8")
     reference_path("person-prompt-source-blocks.md").write_text("# empty\n", encoding="utf-8")
 
-    package = compose_prompt_package(ProductBrief(category="咖啡", product_name="冰咖啡"))
+    package = compose_prompt_package(
+        ProductBrief(category="咖啡", product_name="冰咖啡"),
+        copy_mode="source_fill",
+        source_block_id="learned-copy-000",
+    )
     selected = select_copy_blocks("咖啡", "冰咖啡|夏季", copy_resource)
 
     assert len(learned_copy_blocks(copy_resource)) == 40
     assert len(selected) == 4
-    assert len(package.selected_copy_block_ids) == 4
+    assert package.selected_copy_block_ids == ("learned-copy-000",)
     assert package.copy_learning_context_character_count < 7000
-    assert all(
-        block_id in package.copywriting_prompt for block_id in package.selected_copy_block_ids
-    )
+    assert "learned-copy-000" in package.copywriting_prompt
     unselected_ids = {block.block_id for block in learned_copy_blocks(copy_resource)} - set(
         package.selected_copy_block_ids
     )

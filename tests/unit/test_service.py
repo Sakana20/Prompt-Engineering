@@ -5,6 +5,7 @@ import pytest
 from avatar_prompt_pipeline.models import (
     BenefitPoint,
     CampaignSpec,
+    CreativeBrief,
     LanguageStyle,
     ProductBrief,
     ValidationConfig,
@@ -27,47 +28,30 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "已确认卖点：中筒款式" in package.copywriting_prompt
     assert "禁止使用：绝对防滑" in package.copywriting_prompt
     assert "不要套用" not in package.copywriting_prompt
-    assert "约占全文 20%" in package.copywriting_prompt
-    assert "商品相关内容约占全文 50%" in package.copywriting_prompt
-    assert "利益点与购买体验约占全文 30%" in package.copywriting_prompt
-    assert "不要写成完整生活故事" in package.copywriting_prompt
-    assert "不要单独写成播报口号" in package.copywriting_prompt
-    assert "从完整正式学习库中按当前品类" in package.copywriting_prompt
-    assert "【本次筛选的真人原文块】" in package.copywriting_prompt
-    assert len(package.selected_copy_block_ids) == 4
-    assert package.copy_learning_context_character_count < 7000
-    assert "learn-006-winter" not in package.selected_copy_block_ids
-    assert "learn-013-friends-at-home" not in package.selected_copy_block_ids
-    assert "非改写序号优先为 `source_fill`" in package.copywriting_prompt
-    assert "`human_rewrite` 的数量固定为" in package.copywriting_prompt
-    assert "改用 `natural_generate`" in package.copywriting_prompt
-    assert "至少保留其中两个可辨认的字眼或短语" in package.copywriting_prompt
-    assert "不得写回“场景开场—商品承接—体验收束”" in package.copywriting_prompt
-    assert "10 条始终包含 5 条 `human_rewrite`" in package.copywriting_prompt
-    assert "同一批次不得重复原文块 ID" in package.copywriting_prompt
-    assert "当前利益点" in package.copywriting_prompt
-    assert "生成候选后必须使用与当前活动完全匹配的校验器检查" in package.copywriting_prompt
+    assert "约占全文 20%" not in package.copywriting_prompt
+    assert "商品相关内容约占全文 50%" not in package.copywriting_prompt
+    assert "利益点与购买体验约占全文 30%" not in package.copywriting_prompt
+    assert "【本次筛选的真人原文块】" not in package.copywriting_prompt
+    assert package.selected_copy_block_ids == ()
+    assert package.copy_learning_context_character_count == 0
+    assert "本条模式：natural_generate" in package.copywriting_prompt
+    assert "source_slot_values" not in package.copywriting_prompt
+    assert "rewrite_anchor_phrases" not in package.copywriting_prompt
     assert "利益点[primary-benefit]" in package.copywriting_prompt
-    assert "【语言风格】" in package.copywriting_prompt
+    assert "【受众与传播目标】" in package.copywriting_prompt
     assert "当前本地日期：2026-08-05" in package.copywriting_prompt
     assert "当前月份：8月" in package.copywriting_prompt
     assert "按月份划分的当前季节：夏季" in package.copywriting_prompt
-    assert "本次候选已标明 `source_fill` 季节兼容性" in package.copywriting_prompt
-    assert "`human_rewrite` 可以参考跨季原文块" in package.copywriting_prompt
-    assert "不能机械替换季节词" in package.copywriting_prompt
-    assert "两个非季节性原字眼" in package.copywriting_prompt
-    assert "`source_slot_values`" in package.copywriting_prompt
-    assert "不阻断整批生成" in package.copywriting_prompt
-    assert "标为“否，仅 human_rewrite”的块不得直接填槽" in package.copywriting_prompt
-    assert "风格名称：product-led-conversational" in package.copywriting_prompt
+    assert "受众：日常消费用户" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-08-13-selected-learning-context-v24"
+    assert package.copy_mode == "natural_generate"
+    assert package.template_version == "2026-08-13-gpt-5-6-lean-copy-prompt-v25"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
 
-def test_compose_prompt_package_injects_configured_language_style() -> None:
+def test_compose_prompt_package_converts_legacy_language_style_to_creative_brief() -> None:
     package = compose_prompt_package(
         ProductBrief(category="西瓜"),
         language_style=LanguageStyle(
@@ -81,12 +65,51 @@ def test_compose_prompt_package_injects_configured_language_style() -> None:
         ),
     )
 
-    assert "风格名称：benefit-forward-natural" in package.copywriting_prompt
-    assert "整体语气：自然直接地说明这次购买合适" in package.copywriting_prompt
-    assert "表达重点：先讲清活动利益点" in package.copywriting_prompt
-    assert "避免套话：错过就亏" in package.copywriting_prompt
-    assert "额外规则：不要夸张促销氛围" in package.copywriting_prompt
+    assert "表达声音：自然直接地说明这次购买合适" in package.copywriting_prompt
+    assert "传播目标：先讲清活动利益点" in package.copywriting_prompt
+    assert "创意偏好：先讲清活动利益点；不要夸张促销氛围" in package.copywriting_prompt
+    assert "避免套话：错过就亏" not in package.copywriting_prompt
     assert package.language_style.name == "benefit-forward-natural"
+
+
+def test_compose_prompt_package_uses_explicit_creative_brief() -> None:
+    package = compose_prompt_package(
+        ProductBrief(category="西瓜"),
+        creative_brief=CreativeBrief(
+            audience="夏季水果用户",
+            communication_goal="让饭后分享需求自然成立",
+            voice="轻松直接",
+            preferences=("从具体动作进入",),
+        ),
+    )
+
+    assert "受众：夏季水果用户" in package.copywriting_prompt
+    assert "传播目标：让饭后分享需求自然成立" in package.copywriting_prompt
+    assert "创意偏好：从具体动作进入" in package.copywriting_prompt
+
+
+def test_compose_prompt_package_injects_only_selected_source_mode_block() -> None:
+    package = compose_prompt_package(
+        ProductBrief(category="炸鸡", product_name="脆皮炸鸡"),
+        copy_mode="human_rewrite",
+        source_block_id="learn-008-evening",
+        reference_date=date(2026, 8, 5),
+    )
+
+    assert package.selected_copy_block_ids == ("learn-008-evening",)
+    assert "本条模式：human_rewrite" in package.copywriting_prompt
+    assert "### `learn-008-evening`" in package.copywriting_prompt
+    assert "本来晚上不想吃的" in package.copywriting_prompt
+    assert "source_fill" not in package.copywriting_prompt
+
+
+def test_compose_source_fill_rejects_incompatible_source_block() -> None:
+    with pytest.raises(ValueError, match="learn-005-not-hungry 不适用于 source_fill：品类不兼容"):
+        compose_prompt_package(
+            ProductBrief(category="咖啡"),
+            copy_mode="source_fill",
+            source_block_id="learn-005-not-hungry",
+        )
 
 
 def test_compose_prompt_package_renders_validation_call_to_actions() -> None:
@@ -100,7 +123,7 @@ def test_compose_prompt_package_renders_validation_call_to_actions() -> None:
     )
 
     assert "已确认可用信息：可提及配送到家" in package.copywriting_prompt
-    assert "平台名必须逐字出现在每条文案中" in package.copywriting_prompt
+    assert "平台：未指定" in package.copywriting_prompt
     assert "禁止出现以下行动引导：直播间、点击视频下方链接" in package.copywriting_prompt
 
 

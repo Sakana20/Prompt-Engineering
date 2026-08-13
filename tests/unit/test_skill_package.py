@@ -73,19 +73,21 @@ def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
     assert "商品和利益点" in metadata
 
 
-def test_copywriting_rules_keep_lifestyle_setup_subordinate_to_product() -> None:
+def test_copywriting_rules_define_lean_dynamic_prompt_contract() -> None:
     rules = (SKILL_ROOT / "references" / "copywriting-rules.md").read_text(encoding="utf-8")
 
-    assert "商品导向的生活化分享" in rules
-    assert "约占全文 20%" in rules
-    assert "商品内容约占全文 50%" in rules
-    assert "利益点和购买体验约占全文 30%" in rules
-    assert "`floor(N/2)`" in rules
+    assert "不使用固定开头、信息比例或结尾结构" in rules
+    assert "creative_brief" in rules
+    assert "生成后使用与当前项目完全匹配的 `validate-copy`" in rules
+    assert "约占全文 20%" not in rules
+    assert "商品内容约占全文 50%" not in rules
+    assert "利益点和购买体验约占全文 30%" not in rules
+    assert "`human_rewrite=floor(N/2)`" in rules
     assert "`source_fill`" in rules
     assert "`human_rewrite`" in rules
-    assert "`human_rewrite` 固定为 `floor(N/2)`" in rules
+    assert "`human_rewrite=floor(N/2)`" in rules
     assert "`natural_generate`" in rules
-    assert "保留至少两个可辨认字眼或短语" in rules
+    assert "至少保留两个确实出现于" in rules
 
 
 def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
@@ -107,10 +109,10 @@ def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
     for sample_benefit in ("最高66元红包", "最高28元红包", "9.9起", "几块钱起"):
         assert sample_benefit not in guidance
     assert "当前利益点按 `CampaignSpec` 单独插入" in guidance
-    assert "必须使用与当前活动完全匹配的校验器" in guidance
+    assert "最终仍以 `validate-copy`、`validate-batch` 或 `package`" in guidance
     assert "不得改写、润色、扩句、调整原句顺序" in guidance
     assert "轨道内不得重复 `source_block_id`" in guidance
-    assert "不得先总结风格" in guidance
+    assert "所有块都不总结文风" in guidance
     assert "10 条时始终是 5 条 `human_rewrite`" in guidance
 
 
@@ -132,8 +134,9 @@ def test_volume_copy_library_is_selected_at_runtime_instead_of_embedded() -> Non
     }
     assert len(source_ids) >= 10
     assert all(block_id not in production_prompt for block_id in source_ids)
-    assert "【真人原文块使用规则】" in production_prompt
-    assert "按当前品类、商品资料和季节确定性筛选" in production_prompt
+    assert "{{SOURCE_MODE_CONTEXT}}" in production_prompt
+    assert "source_fill" not in production_prompt
+    assert "human_rewrite" not in production_prompt
     assert "什么你说你不饿\n不你就是饿了" in blocks
     assert "如果人间烟火气有背景音乐\n那一定是[已确认食用动作]的声音" in blocks
     assert "这天一冷\n只想和好朋友\n窝在家里吃[商品名]聊八卦" in blocks
@@ -183,6 +186,9 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "benefit_point",
         "config",
         "output",
+        "count",
+        "copy_mode",
+        "source_block_id",
         "learning_root",
     }
     assert set(validate) == {
@@ -274,6 +280,8 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
     assert "project_id" in properties
     assert "confirmed_claims" in properties
     assert "validation_config_path" in properties
+    assert "creative_brief" in properties
+    assert properties["creative_brief"]["properties"]["preferences"]["maxItems"] == 3
     assert "language_style" in properties
     assert "avoid_phrases" in properties["language_style"]["properties"]
 

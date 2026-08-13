@@ -11,6 +11,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 
 - 生成 80-100 字中文商品口播，支持通用商品、淘宝闪购默认利益点、无利益点任务，以及
   一个项目一个 JSON 配置文件的完整活动口径。
+- 文案创作 Prompt 使用“少量硬约束 + 五条成功标准 + 精简 creative brief”，不再注入固定
+  内容比例、六段式信息流、动作教学或长套话黑名单；确定性问题在生成后由 CLI 校验。
 - 跑量批次固定 50% AI 贴近具体真人原文块改写；其余条目优先真人原文填槽，不兼容时使用
   `natural_generate`。奇数批次的改写数向下取整。AI 改写必须保留原文可辨认字眼与口语逻辑，不能退回规整的
   模板广告腔；原稿利益点仍不复用，成稿利益点只取当前任务配置。直填块还需通过品类
@@ -18,8 +20,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 - 生成 Prompt 自动注入当前本地日期、月份和季节；直接填槽轨过滤跨季原文块，AI 改写轨
   可借鉴跨季原文的非季节性字眼和口语逻辑，但必须把场景完整重建为当季版本。
   校验器仍拒绝成稿中的跨季表达，并拦截任务未确认的实时天气描述。
-- 文案和人物正式学习库均完整保存，但 `compose` 只按当前任务注入紧凑候选：单条文案最多
-  4 块，批量文案最多 `max(4, floor(N/2)+2)` 块，人物最多 10 块；不再全文加载学习库。
+- 文案和人物正式学习库均完整保存；`natural_generate` 不读取真人文案块，`source_fill` 与
+  `human_rewrite` 各只注入当前最终选择的一个块。人物 Prompt 仍按任务最多注入 10 个变量块。
 - 校验活动利益点、平台名、禁词、行动引导、`[[NO_SPLIT]]` 标签完整性、批量文案相似度及
   50% 改写比例、三模式字段边界和原文块来源去重；另外拦截饮品套用饱腹逻辑，以及平台、红包、
   津贴或配送被填入商品组成插槽。
@@ -92,7 +94,10 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,
 - 互斥或禁用表达；
 - 可提及但不强制出现的 `confirmed_claims`；
 - `validation_config_path`；
-- `language_style`。
+- `creative_brief`：受众、传播目标、voice 和最多三条创意偏好。
+
+旧 `language_style` 仍可读取并转换为精简 brief，便于历史配置迁移；新配置不能同时声明
+`creative_brief` 与 `language_style`。创意偏好不参与确定性校验。
 
 传入 `--config` 后，CLI 使用配置文件作为完整口径，不再叠加默认淘宝闪购预设，也不要同时
 传入 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。
@@ -125,6 +130,14 @@ uv run avatar-prompts compose --category 雨靴 \
   --product-name 浅卡其色中筒雨靴 \
   --selling-point 浅卡其配色 \
   --selling-point 中筒款式
+```
+
+按当前文案模式组装最小 Prompt；来源模式每次只注入一个块：
+
+```bash
+uv run avatar-prompts compose --category 炸鸡 \
+  --copy-mode human_rewrite \
+  --source-block-id learn-008-evening
 ```
 
 使用项目配置：

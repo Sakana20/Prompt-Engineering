@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-TEMPLATE_VERSION = "2026-08-13-selected-learning-context-v24"
+TEMPLATE_VERSION = "2026-08-13-gpt-5-6-lean-copy-prompt-v25"
 
 
 def load_template(name: str) -> str:

@@ -66,6 +66,41 @@ def test_load_project_config_builds_project_brief_and_campaign(tmp_path: Path) -
     assert config.language_style.emphasis == ("先讲清活动利益点",)
     assert config.language_style.avoid_phrases == ("错过就亏",)
     assert config.language_style.extra_rules == ("不要夸张促销氛围",)
+    assert config.creative_brief.communication_goal == "先讲清活动利益点"
+
+
+def test_load_project_config_builds_creative_brief(tmp_path: Path) -> None:
+    source = _write_config(
+        tmp_path / "project.json",
+        {
+            "category": "西瓜",
+            "creative_brief": {
+                "audience": "家庭水果用户",
+                "communication_goal": "让分享需求自然成立",
+                "voice": "轻松自然",
+                "preferences": ["从具体动作进入"],
+            },
+        },
+    )
+
+    config = load_project_config(source)
+
+    assert config.creative_brief.audience == "家庭水果用户"
+    assert config.creative_brief.preferences == ("从具体动作进入",)
+
+
+def test_load_project_config_rejects_style_and_creative_brief_together(tmp_path: Path) -> None:
+    source = _write_config(
+        tmp_path / "bad.json",
+        {
+            "category": "西瓜",
+            "creative_brief": {"voice": "自然"},
+            "language_style": {"tone": "自然"},
+        },
+    )
+
+    with pytest.raises(ProjectConfigError, match="不能同时配置"):
+        load_project_config(source)
 
 
 def test_load_project_config_rejects_unknown_fields(tmp_path: Path) -> None:

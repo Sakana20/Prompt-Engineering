@@ -171,6 +171,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compose.add_argument("--output", help="输出 JSON 路径；省略时打印到标准输出")
     compose.add_argument("--count", type=int, default=1, help="计划生成数量，默认 1")
+    compose.add_argument(
+        "--copy-mode",
+        choices=("source_fill", "human_rewrite", "natural_generate"),
+        default="natural_generate",
+        help="本次创作文案模式；只注入该模式所需上下文",
+    )
+    compose.add_argument(
+        "--source-block-id",
+        default="",
+        help="source_fill/human_rewrite 使用的单个真人原文块 ID",
+    )
     _add_campaign_arguments(compose)
     _add_generation_learning_gate_argument(compose)
     validate = commands.add_parser("validate-copy", help="校验一段已生成口播")
@@ -568,13 +579,19 @@ def run(argv: Sequence[str] | None = None) -> int:
     if args.command != "compose":
         raise AssertionError(f"未知命令：{args.command}")
     brief = _brief_from_args(args, config)
-    package = compose_prompt_package(
-        brief,
-        campaign,
-        validation_config=validation_config,
-        language_style=config.language_style if config is not None else None,
-        batch_size=args.count,
-    )
+    try:
+        package = compose_prompt_package(
+            brief,
+            campaign,
+            validation_config=validation_config,
+            language_style=config.language_style if config is not None else None,
+            creative_brief=config.creative_brief if config is not None else None,
+            batch_size=args.count,
+            copy_mode=str(args.copy_mode),
+            source_block_id=str(args.source_block_id),
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     if args.output:
         destination = write_package(args.output, package)
         print(f"Prompt 包已写入：{destination}")

@@ -73,11 +73,28 @@
       "default": "",
       "description": "相对当前项目配置文件的校验配置 JSON 路径；为空时使用默认严格校验"
     },
+    "creative_brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "description": "项目差异化创意简报；最多三条偏好，不承载合规或逐句写法",
+      "properties": {
+        "audience": {"type": "string", "minLength": 1},
+        "communication_goal": {"type": "string", "minLength": 1},
+        "voice": {"type": "string", "minLength": 1},
+        "preferences": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {"type": "string", "minLength": 1},
+          "default": []
+        }
+      }
+    },
     "language_style": {
       "type": "object",
       "additionalProperties": false,
       "default": {},
-      "description": "当前项目的文案语言风格；未配置字段继承默认商品导向生活化风格",
+      "description": "兼容旧项目的语言风格字段；新项目使用 creative_brief，二者不得同时配置",
       "properties": {
         "name": {"type": "string", "minLength": 1, "default": "product-led-conversational"},
         "tone": {"type": "string", "minLength": 1},
@@ -158,5 +175,6 @@
     "allow_import": {"type": "boolean", "default": false},
     "allow_paid_generation": {"type": "boolean", "default": false}
   },
+  "not": {"required": ["creative_brief", "language_style"]},
   "required": ["category"]
 }

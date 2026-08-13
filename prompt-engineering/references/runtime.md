@@ -6,6 +6,7 @@
 
 ```bash
 python scripts/run_cli.py -- compose --category 西瓜
+python scripts/run_cli.py -- compose --category 炸鸡 --copy-mode human_rewrite --source-block-id learn-008-evening
 python scripts/run_cli.py --debug -- validate-copy '口播正文'
 python scripts/run_cli.py -- init-batch --task-name watermelon-batch --category 西瓜 --count 5 --task-prefix WM --output watermelon.tasks.json
 python scripts/run_cli.py -- export-csv --input watermelon.tasks.json --config configs/projects/example.json
@@ -67,9 +68,11 @@ Codex 完成语义处理。
 不得写进正式文案库。人物块仍写入独立人物资源，但同样使用块标题加 fenced `text` 的可读
 格式；来源候选、兼容标签和风险记录只留在 provenance。未批准、过期或部分失败均不发布。
 
-文案生成不读取完整正式文案库。`compose` 按当前品类、商品资料、季节与 `--count` 稳定选择：
-单条最多 4 块，批量最多 `max(4, floor(N/2)+2)` 块，并受 7,000 字符硬上限约束。
-PromptPackage 登记所选文案 block ID 和文案学习上下文字符数。
+文案生成不读取完整正式文案库。`compose` 默认使用 `natural_generate`，不读取或注入真人文案
+块。使用 `--copy-mode source_fill` 或 `--copy-mode human_rewrite` 时，只选择
+`--source-block-id` 指定的一个正式块；省略 ID 时确定性选择一个适用块。`source_fill` 在组装
+Prompt 前拒绝品类或季节不兼容块。PromptPackage 登记实际选中的唯一 block ID 和上下文字符数。
+`--count` 保留用于声明批量创作目标，但不会把其他模式合同或多块候选注入当前单条 Prompt。
 
 人物生成不读取完整正式人物库。`compose` 和人物 Prompt 渲染按当前任务与季节稳定选择
 identity 2 块、hair 2 块、outfit 4 块、scene 2 块，并只注入这 10 个正文块；PromptPackage
@@ -113,14 +116,15 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 项目配置文件代表一组完整且互斥的商品与活动口径。传入 `--config` 后，CLI 使用配置中的
 `category`、商品事实、`platform`、`campaign_name`、`benefit_points`、
 `campaign_forbidden_expressions`、`required_disclosures`、`confirmed_claims`、
-`validation_config_path` 和 `language_style`；不得同时传入
+`validation_config_path` 和 `creative_brief`；不得同时传入
 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。如“淘宝闪购 12 元
 无门槛红包”和“淘宝闪购 25 元无门槛红包”方向不同，应分别保存为两个项目配置，并在各自
 配置中用 `campaign_forbidden_expressions` 禁止另一个口径。
 兼容预设 `taobao-instant-commerce-default` 使用
 `configs/projects/taobao-12-no-threshold-redpacket.json` 作为数据源。
-`language_style` 只影响 Codex 的文案生成指令，不参与确定性校验；校验仍由活动契约、
-禁词、行动引导和格式规则负责。
+`creative_brief` 只包含受众、传播目标、voice 和最多三条偏好，不参与确定性校验；校验仍由
+活动契约、禁词、行动引导和格式规则负责。兼容字段 `language_style` 仍可读取，但不能与
+`creative_brief` 同时配置，且只会先转换为精简 brief，不会把旧字段全文注入创作 Prompt。
 `validation_config_path` 指向独立校验配置，校验配置决定字数、禁词、行动引导禁用词和格式
 前缀；不要在项目口径里维护 CTA 许可列表。
 完整校验配置 schema 见 [validation-config.schema.json](validation-config.schema.json)。

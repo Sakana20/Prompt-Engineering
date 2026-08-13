@@ -53,15 +53,16 @@ CSV 或 LibTV 三件套。完整视频 Prompt 与身份/服装键保留在审计
 以“大额红包”为必填利益点，允许优惠价、活动价、福利价等无金额描述；它引用的
 `ValidationConfig` 单独开启数字红包金额拦截，不改变其他项目。
 
-`PromptPackage` 包含 schema 版本、模板版本、输入资料、文案 Prompt、数字人 Prompt 模板、
+`PromptPackage` 包含 schema 版本、模板版本、输入资料、当前 `copy_mode`、精简 creative brief、
+文案 Prompt、数字人 Prompt 模板、
 审核标记，以及本次选择的文案和人物学习 block ID、各自上下文字符数。两套正式库完整保存
-全部已发布块；文案编排时按品类、商品资料、季节和数量限量选择，人物编排时按当前任务与季节
-只注入 identity 2、hair 2、outfit 4、scene 2；正常生成均不读取全文。
+全部已发布块；自然生成不读取真人文案块，两个来源模式只注入一个最终选择块；人物编排时按
+当前任务与季节只注入 identity 2、hair 2、outfit 4、scene 2。正常生成均不读取全文。
 JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQLite。
 
-`LanguageStyle` 描述项目级语言风格，包括语气、叙述视角、句式节奏、表达重点、避免套话
-和额外风格规则。它从项目配置文件进入文案 Prompt，用于指导 Codex 生成；确定性校验不
-判断风格好坏，只校验活动利益点、禁词、行动引导、标签和格式等客观规则。
+`CreativeBrief` 只描述项目差异：受众、传播目标、voice 和最多三条创意偏好。它进入文案
+Prompt 指导 Codex 选择自然切口，但不参与确定性校验。`LanguageStyle` 只作为历史配置兼容
+模型存在，读取后先转换成 `CreativeBrief`，不会把旧字段和长负面词表全文注入 Prompt。
 
 `GeneratedScript` 与 `AvatarVideoPrompt` 表示 Codex 的两层生成结果。文案必须先通过
 `CopyValidationReport`：字符数、活动契约、禁词、行动引导和格式均合格后，才进入
@@ -69,6 +70,11 @@ JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQ
 只做保守预警，不能替代 Codex 对场景和表达差异的语义判断。
 
 ## Skill 与 Prompt 资源
+
+文案模板采用职责分层：商品与活动事实、creative brief、时间上下文、成功标准和当前校验
+配置的硬约束构成固定骨架；`source_mode` 按本条实际模式动态渲染。默认
+`natural_generate` 不访问真人文案库，`source_fill`/`human_rewrite` 只注入一个最终选定块。
+批次比例、来源字段、发布流程和失败处理留在 Schema、Skill 与验证器，不重复进入创作正文。
 
 可分发 Skill 位于 `prompt-engineering/`。核心流程在 `SKILL.md`，详细规则按需放在
 `references/`。`src/avatar_prompt_pipeline/templates/` 暂时保留完整基线模板，供开发期
@@ -79,10 +85,10 @@ JSON 是当前审计格式，后续可在不破坏领域层的情况下增加 SQ
 3. 在实现计划中记录变更；
 4. 对代表性品类重新验收。
 
-文案模板 `2026-08-06-adaptive-three-mode-v19` 定位为“商品导向的生活化分享”：场景或需求用
-1–2 句话快速交代，约占 20%；商品、选择理由和 1–2 个已确认特点约占 50%；利益点与
-具体购买体验约占 30%。场景只为商品服务，不展开成完整生活故事。确定性校验仍负责
-字数、活动利益点、禁词、行动引导和单段格式，表达比例和自然度由 Codex 与人工审核判断。
+文案模板 `2026-08-13-gpt-5-6-lean-copy-prompt-v25` 定位为“结果导向的生活化分享”：只定义
+真人口语感、商品动机、事实清晰、利益点自然融入和信息密度等成功标准，不规定内容比例或
+固定信息流。确定性校验负责字数、活动利益点、禁词、行动引导和单段格式；自然度与创意差异
+由 Codex 和人工审核判断。
 
 跑量样本由 `volume-copy-source-blocks.md` 保存审核后的真人原句块。批次采用三模式：
 `human_rewrite` 固定占 `floor(N/2)`；其余条目优先 `source_fill`，不兼容时使用
