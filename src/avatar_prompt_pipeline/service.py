@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 
-from .learning.publication import (
-    COPY_RESOURCE_NAME,
-    PUBLISHED_COPY_SECTION_HEADING,
-    reference_path,
-)
+from .learning.publication import COPY_RESOURCE_NAME, reference_path
 from .models import CampaignSpec, LanguageStyle, ProductBrief, PromptPackage, ValidationConfig
 from .presets import TAOBAO_DEFAULT_CAMPAIGN
-from .source_blocks import render_person_block_context, select_person_blocks
+from .source_blocks import (
+    render_copy_block_context,
+    render_person_block_context,
+    select_copy_blocks,
+    select_person_blocks,
+)
 from .template_loader import TEMPLATE_VERSION, load_template
 from .validation import DEFAULT_VALIDATION_CONFIG, strip_no_split_markers, temporal_context
 
@@ -33,6 +33,7 @@ def compose_prompt_package(
     language_style: LanguageStyle | None = None,
     *,
     reference_date: date | None = None,
+    batch_size: int = 1,
 ) -> PromptPackage:
     resolved_language_style = language_style or LanguageStyle()
     copywriting_template = load_template("copywriting_prompt.txt")
@@ -49,9 +50,25 @@ def compose_prompt_package(
     copywriting_prompt = copywriting_prompt.replace(
         "{{TEMPORAL_CONTEXT}}", temporal_context(reference_date)
     )
-    copywriting_prompt += _published_copy_resource_context(reference_path(COPY_RESOURCE_NAME))
+    current_temporal_context = temporal_context(reference_date)
+    copy_blocks = select_copy_blocks(
+        brief.category,
+        "|".join(
+            (
+                brief.category,
+                brief.product_name,
+                "；".join(brief.selling_points),
+                resolved_language_style.style_context(),
+                current_temporal_context,
+            )
+        ),
+        reference_path(COPY_RESOURCE_NAME),
+        batch_size=batch_size,
+    )
+    copy_context = render_copy_block_context(copy_blocks)
+    copywriting_prompt += copy_context
     person_blocks = select_person_blocks(
-        "|".join((brief.category, brief.product_name, temporal_context(reference_date))),
+        "|".join((brief.category, brief.product_name, current_temporal_context)),
         reference_path("person-prompt-source-blocks.md"),
     )
     person_context = render_person_block_context(person_blocks)
@@ -66,6 +83,8 @@ def compose_prompt_package(
         copywriting_prompt=copywriting_prompt,
         avatar_prompt_template=avatar_template,
         review_required=True,
+        selected_copy_block_ids=tuple(block.block_id for block in copy_blocks),
+        copy_learning_context_character_count=len(copy_context),
         selected_person_block_ids=tuple(block.block_id for block in person_blocks),
         person_learning_context_character_count=len(person_context),
     )
@@ -82,13 +101,3 @@ def render_avatar_prompt(script: str) -> str:
     )
     template += render_person_block_context(person_blocks)
     return template.replace("{{SCRIPT}}", cleaned_script)
-
-
-def _published_copy_resource_context(path: Path) -> str:
-    if not path.is_file():
-        return ""
-    text = path.read_text(encoding="utf-8")
-    _, marker, published = text.partition(PUBLISHED_COPY_SECTION_HEADING)
-    if not marker or "### `" not in published or "```text" not in published:
-        return ""
-    return f"\n\n【审核发布的文案块】\n{marker}\n{published.strip()}"

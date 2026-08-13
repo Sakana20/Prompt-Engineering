@@ -114,7 +114,7 @@ def test_volume_copy_guidance_never_embeds_sample_benefits() -> None:
     assert "10 条时始终是 5 条 `human_rewrite`" in guidance
 
 
-def test_volume_copy_library_preserves_human_source_blocks() -> None:
+def test_volume_copy_library_is_selected_at_runtime_instead_of_embedded() -> None:
     blocks = (SKILL_ROOT / "references" / "volume-copy-source-blocks.md").read_text(
         encoding="utf-8"
     )
@@ -130,14 +130,10 @@ def test_volume_copy_library_preserves_human_source_blocks() -> None:
         for line in blocks.splitlines()
         if line.startswith("### `learn-")
     }
-    prompt_ids = {
-        line.split("`", maxsplit=2)[1]
-        for line in production_prompt.splitlines()
-        if line.startswith("- `learn-")
-    }
-
     assert len(source_ids) >= 10
-    assert prompt_ids == source_ids
+    assert all(block_id not in production_prompt for block_id in source_ids)
+    assert "【真人原文块使用规则】" in production_prompt
+    assert "按当前品类、商品资料和季节确定性筛选" in production_prompt
     assert "什么你说你不饿\n不你就是饿了" in blocks
     assert "如果人间烟火气有背景音乐\n那一定是[已确认食用动作]的声音" in blocks
     assert "这天一冷\n只想和好朋友\n窝在家里吃[商品名]聊八卦" in blocks

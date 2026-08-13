@@ -170,6 +170,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--forbidden-claim", action="append", default=[], help="禁止使用的信息，可重复传入"
     )
     compose.add_argument("--output", help="输出 JSON 路径；省略时打印到标准输出")
+    compose.add_argument("--count", type=int, default=1, help="计划生成数量，默认 1")
     _add_campaign_arguments(compose)
     _add_generation_learning_gate_argument(compose)
     validate = commands.add_parser("validate-copy", help="校验一段已生成口播")
@@ -572,6 +573,7 @@ def run(argv: Sequence[str] | None = None) -> int:
         campaign,
         validation_config=validation_config,
         language_style=config.language_style if config is not None else None,
+        batch_size=args.count,
     )
     if args.output:
         destination = write_package(args.output, package)

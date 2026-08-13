@@ -344,6 +344,8 @@ class PromptPackage:
     copywriting_prompt: str
     avatar_prompt_template: str
     review_required: bool
+    selected_copy_block_ids: tuple[str, ...] = ()
+    copy_learning_context_character_count: int = 0
     selected_person_block_ids: tuple[str, ...] = ()
     person_learning_context_character_count: int = 0
 

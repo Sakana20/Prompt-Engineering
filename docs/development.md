@@ -114,7 +114,8 @@ approved/published 候选；服务端移动完整目录到 trash，不得删除�
 
 人物正式资源与文案正式资源统一使用可读 Markdown 文本块。人物块标题同时登记 block ID 与
 identity/hair/outfit/scene 类型，正文使用 fenced `text`；结构化兼容标签、来源候选和风险清理
-只保存在 `learning/person/published/provenance.jsonl`。`compose` 与人物 Prompt 渲染不会加载
+只保存在 `learning/person/published/provenance.jsonl`。`compose` 不会加载完整文案或人物正式库；
+文案按当前任务和数量限量选择，人物 Prompt 渲染不会加载
 完整人物库，而是按当前任务和季节稳定选择 identity 2、hair 2、outfit 4、scene 2，并在
 PromptPackage 中登记所选 ID 和字符数。
 

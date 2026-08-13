@@ -43,10 +43,9 @@ help, tests, or Skill validation.
    [volume-copy-source-blocks.md](references/volume-copy-source-blocks.md), and
    [source-block-contracts.md](references/source-block-contracts.md). The volume-copy resource is
    the single formal copy library for both historical human blocks and newly audited web learning
-   blocks. When person resources contain published blocks, use only the bounded person blocks
-   embedded by `compose`; do not read the complete
-   [person-prompt-source-blocks.md](references/person-prompt-source-blocks.md) during normal
-   generation. Read the complete resource only for publication, repair, or audit, together with
+   blocks. During normal generation, use only the bounded copy and person blocks embedded by
+   `compose`; do not read either complete formal resource. Read the complete person resource only
+   for publication, repair, or audit, together with
    [person-prompt-block-contracts.md](references/person-prompt-block-contracts.md).
    For production-volume copy, classify the product and its
    consumption need before selecting a block. For a batch, assign exactly `floor(N/2)` rows to

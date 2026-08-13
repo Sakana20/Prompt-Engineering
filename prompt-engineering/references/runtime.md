@@ -67,6 +67,10 @@ Codex 完成语义处理。
 不得写进正式文案库。人物块仍写入独立人物资源，但同样使用块标题加 fenced `text` 的可读
 格式；来源候选、兼容标签和风险记录只留在 provenance。未批准、过期或部分失败均不发布。
 
+文案生成不读取完整正式文案库。`compose` 按当前品类、商品资料、季节与 `--count` 稳定选择：
+单条最多 4 块，批量最多 `max(4, floor(N/2)+2)` 块，并受 7,000 字符硬上限约束。
+PromptPackage 登记所选文案 block ID 和文案学习上下文字符数。
+
 人物生成不读取完整正式人物库。`compose` 和人物 Prompt 渲染按当前任务与季节稳定选择
 identity 2 块、hair 2 块、outfit 4 块、scene 2 块，并只注入这 10 个正文块；PromptPackage
 登记所选 block ID 和人物学习上下文字符数。正式资源保留全部已发布 block ID，preflight 仍按

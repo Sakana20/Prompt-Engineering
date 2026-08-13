@@ -32,9 +32,12 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "利益点与购买体验约占全文 30%" in package.copywriting_prompt
     assert "不要写成完整生活故事" in package.copywriting_prompt
     assert "不要单独写成播报口号" in package.copywriting_prompt
-    assert "从人工原稿直接保留下来的正文骨架" in package.copywriting_prompt
-    assert "什么你说你不饿\uff0f不你就是饿了" in package.copywriting_prompt
-    assert "如果人间烟火气有背景音乐" in package.copywriting_prompt
+    assert "从完整正式学习库中按当前品类" in package.copywriting_prompt
+    assert "【本次筛选的真人原文块】" in package.copywriting_prompt
+    assert len(package.selected_copy_block_ids) == 4
+    assert package.copy_learning_context_character_count < 7000
+    assert "learn-006-winter" not in package.selected_copy_block_ids
+    assert "learn-013-friends-at-home" not in package.selected_copy_block_ids
     assert "非改写序号优先为 `source_fill`" in package.copywriting_prompt
     assert "`human_rewrite` 的数量固定为" in package.copywriting_prompt
     assert "改用 `natural_generate`" in package.copywriting_prompt
@@ -49,17 +52,17 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "当前本地日期：2026-08-05" in package.copywriting_prompt
     assert "当前月份：8月" in package.copywriting_prompt
     assert "按月份划分的当前季节：夏季" in package.copywriting_prompt
-    assert "`source_fill` 直接填槽时，6\u20138 月不得选用" in package.copywriting_prompt
+    assert "本次候选已标明 `source_fill` 季节兼容性" in package.copywriting_prompt
     assert "`human_rewrite` 可以参考跨季原文块" in package.copywriting_prompt
     assert "不能机械替换季节词" in package.copywriting_prompt
     assert "两个非季节性原字眼" in package.copywriting_prompt
     assert "`source_slot_values`" in package.copywriting_prompt
     assert "不阻断整批生成" in package.copywriting_prompt
-    assert "饮品不得直接填槽使用" in package.copywriting_prompt
+    assert "标为“否，仅 human_rewrite”的块不得直接填槽" in package.copywriting_prompt
     assert "风格名称：product-led-conversational" in package.copywriting_prompt
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
-    assert package.template_version == "2026-08-13-selected-person-learning-v23"
+    assert package.template_version == "2026-08-13-selected-learning-context-v24"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 

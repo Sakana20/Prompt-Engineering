@@ -32,6 +32,14 @@ class PersonSourceBlock:
     description: str
 
 
+@dataclass(frozen=True, slots=True)
+class CopySourceBlock:
+    block_id: str
+    template: str
+    contract: SourceBlockContract
+    source_fill_restriction: str = ""
+
+
 PERSON_BLOCK_LIMITS = {
     "identity": 2,
     "hair": 2,
@@ -40,6 +48,9 @@ PERSON_BLOCK_LIMITS = {
 }
 PERSON_CONTEXT_CHARACTER_LIMIT = 4500
 PERSON_CONTEXT_HEADING = "\n\n【本次筛选的人物学习块】\n"
+COPY_BLOCK_MINIMUM_LIMIT = 4
+COPY_CONTEXT_CHARACTER_LIMIT = 7000
+COPY_CONTEXT_HEADING = "\n\n【本次筛选的真人原文块】\n"
 
 
 _BEVERAGE_CATEGORY_TERMS = (
@@ -121,22 +132,106 @@ def published_copy_block_contracts(path: Path | None = None) -> dict[str, Source
     )
     if not marker:
         return {}
-    contracts: dict[str, SourceBlockContract] = {}
+    return {block.block_id: block.contract for block in _parse_copy_blocks(published)}
+
+
+def learned_copy_blocks(path: Path | None = None) -> tuple[CopySourceBlock, ...]:
+    resource = path or reference_path(COPY_RESOURCE_NAME)
+    if not resource.is_file():
+        return ()
+    return _parse_copy_blocks(resource.read_text(encoding="utf-8"))
+
+
+def _parse_copy_blocks(text: str) -> tuple[CopySourceBlock, ...]:
     pattern = re.compile(
         r"^### `(?P<block_id>[a-z0-9][a-z0-9-]{2,95})`[ \t]*\n+"
         r"[ \t]*```text[ \t]*\n(?P<template>.*?)\n```(?=\n|$)",
         flags=re.MULTILINE | re.DOTALL,
     )
-    for match in pattern.finditer(published):
+    blocks: list[CopySourceBlock] = []
+    for match in pattern.finditer(text):
         block_id = match.group("block_id")
-        template = match.group("template")
+        template = match.group("template").strip()
+        configured = SOURCE_BLOCK_CONTRACTS.get(block_id)
         slot_names = set(re.findall(r"\[([^\[\]\n]+)\]", template))
-        contracts[block_id] = SourceBlockContract(
+        contract = configured or SourceBlockContract(
             block_id=block_id,
             solid_food_only=category_family(template) is not CategoryFamily.BEVERAGE,
             minimum_source_slot_values=max(1, len(slot_names)),
         )
-    return contracts
+        blocks.append(CopySourceBlock(block_id, template, contract))
+    if len({block.block_id for block in blocks}) != len(blocks):
+        raise ValueError("文案正式资源包含重复 block ID")
+    return tuple(blocks)
+
+
+def select_copy_blocks(
+    category: str,
+    context: str,
+    path: Path | None = None,
+    *,
+    batch_size: int = 1,
+) -> tuple[CopySourceBlock, ...]:
+    if batch_size < 1:
+        raise ValueError("文案学习筛选的 batch_size 必须大于等于 1")
+    block_limit = max(COPY_BLOCK_MINIMUM_LIMIT, batch_size // 2 + 2)
+    candidates = []
+    for block in learned_copy_blocks(path):
+        restrictions: list[str] = []
+        if not source_fill_is_compatible(category, block.contract):
+            restrictions.append("品类不兼容")
+        if not _copy_season_is_compatible(block.template, context):
+            restrictions.append("需重建季节")
+        candidates.append(
+            CopySourceBlock(
+                block.block_id,
+                block.template,
+                block.contract,
+                "、".join(restrictions),
+            )
+        )
+    ranked = sorted(
+        candidates,
+        key=lambda block: (
+            bool(block.source_fill_restriction),
+            hashlib.sha256(f"{context}|{block.block_id}".encode()).hexdigest(),
+            block.block_id,
+        ),
+    )
+    selected: list[CopySourceBlock] = []
+    character_count = len(COPY_CONTEXT_HEADING)
+    for block in ranked:
+        separator_size = 2 if selected else 0
+        projected = character_count + separator_size + len(_render_copy_block(block))
+        if projected > COPY_CONTEXT_CHARACTER_LIMIT:
+            continue
+        selected.append(block)
+        character_count = projected
+        if len(selected) == block_limit:
+            break
+    return tuple(selected)
+
+
+def _copy_season_is_compatible(template: str, context: str) -> bool:
+    return _person_season_is_compatible(template, context)
+
+
+def render_copy_block_context(blocks: tuple[CopySourceBlock, ...]) -> str:
+    if not blocks:
+        return ""
+    return COPY_CONTEXT_HEADING + "\n\n".join(_render_copy_block(block) for block in blocks)
+
+
+def _render_copy_block(block: CopySourceBlock) -> str:
+    source_fill = (
+        "是"
+        if not block.source_fill_restriction
+        else f"否，仅 human_rewrite：{block.source_fill_restriction}"
+    )
+    return (
+        f"### `{block.block_id}` · source_fill 兼容：{source_fill}\n\n"
+        f"```text\n{block.template}\n```"
+    )
 
 
 def learned_person_blocks(path: Path | None = None) -> tuple[PersonSourceBlock, ...]:
