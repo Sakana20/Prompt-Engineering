@@ -169,6 +169,7 @@ PROHIBITED_PERSON_STYLE_PATTERNS = (
     "老年女性",
     "老气",
 )
+PERSON_STYLE_BRAND_EXEMPTIONS = ("沪上阿姨",)
 UNCONFIRMED_STARTING_PRICE_PATTERN = re.compile(r"(?:\d+(?:\.\d+)?元?|几块钱)起")
 NUMERIC_REDPACKET_AMOUNT_PATTERN = re.compile(
     r"(?:\d+(?:\.\d+)?|[零〇一二两三四五六七八九十百千万]+)\s*"
@@ -893,8 +894,11 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                 "中国女生",
             )
         )
+    person_style_scope = cleaned
+    for brand in PERSON_STYLE_BRAND_EXEMPTIONS:
+        person_style_scope = person_style_scope.replace(brand, "")
     for pattern in PROHIBITED_PERSON_STYLE_PATTERNS:
-        if pattern in cleaned:
+        if pattern in person_style_scope:
             issues.append(
                 ValidationIssue(
                     IssueCode.PROHIBITED_PERSON_STYLE,

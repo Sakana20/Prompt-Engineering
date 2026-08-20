@@ -13,6 +13,7 @@
 
 - 使用 Python 3.12+。
 - 依赖统一使用 `uv`；固定环境为 `/Users/sakana/PyEnv/prompt-engineering`，不使用项目本地 `.venv`、系统 Python 或全局 `pip`。
+- `uv` 缓存统一使用 `/Users/sakana/PyEnv/uv-cache`；禁止在项目内创建 `.uv-cache`。
 - 增删依赖使用 `uv add`、`uv add --dev` 或 `uv remove`，不得手改 `uv.lock`。
 - 生产代码放在 `src/avatar_prompt_pipeline/`。
 

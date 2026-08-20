@@ -664,6 +664,14 @@ def test_visual_prompt_rejects_auntie_or_middle_aged_style() -> None:
     assert IssueCode.PROHIBITED_PERSON_STYLE in codes
 
 
+def test_visual_prompt_allows_hushang_ayi_brand_name() -> None:
+    prompt = f"{VALID_VISUAL_PROMPT} 人物面前桌上放着沪上阿姨奶茶。"
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.PROHIBITED_PERSON_STYLE not in codes
+
+
 def test_visual_prompt_requires_no_handheld_product_constraint() -> None:
     missing_constraint = (
         "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，"
