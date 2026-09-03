@@ -143,9 +143,13 @@ help, tests, or Skill validation.
    `person_prompt` from visible first-frame attributes; do not put temporal camera or lip-sync
    instructions into that image prompt. Keep every static `person_prompt` to 120-180 Chinese
    characters. It must begin with `竖屏9:16，固定中景，手机实拍，数字人口播首帧`,
-   say the person is looking directly at the camera using `直视镜头`, state
+   state `人物约占画面二分之一`, say the person is looking directly at the camera using
+   `直视镜头`, state
    `商品不由人物手持`, state `人物不看商品、不接触商品`, and say the scene is only background
    using `场景只作为背景`.
+   Use a visually layered real shop interior or warm home setting with two or three compatible
+   visible elements such as a counter, shelves, warm lamps, wood furniture, a sofa, curtains, or
+   plants. Never use a blank white-wall background.
    It must also state `非商品区域无logo` and `无字幕`.
    The product must be placed on the table or countertop in front of the person; never place it
    behind the person, in the background, far away, or off to the side/back.
@@ -157,9 +161,12 @@ help, tests, or Skill validation.
    derive `image_prompt` from visible first-frame attributes, derive `audio_prompt` from the
    accepted plain script, and write a per-row LibTV CSV plus a separate interface configuration
    JSON. Keep every `image_prompt` to 120-180 Chinese characters. Every `image_prompt` must
-   begin with `竖屏9:16，固定中景，手机实拍，数字人口播首帧`, say the person is looking
-   directly at the camera using `直视镜头`, state `商品不由人物手持`, state
+   begin with `竖屏9:16，固定中景，手机实拍，数字人口播首帧`, state
+   `人物约占画面二分之一`, say the person is looking directly at the camera using
+   `直视镜头`, state `商品不由人物手持`, state
    `人物不看商品、不接触商品`, and say the scene is only background using `场景只作为背景`.
+   Use a visually layered real shop interior or warm home setting with two or three compatible
+   visible elements; never use a blank white-wall background.
    It must also state `非商品区域无logo` and `无字幕`. Do not put LibTV model names,
    node templates, resolution targets, or execution settings into the per-row CSV; those belong
    in `<task>.libtv.interface.json`.

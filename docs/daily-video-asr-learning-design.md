@@ -44,7 +44,7 @@ FunASR 仓库必须保持完全只读。
 - 不复制 Paraformer 推理实现到 Prompt Engineering，不给 Prompt Engineering 增加 `funasr`
   或 `torch` 依赖；
 - Prompt Engineering 通过无 shell 的 `subprocess` 参数数组，使用 FunASR 已存在的
-  `.venv/bin/python -B` 执行本项目自有的纯转写 worker，并严格校验 worker JSON；
+  `/Users/sakana/PyEnv/.venv/bin/python -B` 执行本项目自有的纯转写 worker，并严格校验 worker JSON；
 - FunASR 项目完全只读：不得新增、修改、格式化、生成或删除其中任何文件，包括
   `pyproject.toml`、源码、脚本、测试、锁文件和缓存；
 - 可视化审核台保留原任务审核工作台的只读行为，通过顶部按钮切换到可写的学习审核工作台；
@@ -178,7 +178,7 @@ FunASR 当前已有通用 `prepare_audio_for_asr(...)` 和
 执行命令契约：
 
 ```bash
-/Users/sakana/Desktop/Work/Codex/FunASR/.venv/bin/python \
+/Users/sakana/PyEnv/.venv/bin/python \
   -B \
   "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/src/avatar_prompt_pipeline/learning/funasr_worker.py" \
   --input /absolute/path/to/video.mp4 \
@@ -212,7 +212,7 @@ worker JSON 至少包含：
 Prompt Engineering 的 `asr_provider.py` 必须：
 
 - 使用参数数组和 `subprocess.run(..., shell=False)`；
-- 默认调用以上 `<FunASR>/.venv/bin/python -B <prompt-owned-worker>`；
+- 默认调用以上 `/Users/sakana/PyEnv/.venv/bin/python -B <prompt-owned-worker>`；
 - 给子进程设置 `PYTHONDONTWRITEBYTECODE=1`，禁止在 FunASR 源码目录生成 `__pycache__`；
 - 允许测试注入 worker command；
 - 设置合理超时并截断错误输出；
@@ -722,7 +722,7 @@ avatar-prompts learning-add-person-prompt \
 
 当前静态人物 Prompt 同时包含两类信息：
 
-1. **固定生产约束**：竖屏比例、固定中景、直视镜头、商品摆放、人物不手持或接触商品、
+1. **固定生产约束**：竖屏比例、固定中景、人物约占画面二分之一、真实店内或温馨居家背景、禁止大白墙、直视镜头、商品摆放、人物不手持或接触商品、
    非商品区域无 logo、无字幕等；
 2. **可学习变量**：年龄方向、脸型、五官、人物审美、发型、发色、服装组合和环境风格。
 

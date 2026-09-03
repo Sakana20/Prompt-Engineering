@@ -149,6 +149,10 @@ def test_render_avatar_prompt_injects_script() -> None:
     assert "禁止大妈、阿姨、中年女性、中老年或老气方向" in rendered
     assert "亚洲女生、亚洲女性、大妈、阿姨" in rendered
     assert "开头必须先写“竖屏9:16，固定中景，手机实拍，数字人口播首帧”" in rendered
+    assert "人物约占画面二分之一" in rendered
+    assert "真实生活背景" in rendered
+    assert "温馨居家环境" in rendered
+    assert "大白墙、纯白墙、空白白墙、白色空墙、空荡白墙" in rendered
     assert "目标长度 120-180 个中文字符" in rendered
     assert "主流日常审美" in rendered
     assert "通勤、休闲、甜酷、简约或轻运动风" in rendered

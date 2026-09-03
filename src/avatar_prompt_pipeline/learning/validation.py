@@ -19,6 +19,7 @@ PERSON_RISK_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("age", re.compile(r"未成年|儿童|中年|老年|大妈|阿姨")),
     ("exposure", re.compile(r"暴露|透视|低胸|超短")),
     ("real_person", re.compile(r"明星|网红|某某本人|一模一样|复刻")),
+    ("blank_white_wall", re.compile(r"大白墙|纯白墙|空白白墙|白色空墙|空荡白墙")),
     ("fixed_constraint", re.compile(r"竖屏9:16|固定中景|直视镜头|无字幕|不手持商品")),
 )
 

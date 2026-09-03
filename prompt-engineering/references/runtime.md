@@ -51,7 +51,7 @@ Codex 完成语义处理。
 命令必须由用户或 Codex 明确运行；打开审核台不会自动转写。该命令只创建
 `learning/copy/` 内容。
 内容指纹与 worker 配置共同决定缓存；单项失败写入 copy failure report，不中断同批其他媒体。
-默认 worker 使用 FunASR 既有 `.venv/bin/python -B` 执行 Prompt Engineering 自有
+默认 worker 使用 FunASR 固定环境 `/Users/sakana/PyEnv/.venv/bin/python -B` 执行 Prompt Engineering 自有
 `funasr_worker.py`，主进程使用参数数组、`shell=False`、超时和严格 JSON 校验。FunASR 仓库
 保持只读，现有字幕入口不参与此流程。
 

@@ -13,7 +13,7 @@ from .models import AsrToken
 from .store import atomic_write_json
 from .validation import LearningValidationError
 
-DEFAULT_FUNASR_PYTHON = Path("/Users/sakana/Desktop/Work/Codex/FunASR/.venv/bin/python")
+DEFAULT_FUNASR_PYTHON = Path("/Users/sakana/PyEnv/.venv/bin/python")
 DEFAULT_MODEL_DIR = Path("/Users/sakana/PyEnv/paraformer")
 SUPPORTED_MEDIA_SUFFIXES = frozenset(
     {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".mp4", ".mov", ".mkv", ".webm"}

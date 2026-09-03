@@ -29,7 +29,9 @@
       "priority": 3
     }
   ],
-  "no_split_phrases": [],
+  "no_split_phrases": [
+    "淘宝闪购有大额红包"
+  ],
   "campaign_forbidden_expressions": [],
   "required_disclosures": [],
   "confirmed_claims": [

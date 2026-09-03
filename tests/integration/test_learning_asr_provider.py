@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from avatar_prompt_pipeline.learning.asr_provider import (
+    DEFAULT_FUNASR_PYTHON,
     AsrProviderError,
     AsrWorkerConfig,
     ParaformerSubprocessProvider,
@@ -17,6 +18,11 @@ from avatar_prompt_pipeline.learning.store import LearningStore
 def _worker(path: Path, body: str) -> Path:
     path.write_text(body, encoding="utf-8")
     return path
+
+
+def test_default_worker_uses_managed_funasr_environment() -> None:
+    assert Path("/Users/sakana/PyEnv/.venv/bin/python") == DEFAULT_FUNASR_PYTHON
+    assert AsrWorkerConfig().python_executable == DEFAULT_FUNASR_PYTHON
 
 
 def test_default_worker_uses_isolated_python_and_preflight(

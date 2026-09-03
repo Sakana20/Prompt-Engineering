@@ -46,6 +46,12 @@ def test_risk_detection_keeps_asr_claims_out_of_fact_layer() -> None:
     assert {"price", "promotion", "platform_or_delivery", "action_call", "claim"} <= set(risks)
 
 
+def test_person_risk_detection_rejects_blank_white_wall() -> None:
+    risks = detect_risks("年轻女生坐在大白墙前，穿浅色针织衫", kind=CandidateKind.PERSON)
+
+    assert "blank_white_wall" in risks
+
+
 def test_copy_submission_requires_controlled_classification_fields(tmp_path: Path) -> None:
     service = LearningService.from_root(tmp_path / "learning")
     candidate = CopyLearningCandidate(

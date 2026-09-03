@@ -34,7 +34,7 @@ VALID_COPY = (
     "雨天补一双省心不少。"
 )
 VALID_VISUAL_PROMPT = (
-    "竖屏9:16，固定中景，手机实拍，数字人口播首帧，年轻中国女生坐在餐桌旁，"
+    "竖屏9:16，固定中景，手机实拍，数字人口播首帧，人物约占画面二分之一，年轻中国女生坐在餐桌旁，"
     "场景只作为背景，正面眼睛直视镜头，人物面前桌上放着商品，商品不由人物手持，"
     "人物不看商品、不接触商品，非商品区域无logo，无字幕。"
     "自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
@@ -645,6 +645,33 @@ def test_visual_prompt_requires_direct_eye_contact() -> None:
     assert validate_visual_prompt(valid_prompt) == ()
     issues = validate_visual_prompt(invalid_prompt)
     assert any(issue.code is IssueCode.MISSING_EYE_CONTACT for issue in issues)
+
+
+@pytest.mark.parametrize(
+    "ratio_phrase",
+    ("人物约占画面1/2", "人物占画面1/2左右", "人物约占画面二分之一", "人物约占画面一半"),
+)
+def test_visual_prompt_accepts_person_frame_ratio_variants(ratio_phrase: str) -> None:
+    prompt = VALID_VISUAL_PROMPT.replace("人物约占画面二分之一", ratio_phrase)
+
+    assert validate_visual_prompt(prompt) == ()
+
+
+def test_visual_prompt_requires_person_frame_ratio() -> None:
+    prompt = VALID_VISUAL_PROMPT.replace("人物约占画面二分之一，", "")
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.MISSING_PERSON_FRAME_RATIO in codes
+
+
+@pytest.mark.parametrize("wall_phrase", ("大白墙", "纯白墙", "空白白墙", "白色空墙", "空荡白墙"))
+def test_visual_prompt_rejects_blank_white_wall(wall_phrase: str) -> None:
+    prompt = f"{VALID_VISUAL_PROMPT} 背景为{wall_phrase}。"
+
+    codes = {issue.code for issue in validate_visual_prompt(prompt)}
+
+    assert IssueCode.PROHIBITED_BLANK_WHITE_WALL in codes
 
 
 def test_visual_prompt_requires_chinese_young_woman_demographic() -> None:

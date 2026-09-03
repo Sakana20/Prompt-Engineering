@@ -35,6 +35,21 @@ MAX_VISUAL_PROMPT_CHARACTERS = 180
 MIN_VISUAL_PROMPT_CHARACTERS = 120
 FRONTLOADED_FRAME_STYLE = "竖屏9:16，固定中景，手机实拍"
 FRONTLOADED_FRAME_STYLE_WINDOW = 25
+PERSON_FRAME_RATIO_PHRASES = (
+    "人物约占画面1/2",
+    "人物占画面1/2左右",
+    "人物约占画面二分之一",
+    "人物占画面二分之一左右",
+    "人物约占画面一半",
+    "人物占画面一半左右",
+)
+PROHIBITED_BLANK_WHITE_WALL_PATTERNS = (
+    "大白墙",
+    "纯白墙",
+    "空白白墙",
+    "白色空墙",
+    "空荡白墙",
+)
 NO_HANDHELD_PRODUCT_PHRASES = (
     "不手持商品",
     "人物不手持商品",
@@ -862,6 +877,14 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                 FRONTLOADED_FRAME_STYLE,
             )
         )
+    if not any(phrase in cleaned for phrase in PERSON_FRAME_RATIO_PHRASES):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_PERSON_FRAME_RATIO,
+                "人物 Prompt 必须明确人物约占画面二分之一",
+                "人物约占画面二分之一",
+            )
+        )
     if not any(phrase in cleaned for phrase in TALKING_HEAD_FRAME_PHRASES):
         issues.append(
             ValidationIssue(
@@ -878,6 +901,15 @@ def validate_visual_prompt(prompt: str) -> tuple[ValidationIssue, ...]:
                 "场景只作为背景",
             )
         )
+    for pattern in PROHIBITED_BLANK_WHITE_WALL_PATTERNS:
+        if pattern in cleaned:
+            issues.append(
+                ValidationIssue(
+                    IssueCode.PROHIBITED_BLANK_WHITE_WALL,
+                    "人物 Prompt 不能使用单调的纯白空墙背景",
+                    pattern,
+                )
+            )
     if "直视镜头" not in cleaned:
         issues.append(
             ValidationIssue(
