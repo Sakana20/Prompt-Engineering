@@ -1,8 +1,8 @@
 {
-  "project_id": "taobao-25-no-threshold-redpacket",
+  "project_id": "taobao-instant-commerce-regular",
   "category": "咖啡奶茶炸鸡等淘宝闪购商品",
   "platform": "淘宝闪购",
-  "campaign_name": "25元利益点",
+  "campaign_name": "淘宝闪购常规",
   "benefit_points": [
     {
       "id": "primary-benefit",
@@ -19,21 +19,15 @@
       "exact_match": true,
       "no_split": false,
       "priority": 2
-    },
-    {
-      "id": "allowance-card-benefit",
-      "text": "还可以叠加九折津贴卡",
-      "required": false,
-      "exact_match": true,
-      "no_split": false,
-      "priority": 3
     }
   ],
   "no_split_phrases": [
-    "最高25元无门槛红包，还可以叠加九折津贴卡"
+    "最高25元无门槛红包"
   ],
   "campaign_forbidden_expressions": [
-    "最高12元无门槛红包"
+    "最高12元无门槛红包",
+    "9折津贴卡",
+    "九折津贴卡"
   ],
   "required_disclosures": [],
   "confirmed_claims": [

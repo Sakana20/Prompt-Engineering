@@ -27,6 +27,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
   津贴或配送被填入商品组成插槽。
 - 支持“淘宝闪购合规”美食外卖项目配置：沿用 25 元项目的福利前置投流口径和行动引导，
   利益点改用大额红包、优惠价、活动价、福利价等模糊表达，并拦截阿拉伯和中文数字红包金额。
+- 支持“淘宝闪购常规”项目配置：沿用 25 元利益点口径，但移除津贴卡利益点，并拒绝
+  “9折津贴卡”和“九折津贴卡”两种表达。
 - 为每条口播生成静态数字人首帧 Prompt，并校验人物直视镜头、商品位于人物前方桌面、
   商品不由人物手持、人物不看商品不接触商品、非商品区域无 logo 和无字幕。
 - 输出 SmartSplit 字幕稿：每个任务一份 `<task_id>.smartsplit.txt`，保留 `[[NO_SPLIT]]`。
@@ -145,6 +147,7 @@ uv run avatar-prompts compose --category 炸鸡 \
 ```bash
 uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
 uv run avatar-prompts compose --config configs/projects/taobao-instant-commerce-compliance.json
+uv run avatar-prompts compose --config configs/projects/taobao-instant-commerce-regular.json
 ```
 
 校验口播：

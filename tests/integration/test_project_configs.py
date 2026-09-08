@@ -17,6 +17,7 @@ def test_repository_project_configs_are_loadable() -> None:
         "taobao-12-no-threshold-redpacket.json",
         "taobao-25-no-threshold-redpacket.json",
         "taobao-instant-commerce-compliance.json",
+        "taobao-instant-commerce-regular.json",
     }
     for path in configs:
         config = load_project_config(path)
@@ -59,7 +60,10 @@ def test_taobao_redpacket_project_configs_forbid_each_other() -> None:
     assert "可提及配送到家或外卖到家" in twenty_five.campaign.confirmed_claims
     assert twenty_five.validation_config.call_to_actions == ()
     assert "即时外卖用户" in twenty_five.creative_brief.audience
-    assert "结尾自然给出行动引导" in twenty_five.creative_brief.preferences
+    assert any(
+        preference.startswith("结尾自然给出行动引导")
+        for preference in twenty_five.creative_brief.preferences
+    )
 
 
 @pytest.mark.integration
@@ -72,6 +76,38 @@ def test_taobao_25_project_allows_natural_call_to_action() -> None:
     )
 
     assert validate_copy(copy, config.campaign, config.validation_config).is_valid is True
+
+
+@pytest.mark.integration
+def test_taobao_regular_project_uses_25_yuan_benefit_without_allowance_card() -> None:
+    config = load_project_config(PROJECT_CONFIG_ROOT / "taobao-instant-commerce-regular.json")
+    valid_copy = (
+        "早八想喝咖啡的看过来，淘宝闪购现在有"
+        "[[NO_SPLIT]]最高25元无门槛红包[[/NO_SPLIT]]，"
+        "附近门店能配送到公司，早上赶时间不用专门绕路排队，午后想喝也能直接在附近门店里挑一挑，"
+        "想给自己补一杯的，点开下方链接进去看看吧。"
+    )
+
+    assert config.project_id == "taobao-instant-commerce-regular"
+    assert config.campaign.campaign_name == "淘宝闪购常规"
+    assert [benefit.text for benefit in config.campaign.benefit_points] == [
+        "最高25元无门槛红包",
+        "0.1元起",
+    ]
+    assert config.campaign.no_split_phrases == ("最高25元无门槛红包",)
+    assert config.campaign.forbidden_expressions == (
+        "最高12元无门槛红包",
+        "9折津贴卡",
+        "九折津贴卡",
+    )
+    assert validate_copy(valid_copy, config.campaign, config.validation_config).is_valid is True
+    for forbidden in ("9折津贴卡", "九折津贴卡"):
+        report = validate_copy(
+            valid_copy.replace("点开下方链接进去看看吧", f"还能叠加{forbidden}，点开下方链接看看"),
+            config.campaign,
+            config.validation_config,
+        )
+        assert any(issue.code.value == "BANNED_EXPRESSION" for issue in report.issues)
 
 
 @pytest.mark.integration
@@ -88,7 +124,7 @@ def test_taobao_default_preset_is_loaded_from_12_yuan_project_config() -> None:
 def test_taobao_compliance_project_uses_fuzzy_benefit_and_rejects_amounts() -> None:
     config = load_project_config(PROJECT_CONFIG_ROOT / "taobao-instant-commerce-compliance.json")
     compliant_copy = (
-        "早八人想喝咖啡的看过来，淘宝闪购现在有大额红包，"
+        "早八人想喝咖啡的看过来，[[NO_SPLIT]]淘宝闪购有大额红包[[/NO_SPLIT]]，"
         "看到附近瑞幸还有活动价，我直接选了杯拿铁。"
         "外卖送到公司不用绕路，上班前就能喝到，"
         "想给自己补一杯的，官方链接就在左下角。"
@@ -109,7 +145,7 @@ def test_taobao_compliance_project_uses_fuzzy_benefit_and_rejects_amounts() -> N
         "活动价",
     ]
     assert "可提及配送到家或外卖到家" in config.campaign.confirmed_claims
-    assert config.campaign.no_split_phrases == ()
+    assert config.campaign.no_split_phrases == ("淘宝闪购有大额红包",)
     assert config.validation_config.call_to_actions == ()
     assert config.validation_config.forbid_numeric_redpacket_amounts is True
     assert "只使用已确认的美食外卖场景" in config.creative_brief.preferences

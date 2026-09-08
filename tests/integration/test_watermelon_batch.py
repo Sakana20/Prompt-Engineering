@@ -1,4 +1,5 @@
 import csv
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -36,7 +37,10 @@ def test_watermelon_batch_matches_prompt_and_copy_contract() -> None:
 
     assert all("[[NO_SPLIT]]" not in row["script"] for row in rows)
     reports = [
-        validate_copy(wrap_campaign_benefits(row["script"], TAOBAO_DEFAULT_CAMPAIGN))
+        validate_copy(
+            wrap_campaign_benefits(row["script"], TAOBAO_DEFAULT_CAMPAIGN),
+            reference_date=date(2026, 7, 2),
+        )
         for row in rows
     ]
     assert all(report.is_valid for report in reports)

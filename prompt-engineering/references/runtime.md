@@ -111,6 +111,7 @@ Python CLI 当前支持一个项目一个 JSON 配置文件：
 ```bash
 uv run avatar-prompts compose --config configs/projects/taobao-25-no-threshold-redpacket.json
 uv run avatar-prompts validate-copy '口播正文' --config configs/projects/taobao-25-no-threshold-redpacket.json
+uv run avatar-prompts compose --config configs/projects/taobao-instant-commerce-regular.json
 ```
 
 项目配置文件代表一组完整且互斥的商品与活动口径。传入 `--config` 后，CLI 使用配置中的
@@ -120,6 +121,8 @@ uv run avatar-prompts validate-copy '口播正文' --config configs/projects/tao
 `--benefit-point`、`--preset`、`--platform` 或 `--campaign-name`。如“淘宝闪购 12 元
 无门槛红包”和“淘宝闪购 25 元无门槛红包”方向不同，应分别保存为两个项目配置，并在各自
 配置中用 `campaign_forbidden_expressions` 禁止另一个口径。
+`configs/projects/taobao-instant-commerce-regular.json` 沿用 25 元项目的必填红包和可选
+`0.1元起` 利益点，但不提供津贴卡利益点，并同时禁止 `9折津贴卡` 与 `九折津贴卡`。
 兼容预设 `taobao-instant-commerce-default` 使用
 `configs/projects/taobao-12-no-threshold-redpacket.json` 作为数据源。
 `creative_brief` 只包含受众、传播目标、voice 和最多三条偏好，不参与确定性校验；校验仍由

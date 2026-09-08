@@ -243,6 +243,9 @@ Compatibility defaults:
 - If the user provides an explicit benefit, use that benefit instead of the preset.
 - If the user says no benefit or no promotion, use `--preset none` semantics and generate without
   any promotional benefit.
+- If the user selects `configs/projects/taobao-instant-commerce-regular.json`, follow the 25-yuan
+  project structure with required `最高25元无门槛红包` and optional `0.1元起`, but never use either
+  `9折津贴卡` or `九折津贴卡`.
 - If the user selects the project configuration
   `configs/projects/taobao-instant-commerce-compliance.json`, require the exact benefit `大额红包`
   and use only food-delivery scenarios such as coffee, milk tea, or fried chicken. Follow the
