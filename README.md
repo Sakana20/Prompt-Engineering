@@ -35,6 +35,22 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 - 输出 Auto Oceanengine CSV：每批次一份 `<task>.csv`，去除 `[[NO_SPLIT]]`，兼容参考图字段。
 - 输出 LibTV OmniHuman 三件套：`<task>.libtv.csv`、`<task>.libtv.interface.json`、
   `<task>.libtv.plan.md`，只用于人审和后续执行，不创建画布或运行节点。
+- 输出 Dreamina Canvas 三件套：`<task>.dreamina.csv`、
+  `<task>.dreamina.interface.json`、`<task>.dreamina.plan.md`。默认音色为`明媚女声`，
+  视频 Prompt 必须包含`不包含任何字幕`；1.2x 是强制目标，但当前 Dreamina CLI 不支持
+  TTS 语速参数，因此接口配置要求执行器在音频运行前停止。
+- `save-dreamina-video-node` 使用真实图片 Node ID 渲染正文引用，并把图片、音频 Node ID
+  同时作为 `--ref` 传给 Dreamina 视频节点。该命令只保存草稿，不带 `--run`；生成仍需另行批准。
+  视频 Prompt 允许切镜和运镜，但要求完整逐字使用音频节点内容，不得省略、改写或截断。
+
+```bash
+avatar-prompts save-dreamina-video-node \
+  --input <task>.dreamina.csv \
+  --interface <task>.dreamina.interface.json \
+  --task-id <task-id> --project-id <project-id> \
+  --image-node-id <image-node-id> --audio-node-id <audio-node-id> \
+  --duration <verified-seconds> --dry-run
+```
 - 提供本地审核台，扫描 CSV 并可只读合并同目录 SQLite 中的任务状态。
 
 ## 输出边界
@@ -53,11 +69,14 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 ├── <task>.csv
 ├── <task>.libtv.csv
 ├── <task>.libtv.interface.json
-└── <task>.libtv.plan.md
+├── <task>.libtv.plan.md
+├── <task>.dreamina.csv
+├── <task>.dreamina.interface.json
+└── <task>.dreamina.plan.md
 ```
 
 这些产物彼此独立：写字幕稿不会自动写 CSV，写 CSV 不会导入 Auto Oceanengine，写 LibTV
-任务包不会创建画布、创建节点或运行付费生成。
+或 Dreamina 任务包不会创建画布、创建节点或运行付费生成。
 
 ## Auto Oceanengine CSV
 

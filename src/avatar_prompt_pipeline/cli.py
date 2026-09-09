@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import datetime
@@ -9,6 +10,9 @@ from pathlib import Path
 
 from .artifacts import (
     write_audit_json,
+    write_dreamina_canvas_csv,
+    write_dreamina_canvas_interface_config,
+    write_dreamina_canvas_plan,
     write_libtv_omnihuman_csv,
     write_libtv_omnihuman_interface_config,
     write_libtv_omnihuman_plan,
@@ -23,6 +27,11 @@ from .batch import (
     write_task_batch_template,
 )
 from .config import ProjectConfig, ProjectConfigError, load_project_config
+from .dreamina import (
+    DreaminaAdapterError,
+    load_dreamina_video_node_draft,
+    save_dreamina_video_node,
+)
 from .io import serialize_package, write_package
 from .learning.asr_provider import AsrProviderError, AsrWorkerConfig
 from .learning.models import CandidateKind, LearningCandidate, LearningStatus
@@ -54,6 +63,7 @@ PACKAGE_FORMATS = (
     "markdown",
     "segmentation_manuscript",
     "csv",
+    "dreamina_canvas_package",
     "libtv_omnihuman_package",
 )
 GENERATION_COMMANDS = frozenset(
@@ -221,6 +231,24 @@ def build_parser() -> argparse.ArgumentParser:
     export_csv.add_argument("--date", help="输出日期，格式 YYYYMMDD；默认使用本地日期")
     _add_campaign_arguments(export_csv)
     _add_generation_learning_gate_argument(export_csv)
+    save_dreamina_video = commands.add_parser(
+        "save-dreamina-video-node",
+        help="把 Dreamina 任务包中的视频 Prompt 绑定真实图片/音频节点并保存视频节点草稿",
+    )
+    save_dreamina_video.add_argument("--input", type=Path, required=True, help="Dreamina CSV")
+    save_dreamina_video.add_argument(
+        "--interface", type=Path, required=True, help="Dreamina interface JSON"
+    )
+    save_dreamina_video.add_argument("--task-id", required=True)
+    save_dreamina_video.add_argument("--project-id", required=True)
+    save_dreamina_video.add_argument("--image-node-id", required=True)
+    save_dreamina_video.add_argument("--audio-node-id", required=True)
+    save_dreamina_video.add_argument("--duration", type=float, required=True)
+    save_dreamina_video.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="转交 Dreamina CLI 做纯本地校验，不连接服务端或保存节点",
+    )
     transcribe = commands.add_parser(
         "learning-transcribe", help="从显式本地媒体创建 ASR 文案学习候选"
     )
@@ -405,6 +433,12 @@ def _package_destinations(
             directory / f"{batch.task_name}.libtv.interface.json",
             directory / f"{batch.task_name}.libtv.plan.md",
         )
+    if "dreamina_canvas_package" in formats:
+        destinations["dreamina_canvas_package"] = (
+            directory / f"{batch.task_name}.dreamina.csv",
+            directory / f"{batch.task_name}.dreamina.interface.json",
+            directory / f"{batch.task_name}.dreamina.plan.md",
+        )
     collisions = [path for paths in destinations.values() for path in paths if path.exists()]
     if collisions:
         rendered = "、".join(str(path) for path in collisions)
@@ -465,6 +499,16 @@ def _write_selected_formats(
         )
         written.append(write_libtv_omnihuman_interface_config(paths[1]))
         written.append(write_libtv_omnihuman_plan(paths[2], libtv_tasks))
+    if paths := destinations.get("dreamina_canvas_package"):
+        dreamina_tasks = tuple(
+            task.dreamina_task(notes=batch.notes_for(index))
+            for index, task in enumerate(batch.tasks)
+        )
+        written.append(
+            write_dreamina_canvas_csv(paths[0], dreamina_tasks, campaign, validation_config)
+        )
+        written.append(write_dreamina_canvas_interface_config(paths[1]))
+        written.append(write_dreamina_canvas_plan(paths[2], dreamina_tasks))
     return written
 
 
@@ -527,6 +571,29 @@ def run(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+    if args.command == "save-dreamina-video-node":
+        try:
+            draft = load_dreamina_video_node_draft(
+                csv_path=args.input,
+                interface_path=args.interface,
+                task_id=str(args.task_id),
+                project_id=str(args.project_id),
+                image_node_id=str(args.image_node_id),
+                audio_node_id=str(args.audio_node_id),
+                duration_seconds=float(args.duration),
+            )
+        except DreaminaAdapterError as exc:
+            raise SystemExit(str(exc)) from exc
+        completed = save_dreamina_video_node(draft, dry_run=bool(args.dry_run))
+        if completed.stdout:
+            print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+        if completed.stderr:
+            print(
+                completed.stderr,
+                end="" if completed.stderr.endswith("\n") else "\n",
+                file=sys.stderr,
+            )
+        return completed.returncode
     config = _load_config_from_args(args)
     campaign = _campaign_from_args(args, config)
     validation_config = (

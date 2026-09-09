@@ -153,6 +153,19 @@ help, tests, or Skill validation.
    It must also state `非商品区域无logo` and `无字幕`.
    The product must be placed on the table or countertop in front of the person; never place it
    behind the person, in the background, far away, or off to the side/back.
+   When the user requests a Dreamina Canvas package, read
+   [dreamina-canvas-contract.md](references/dreamina-canvas-contract.md). Treat Dreamina as a
+   separate output adapter. Derive `image_prompt` from the accepted static first-frame prompt,
+   `audio_prompt` from the accepted plain script, and a new `video_prompt` from the full
+   `avatar_prompt` after image/audio references are selected. Replace `{image_node_id}` with the
+   real image Node ID, include image and audio as separate `--ref node:<id>` arguments, and pass
+   the rendered Prompt to the video node. The final video Prompt must require all selected audio
+   content to be spoken verbatim without omission, rewriting, truncation, or early ending, and
+   contain the exact phrase `不包含任何字幕`. Do not add fixed-camera, no-cut, or no-camera-motion
+   restrictions unless the user separately requests them. Use the exact Dreamina voice name
+   `明媚女声`. Record 1.2x
+   as the required speech-speed target, but do not invent a CLI speed flag: Dreamina Canvas CLI
+   1.0.0 must stop before audio execution until an authorized implementation can enforce it.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -225,6 +238,17 @@ quoting, paths, atomic writes, and overwrite protection.
   `720x1280`, but OmniHuman 1.5 currently exposes only `ratio=auto` and `resolution=auto`;
   therefore resolution must be checked after generation. This output must not create a LibTV
   canvas, create nodes, run `libtv node --run`, or submit paid generation.
+- **Dreamina Canvas package:** create three independent handoffs from accepted copy/avatar
+  results: `<task>.dreamina.csv`, `<task>.dreamina.interface.json`, and
+  `<task>.dreamina.plan.md`. The CSV contains per-row image/audio/video prompts and the exact
+  Dreamina voice. The interface configuration contains canonical model candidates, node
+  templates, 1.2x target-speed enforcement state, and execution boundaries. The plan is for
+  human review. This output must not create a Dreamina canvas, save online nodes, quote credits,
+  or submit paid generation.
+  When the user explicitly asks to save the prepared video node, run
+  `avatar-prompts save-dreamina-video-node` with the package CSV/interface, task ID, project ID,
+  real image/audio Node IDs, and verified duration. This command may save an online draft but
+  never adds `--run`; paid generation remains a separate approval boundary.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or

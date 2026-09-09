@@ -194,7 +194,13 @@ LibTV OmniHuman 任务包由三份文件组成：
 <task>.libtv.csv
 <task>.libtv.interface.json
 <task>.libtv.plan.md
+<task>.dreamina.csv
+<task>.dreamina.interface.json
+<task>.dreamina.plan.md
 ```
+
+Dreamina 视频节点草稿由显式命令 `save-dreamina-video-node` 交给官方 CLI 保存。该执行层把
+CSV 中的 `{image_node_id}` 替换为真实 Node ID，并同时传入图片与音频节点引用；默认不运行生成。
 
 - CSV 只保存逐条任务数据：`task_id`、`title`、`notes`、`image_prompt`、`audio_prompt`、
   `voice_label`、`voice_id`、`aspect_ratio`；

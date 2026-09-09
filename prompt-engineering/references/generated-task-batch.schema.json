@@ -33,7 +33,7 @@
           "person_prompt": {"type": "string", "minLength": 1},
           "image_prompt": {
             "type": "string",
-            "description": "LibTV 首帧 Prompt；省略时复用 person_prompt"
+            "description": "LibTV 或 Dreamina 首帧 Prompt；省略时复用 person_prompt"
           },
           "title": {"type": "string", "minLength": 1},
           "aspect_ratio": {

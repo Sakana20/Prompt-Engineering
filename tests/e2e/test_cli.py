@@ -1,4 +1,6 @@
+import csv
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +8,7 @@ import pytest
 
 from avatar_prompt_pipeline import cli as cli_module
 from avatar_prompt_pipeline.cli import run
+from avatar_prompt_pipeline.dreamina import DreaminaVideoNodeDraft
 from avatar_prompt_pipeline.validation import REQUIRED_BENEFIT
 
 
@@ -290,6 +293,174 @@ def test_package_cli_validates_and_writes_selected_skill_outputs(
     assert (task_directory / "HM-001.smartsplit.txt").is_file()
     assert (task_directory / "hami-melon-batch.csv").is_file()
     assert not (task_directory / "hami-melon-batch.libtv.csv").exists()
+
+
+@pytest.mark.e2e
+def test_package_cli_writes_dreamina_canvas_package(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    marked_script = (
+        "午后收拾完桌面，打开冰箱才发现果盘已经空了。我看到"
+        "[[NO_SPLIT]]淘宝闪购有最高12元无门槛红包[[/NO_SPLIT]]，"
+        "就买了个哈密瓜。送到后切几块装进盘里，坐在沙发上慢慢吃，"
+        "剩下的用保鲜盒收好，晚上家里人回来还能一起分。"
+    )
+    person_prompt = (
+        "竖屏9:16，固定中景，手机实拍，数字人口播首帧，人物约占画面二分之一，"
+        "年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，"
+        "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+        "自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
+    )
+    source = tmp_path / "generated.json"
+    source.write_text(
+        json.dumps(
+            {
+                "task_name": "hami-melon-batch",
+                "category": "哈密瓜",
+                "tasks": [
+                    {
+                        "task_id": "HM-001",
+                        "marked_script": marked_script,
+                        "avatar_prompt": "年轻中国女生在餐桌旁自然口播，全程直视镜头。",
+                        "identity_key": "圆脸-黑色短发",
+                        "outfit_key": "白衬衫-蓝牛仔裤",
+                        "person_prompt": person_prompt,
+                        "title": "哈密瓜居家水果场景",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run(
+        [
+            "package",
+            "--input",
+            str(source),
+            "--format",
+            "dreamina_canvas_package",
+            "--output-root",
+            str(tmp_path / "output"),
+            "--date",
+            "20260805",
+        ]
+    )
+
+    output: dict[str, Any] = json.loads(capsys.readouterr().out)
+    task_directory = tmp_path / "output" / "20260805" / "hami-melon-batch"
+    csv_path = task_directory / "hami-melon-batch.dreamina.csv"
+    interface_path = task_directory / "hami-melon-batch.dreamina.interface.json"
+    plan_path = task_directory / "hami-melon-batch.dreamina.plan.md"
+    assert result == 0
+    assert output["written"] == [str(csv_path), str(interface_path), str(plan_path)]
+    assert output["paid_generation_submitted"] is False
+    assert not (task_directory / "hami-melon-batch.csv").exists()
+    assert not (task_directory / "hami-melon-batch.libtv.csv").exists()
+
+    with csv_path.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["dreamina_voice_name"] == "明媚女声"
+    assert "年轻中国女生在餐桌旁自然口播" in row["video_prompt"]
+    assert "{{node:{image_node_id}}}" in row["video_prompt"]
+    assert "必须完整使用所选音频节点的全部内容进行口播" in row["video_prompt"]
+    assert "不得省略、改写、截断或提前结束" in row["video_prompt"]
+    assert "固定机位" not in row["video_prompt"]
+    assert "不切镜" not in row["video_prompt"]
+    assert "不运镜" not in row["video_prompt"]
+    assert row["video_prompt"].count("不包含任何字幕") == 1
+    interface = json.loads(interface_path.read_text(encoding="utf-8"))
+    assert interface["defaults"]["speech_speed"] == 1.2
+    assert interface["nodes"]["audio"]["on_unsupported_speech_speed"] == ("stop_before_audio_run")
+
+
+@pytest.mark.e2e
+def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    csv_path = tmp_path / "batch.dreamina.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=("task_id", "title", "video_prompt", "aspect_ratio"),
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "task_id": "TASK-001",
+                "title": "数字人口播",
+                "video_prompt": (
+                    "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
+                    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+                    "不得省略、改写、截断或提前结束，口型与音频同步，"
+                    "身体动作自然，不包含任何字幕。"
+                ),
+                "aspect_ratio": "9:16",
+            }
+        )
+    interface_path = tmp_path / "batch.dreamina.interface.json"
+    interface_path.write_text(
+        json.dumps(
+            {
+                "interface": "dreamina_canvas",
+                "nodes": {
+                    "video": {
+                        "mode": "m2v",
+                        "model": "seedance_2.5",
+                        "resolution": "720p",
+                        "count": 1,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    captured_command: tuple[str, ...] = ()
+
+    def fake_save(
+        draft: DreaminaVideoNodeDraft, *, dry_run: bool = False
+    ) -> subprocess.CompletedProcess[str]:
+        nonlocal captured_command
+        captured_command = draft.command(dry_run=dry_run)
+        return subprocess.CompletedProcess(captured_command, 0, '{"ok":true}\n', "")
+
+    monkeypatch.setattr(cli_module, "save_dreamina_video_node", fake_save)
+
+    result = run(
+        [
+            "save-dreamina-video-node",
+            "--input",
+            str(csv_path),
+            "--interface",
+            str(interface_path),
+            "--task-id",
+            "TASK-001",
+            "--project-id",
+            "project-123",
+            "--image-node-id",
+            "node_image_123",
+            "--audio-node-id",
+            "node_audio_456",
+            "--duration",
+            "18",
+            "--dry-run",
+        ]
+    )
+
+    assert result == 0
+    assert json.loads(capsys.readouterr().out) == {"ok": True}
+    assert "{{node:node_image_123}}" in captured_command[captured_command.index("--prompt") + 1]
+    ref_values = [
+        captured_command[index + 1]
+        for index, value in enumerate(captured_command)
+        if value == "--ref"
+    ]
+    assert ref_values == ["node:node_image_123", "node:node_audio_456"]
+    assert captured_command[-1] == "--dry-run"
+    assert "--run" not in captured_command
 
 
 @pytest.mark.e2e

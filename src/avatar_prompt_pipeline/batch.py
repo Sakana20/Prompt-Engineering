@@ -9,8 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from .models import (
+    DEFAULT_DREAMINA_VOICE_NAME,
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
+    DREAMINA_REQUIRED_FULL_AUDIO_PHRASE,
+    DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE,
+    DreaminaCanvasTask,
     LibtvOmniHumanTask,
     OceanengineTask,
     VisualProfile,
@@ -18,6 +22,10 @@ from .models import (
 from .validation import COPY_MODES
 
 _TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+_DREAMINA_VIDEO_PROMPT_SUFFIX = (
+    f"{DREAMINA_REQUIRED_FULL_AUDIO_PHRASE}，口型与音频同步，身体动作自然，"
+    f"{DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE}。"
+)
 _ALLOWED_BATCH_KEYS = {"schema_version", "task_name", "category", "tasks"}
 _ALLOWED_TASK_KEYS = {
     "task_id",
@@ -163,6 +171,26 @@ class GeneratedTaskRecord:
             notes=notes,
             voice_label=self.voice_label,
             voice_id=self.voice_id,
+            aspect_ratio=self.aspect_ratio,
+        )
+
+    def dreamina_task(self, *, notes: str) -> DreaminaCanvasTask:
+        avatar_prompt = _clean(self.avatar_prompt).rstrip("。")
+        suffix = _DREAMINA_VIDEO_PROMPT_SUFFIX
+        if DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE in avatar_prompt:
+            suffix = suffix.replace(f"，{DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE}", "")
+        video_prompt = (
+            f"让{{{{node:{{image_node_id}}}}}}中的人物保持首帧身份与服装，{avatar_prompt}。{suffix}"
+        )
+        return DreaminaCanvasTask(
+            task_id=self.task_id,
+            image_prompt=self.image_prompt,
+            marked_script=self.marked_script,
+            video_prompt=video_prompt,
+            title=self.title,
+            notes=notes,
+            voice_intent=self.voice,
+            dreamina_voice_name=DEFAULT_DREAMINA_VOICE_NAME,
             aspect_ratio=self.aspect_ratio,
         )
 

@@ -13,6 +13,8 @@ from typing import TextIO
 
 from .batch import GeneratedTaskRecord
 from .models import (
+    DEFAULT_DREAMINA_SPEECH_SPEED,
+    DEFAULT_DREAMINA_VOICE_NAME,
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
     DEFAULT_LIBTV_MALE_VOICE_ID,
@@ -20,6 +22,7 @@ from .models import (
     DEFAULT_LIBTV_VOICE_SPEED,
     DEFAULT_LIBTV_VOICE_VOLUME,
     CampaignSpec,
+    DreaminaCanvasTask,
     LibtvOmniHumanTask,
     OceanengineTask,
     ValidationConfig,
@@ -56,6 +59,19 @@ LIBTV_OMNIHUMAN_CSV_FIELDS = (
     "voice_label",
     "voice_id",
     "aspect_ratio",
+)
+
+DREAMINA_CANVAS_CSV_FIELDS = (
+    "task_id",
+    "title",
+    "notes",
+    "image_prompt",
+    "audio_prompt",
+    "video_prompt",
+    "aspect_ratio",
+    "voice_intent",
+    "dreamina_voice_name",
+    "reference_image_key",
 )
 
 LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
@@ -134,6 +150,96 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
     },
 }
 
+DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
+    "schema_version": "dreamina-interface-config/v1",
+    "interface": "dreamina_canvas",
+    "catalog_observed_at": "2026-09-09T00:00:00+08:00",
+    "discovery_required_before_execution": True,
+    "task_package": {
+        "csv": "<task>.dreamina.csv",
+        "plan": "<task>.dreamina.plan.md",
+    },
+    "canvas": {
+        "name_template": "{task_name}-{date}",
+        "one_canvas_per_batch": True,
+    },
+    "defaults": {
+        "dreamina_voice_name": DEFAULT_DREAMINA_VOICE_NAME,
+        "speech_speed": DEFAULT_DREAMINA_SPEECH_SPEED,
+        "required_video_prompt_phrases": [
+            "必须完整使用所选音频节点的全部内容进行口播",
+            "逐字说完",
+            "不得省略、改写、截断或提前结束",
+            "不包含任何字幕",
+        ],
+    },
+    "nodes": {
+        "image": {
+            "name_template": "{task_id}-image",
+            "type": "image",
+            "model": "seedream_4.6",
+            "mode_without_reference": "t2i",
+            "mode_with_reference": "i2i",
+            "resolution": "1K",
+            "ratio_field": "aspect_ratio",
+            "count": 1,
+            "prompt_field": "image_prompt",
+        },
+        "audio": {
+            "name_template": "{task_id}-audio",
+            "type": "audio",
+            "mode": "tts",
+            "prompt_field": "audio_prompt",
+            "voice_name": DEFAULT_DREAMINA_VOICE_NAME,
+            "speech_speed": DEFAULT_DREAMINA_SPEECH_SPEED,
+            "speech_speed_enforcement": "unsupported_by_dreamina_cli_1.0.0",
+            "on_unsupported_speech_speed": "stop_before_audio_run",
+        },
+        "video": {
+            "name_template": "{task_id}-video",
+            "type": "video",
+            "model": "seedance_2.5",
+            "mode": "m2v",
+            "resolution": "720p",
+            "ratio_field": "aspect_ratio",
+            "duration_policy": "requires_verified_audio_duration",
+            "prompt_field": "video_prompt",
+            "prompt_write_timing": "after_image_and_audio_references_selected",
+            "prompt_template": (
+                "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。"
+                "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+                "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，"
+                "不包含任何字幕。"
+            ),
+            "required_prompt_phrases": [
+                "必须完整使用所选音频节点的全部内容进行口播",
+                "逐字说完",
+                "不得省略、改写、截断或提前结束",
+                "不包含任何字幕",
+            ],
+            "inputs": ["image", "audio"],
+            "count": 1,
+        },
+    },
+    "execution_boundary": {
+        "create_canvas": False,
+        "create_nodes": False,
+        "run_nodes": False,
+        "requires_user_confirmation_for_paid_generation": True,
+    },
+    "limitations": {
+        "speech_speed": (
+            "Dreamina Canvas CLI 1.0.0 does not expose a TTS speed flag; 1.2x is a "
+            "required target and execution must stop until an authorized implementation can "
+            "enforce it."
+        ),
+        "lip_sync": (
+            "Image-plus-audio input support does not prove stable lip sync; validate with one "
+            "approved paid sample before batch use."
+        ),
+    },
+}
+
 
 def default_task_directory(task_name: str, *, date: str | None = None) -> Path:
     output_date = date or datetime.now().astimezone().strftime("%Y%m%d")
@@ -163,6 +269,18 @@ def default_libtv_omnihuman_interface_path(task_name: str, *, date: str | None =
 
 def default_libtv_omnihuman_plan_path(task_name: str, *, date: str | None = None) -> Path:
     return default_task_directory(task_name, date=date) / f"{task_name}.libtv.plan.md"
+
+
+def default_dreamina_canvas_csv_path(task_name: str, *, date: str | None = None) -> Path:
+    return default_task_directory(task_name, date=date) / f"{task_name}.dreamina.csv"
+
+
+def default_dreamina_canvas_interface_path(task_name: str, *, date: str | None = None) -> Path:
+    return default_task_directory(task_name, date=date) / f"{task_name}.dreamina.interface.json"
+
+
+def default_dreamina_canvas_plan_path(task_name: str, *, date: str | None = None) -> Path:
+    return default_task_directory(task_name, date=date) / f"{task_name}.dreamina.plan.md"
 
 
 def _write_atomic(destination: Path, writer: Callable[[TextIO], None]) -> Path:
@@ -199,6 +317,16 @@ def libtv_omnihuman_interface_config(task_name: str) -> dict[str, object]:
         raise TypeError("LibTV interface config task_package must be a dict")
     task_package["csv"] = f"{task_name}.libtv.csv"
     task_package["plan"] = f"{task_name}.libtv.plan.md"
+    return config
+
+
+def dreamina_canvas_interface_config(task_name: str) -> dict[str, object]:
+    config = copy.deepcopy(DREAMINA_CANVAS_INTERFACE_CONFIG)
+    task_package = config["task_package"]
+    if not isinstance(task_package, dict):
+        raise TypeError("Dreamina interface config task_package must be a dict")
+    task_package["csv"] = f"{task_name}.dreamina.csv"
+    task_package["plan"] = f"{task_name}.dreamina.plan.md"
     return config
 
 
@@ -309,6 +437,109 @@ def write_libtv_omnihuman_plan(
             handle.write("video:\n")
             handle.write(f"  node: {task.task_id}-omnihuman-video\n")
             handle.write("  source: interface JSON `nodes.video`\n")
+            handle.write("  inputs:\n")
+            handle.write(f"    - {task.task_id}-image\n")
+            handle.write(f"    - {task.task_id}-audio\n\n")
+
+    return _write_atomic(Path(path), write)
+
+
+def write_dreamina_canvas_csv(
+    path: str | Path,
+    tasks: Sequence[DreaminaCanvasTask],
+    campaign: CampaignSpec = TAOBAO_DEFAULT_CAMPAIGN,
+    validation_config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
+) -> Path:
+    if not tasks:
+        raise ValueError("Dreamina Canvas CSV 至少需要一个任务")
+    task_ids = [task.task_id for task in tasks]
+    if len(task_ids) != len(set(task_ids)):
+        raise ValueError("Dreamina Canvas CSV 的 task_id 必须唯一")
+
+    def write(handle: TextIO) -> None:
+        csv_writer = csv.DictWriter(handle, fieldnames=DREAMINA_CANVAS_CSV_FIELDS)
+        csv_writer.writeheader()
+        for task in tasks:
+            _raise_for_visual_prompt_issues(task.task_id, task.image_prompt)
+            report = validate_copy(task.marked_script, campaign, validation_config)
+            if not report.is_valid:
+                issue_codes = ", ".join(issue.code for issue in report.issues)
+                raise ValueError(f"任务 {task.task_id} 的口播未通过校验：{issue_codes}")
+            csv_writer.writerow(
+                {
+                    "task_id": task.task_id,
+                    "title": task.title,
+                    "notes": task.notes,
+                    "image_prompt": task.image_prompt,
+                    "audio_prompt": strip_no_split_markers(task.marked_script),
+                    "video_prompt": task.video_prompt,
+                    "aspect_ratio": task.aspect_ratio,
+                    "voice_intent": task.voice_intent,
+                    "dreamina_voice_name": task.dreamina_voice_name,
+                    "reference_image_key": task.reference_image_key,
+                }
+            )
+
+    return _write_atomic(Path(path), write)
+
+
+def write_dreamina_canvas_interface_config(path: str | Path) -> Path:
+    destination = Path(path)
+    suffix = ".dreamina.interface.json"
+    task_name = (
+        destination.name[: -len(suffix)] if destination.name.endswith(suffix) else destination.stem
+    )
+
+    def write(handle: TextIO) -> None:
+        json.dump(
+            dreamina_canvas_interface_config(task_name),
+            handle,
+            ensure_ascii=False,
+            indent=2,
+        )
+        handle.write("\n")
+
+    return _write_atomic(destination, write)
+
+
+def write_dreamina_canvas_plan(
+    path: str | Path,
+    tasks: Sequence[DreaminaCanvasTask],
+) -> Path:
+    if not tasks:
+        raise ValueError("Dreamina Canvas plan 至少需要一个任务")
+
+    def write(handle: TextIO) -> None:
+        handle.write("# Dreamina Canvas 任务计划\n\n")
+        handle.write("接口配置：`<task>.dreamina.interface.json`\n\n")
+        handle.write("执行边界：本计划不创建画布、不创建节点、不运行生成任务。\n\n")
+        handle.write(
+            "语速门禁：目标为 1.2x；Dreamina Canvas CLI 1.0.0 暂不支持 TTS 语速参数，"
+            "执行器必须在音频运行前停止。\n\n"
+        )
+        for task in tasks:
+            handle.write(f"## {task.task_id}\n\n")
+            handle.write(f"- title: {task.title}\n")
+            handle.write(f"- notes: {task.notes}\n")
+            handle.write(f"- voice_intent: {task.voice_intent}\n")
+            handle.write(f"- dreamina_voice_name: {task.dreamina_voice_name}\n")
+            handle.write(f"- aspect_ratio: {task.aspect_ratio}\n\n")
+            handle.write("image:\n")
+            handle.write(f"  node: {task.task_id}-image\n")
+            handle.write(f"  prompt: {task.image_prompt}\n\n")
+            handle.write("audio:\n")
+            handle.write(f"  node: {task.task_id}-audio\n")
+            handle.write(f"  script: {strip_no_split_markers(task.marked_script)}\n\n")
+            handle.write("video:\n")
+            handle.write(f"  node: {task.task_id}-video\n")
+            handle.write("  prompt_write_timing: after_image_and_audio_references_selected\n")
+            handle.write(f"  prompt: {task.video_prompt}\n")
+            handle.write("  image_node_id_placeholder: {image_node_id}\n")
+            handle.write("  required_prompt_phrases:\n")
+            handle.write("    - 必须完整使用所选音频节点的全部内容进行口播\n")
+            handle.write("    - 逐字说完\n")
+            handle.write("    - 不得省略、改写、截断或提前结束\n")
+            handle.write("    - 不包含任何字幕\n")
             handle.write("  inputs:\n")
             handle.write(f"    - {task.task_id}-image\n")
             handle.write(f"    - {task.task_id}-audio\n\n")

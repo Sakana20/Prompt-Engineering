@@ -5,18 +5,25 @@ from pathlib import Path
 import pytest
 
 from avatar_prompt_pipeline.artifacts import (
+    DREAMINA_CANVAS_INTERFACE_CONFIG,
+    default_dreamina_canvas_csv_path,
+    default_dreamina_canvas_interface_path,
+    default_dreamina_canvas_plan_path,
     default_libtv_omnihuman_csv_path,
     default_libtv_omnihuman_interface_path,
     default_libtv_omnihuman_plan_path,
     default_manuscript_path,
     default_oceanengine_csv_path,
+    write_dreamina_canvas_csv,
+    write_dreamina_canvas_interface_config,
+    write_dreamina_canvas_plan,
     write_libtv_omnihuman_csv,
     write_libtv_omnihuman_interface_config,
     write_libtv_omnihuman_plan,
     write_oceanengine_csv,
     write_segmentation_manuscript,
 )
-from avatar_prompt_pipeline.models import LibtvOmniHumanTask, OceanengineTask
+from avatar_prompt_pipeline.models import DreaminaCanvasTask, LibtvOmniHumanTask, OceanengineTask
 
 MARKED_SCRIPT = (
     "午后收拾完桌面，打开冰箱才发现果盘已经空了。我看到"
@@ -24,6 +31,11 @@ MARKED_SCRIPT = (
     "就买了个哈密瓜。送到后切几块装进盘里，坐在沙发上慢慢吃，"
     "剩下的用保鲜盒收好，晚上家里人回来还能一起分。"
 )
+
+
+def test_checked_in_dreamina_config_matches_production_defaults() -> None:
+    config_path = Path(__file__).resolve().parents[2] / "configs/interfaces/dreamina-canvas.json"
+    assert json.loads(config_path.read_text(encoding="utf-8")) == DREAMINA_CANVAS_INTERFACE_CONFIG
 
 
 def test_default_artifact_paths_use_date_and_task_hierarchy() -> None:
@@ -46,6 +58,18 @@ def test_default_artifact_paths_use_date_and_task_hierarchy() -> None:
     assert default_libtv_omnihuman_plan_path("hami-melon-batch", date="20260702") == Path(
         "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
         "hami-melon-batch/hami-melon-batch.libtv.plan.md"
+    )
+    assert default_dreamina_canvas_csv_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.dreamina.csv"
+    )
+    assert default_dreamina_canvas_interface_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.dreamina.interface.json"
+    )
+    assert default_dreamina_canvas_plan_path("hami-melon-batch", date="20260702") == Path(
+        "/Users/sakana/Desktop/Work/Codex/Prompt Engineering/20260702/"
+        "hami-melon-batch/hami-melon-batch.dreamina.plan.md"
     )
 
 
@@ -220,6 +244,102 @@ def test_libtv_omnihuman_export_fills_blank_default_voice_fields(tmp_path: Path)
     plan = written_plan.read_text(encoding="utf-8")
     assert "- voice_label: 温暖闺蜜" in plan
     assert "- voice_id: Chinese (Mandarin)_Warm_Bestie" in plan
+
+
+@pytest.mark.integration
+def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None:
+    csv_path = tmp_path / "dreamina" / "hami-melon-batch.dreamina.csv"
+    interface_path = tmp_path / "dreamina" / "hami-melon-batch.dreamina.interface.json"
+    plan_path = tmp_path / "dreamina" / "hami-melon-batch.dreamina.plan.md"
+    video_prompt = (
+        "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，"
+        "年轻中国女生在餐桌旁自然口播，全程直视镜头。"
+        "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+        "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。"
+    )
+    task = DreaminaCanvasTask(
+        task_id="HM-001",
+        image_prompt=(
+            "竖屏9:16，固定中景，手机实拍，数字人口播首帧，人物约占画面二分之一，"
+            "年轻中国女生坐在餐桌旁，场景只作为背景，正面眼睛直视镜头，人物面前桌上放着哈密瓜，"
+            "商品不由人物手持，人物不看商品、不接触商品，非商品区域无logo，无字幕。"
+            "自然光照明，真实肤色和皮肤纹理，人物居中坐定，背景轻微虚化，整体年轻自然干净生活化。"
+        ),
+        marked_script=MARKED_SCRIPT,
+        video_prompt=video_prompt,
+        title="哈密瓜居家水果场景",
+        notes="哈密瓜+1",
+        voice_intent="明朗女声",
+    )
+
+    written_csv = write_dreamina_canvas_csv(csv_path, [task])
+    assert not interface_path.exists()
+    assert not plan_path.exists()
+    with written_csv.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["audio_prompt"] == MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace(
+        "[[/NO_SPLIT]]", ""
+    )
+    assert row["video_prompt"] == video_prompt
+    assert row["dreamina_voice_name"] == "明媚女声"
+    assert row["voice_intent"] == "明朗女声"
+    assert row["reference_image_key"] == ""
+
+    written_interface = write_dreamina_canvas_interface_config(interface_path)
+    interface_config = json.loads(written_interface.read_text(encoding="utf-8"))
+    assert interface_config["interface"] == "dreamina_canvas"
+    assert interface_config["task_package"] == {
+        "csv": "hami-melon-batch.dreamina.csv",
+        "plan": "hami-melon-batch.dreamina.plan.md",
+    }
+    assert interface_config["defaults"]["dreamina_voice_name"] == "明媚女声"
+    assert interface_config["defaults"]["speech_speed"] == 1.2
+    assert interface_config["nodes"]["audio"]["on_unsupported_speech_speed"] == (
+        "stop_before_audio_run"
+    )
+    assert "不包含任何字幕" in interface_config["nodes"]["video"]["prompt_template"]
+    assert interface_config["execution_boundary"]["run_nodes"] is False
+
+    written_plan = write_dreamina_canvas_plan(plan_path, [task])
+    plan = written_plan.read_text(encoding="utf-8")
+    assert "接口配置：`<task>.dreamina.interface.json`" in plan
+    assert "dreamina_voice_name: 明媚女声" in plan
+    assert "目标为 1.2x" in plan
+    assert "prompt_write_timing: after_image_and_audio_references_selected" in plan
+    assert "image_node_id_placeholder: {image_node_id}" in plan
+    assert "不得省略、改写、截断或提前结束" in plan
+    assert "不包含任何字幕" in plan
+    assert "[[NO_SPLIT]]" not in plan
+
+
+@pytest.mark.integration
+def test_dreamina_task_rejects_wrong_voice_or_missing_required_video_phrase() -> None:
+    base = {
+        "task_id": "HM-001",
+        "image_prompt": "有效首帧 Prompt",
+        "marked_script": MARKED_SCRIPT,
+        "video_prompt": (
+            "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+            "不得省略、改写、截断或提前结束，不包含任何字幕。"
+        ),
+        "title": "哈密瓜居家水果场景",
+        "notes": "哈密瓜+1",
+        "voice_intent": "明朗女声",
+    }
+    with pytest.raises(ValueError, match="Dreamina 音色必须是精确值：明媚女声"):
+        DreaminaCanvasTask(**base, dreamina_voice_name="纯净女声")
+    with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：不包含任何字幕"):
+        DreaminaCanvasTask(
+            **{
+                **base,
+                "video_prompt": (
+                    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+                    "不得省略、改写、截断或提前结束。"
+                ),
+            }
+        )
+    with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：必须完整使用"):
+        DreaminaCanvasTask(**{**base, "video_prompt": "不包含任何字幕。"})
 
 
 @pytest.mark.integration

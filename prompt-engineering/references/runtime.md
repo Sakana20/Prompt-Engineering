@@ -210,6 +210,13 @@ uv run avatar-prompts export-csv \
 - 每个批次写一份 Oceanengine CSV，`script` 写入前移除控制标签；
 - JSON 保留结构化审计字段，Markdown 用于人工验证记录，text 用于单条直接结果。
 - `libtv_omnihuman_package` 写出 LibTV CSV、interface JSON 和 plan Markdown 三件套。
+- `dreamina_canvas_package` 写出 Dreamina CSV、interface JSON 和 plan Markdown 三件套；
+  不创建画布或节点，不提交生成。音色固定为`明媚女声`，视频 Prompt 精确包含
+  `不包含任何字幕`。1.2x 为强制目标；当前 CLI 不支持时必须在音频运行前停止。
+- `save-dreamina-video-node` 读取上述 CSV/interface，用真实 `image_node_id` 替换
+  `{image_node_id}`，把图片和音频分别作为 `--ref node:<id>` 传给官方 Dreamina CLI，且不带
+  `--run`。它会保存线上视频节点草稿；调用前必须由用户明确要求该写入。视频 Prompt 要求完整
+  逐字使用所选音频内容，不得省略、改写、截断或提前结束；不限制切镜或运镜。
 
 统一输出层级为：
 

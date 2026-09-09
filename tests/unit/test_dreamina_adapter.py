@@ -1,0 +1,111 @@
+import csv
+import json
+from pathlib import Path
+
+import pytest
+
+from avatar_prompt_pipeline.dreamina import (
+    DreaminaAdapterError,
+    load_dreamina_video_node_draft,
+    render_dreamina_video_prompt,
+)
+
+VIDEO_PROMPT_TEMPLATE = (
+    "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
+    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
+    "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。"
+)
+
+
+def _write_package_files(tmp_path: Path) -> tuple[Path, Path]:
+    csv_path = tmp_path / "batch.dreamina.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=("task_id", "title", "video_prompt", "aspect_ratio"),
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "task_id": "TASK-001",
+                "title": "数字人口播",
+                "video_prompt": VIDEO_PROMPT_TEMPLATE,
+                "aspect_ratio": "9:16",
+            }
+        )
+    interface_path = tmp_path / "batch.dreamina.interface.json"
+    interface_path.write_text(
+        json.dumps(
+            {
+                "interface": "dreamina_canvas",
+                "nodes": {
+                    "video": {
+                        "mode": "m2v",
+                        "model": "seedance_2.5",
+                        "resolution": "720p",
+                        "count": 1,
+                    }
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return csv_path, interface_path
+
+
+def test_render_video_prompt_uses_real_image_node_and_preserves_required_constraints() -> None:
+    prompt = render_dreamina_video_prompt(
+        VIDEO_PROMPT_TEMPLATE,
+        image_node_id="node_image_123",
+    )
+
+    assert "{{node:node_image_123}}" in prompt
+    assert "{image_node_id}" not in prompt
+    assert "必须完整使用所选音频节点的全部内容进行口播" in prompt
+    assert "不得省略、改写、截断或提前结束" in prompt
+    assert "不包含任何字幕" in prompt
+    assert "固定机位" not in prompt
+    assert "不切镜" not in prompt
+    assert "不运镜" not in prompt
+
+
+def test_video_node_command_passes_prompt_and_both_node_references(tmp_path: Path) -> None:
+    csv_path, interface_path = _write_package_files(tmp_path)
+    draft = load_dreamina_video_node_draft(
+        csv_path=csv_path,
+        interface_path=interface_path,
+        task_id="TASK-001",
+        project_id="project-123",
+        image_node_id="node_image_123",
+        audio_node_id="node_audio_456",
+        duration_seconds=18,
+    )
+
+    command = draft.command()
+    assert command[:4] == ("dreamina-canvas", "node", "create", "video")
+    assert command[command.index("--prompt") + 1] == draft.prompt
+    ref_values = [command[index + 1] for index, value in enumerate(command) if value == "--ref"]
+    assert ref_values == ["node:node_image_123", "node:node_audio_456"]
+    assert "--run" not in command
+    assert "--dry-run" not in command
+    assert draft.command(dry_run=True)[-1] == "--dry-run"
+
+
+@pytest.mark.parametrize(
+    ("prompt", "image_node_id", "message"),
+    [
+        (VIDEO_PROMPT_TEMPLATE.replace("{image_node_id}", "missing"), "node_image_123", "占位符"),
+        (VIDEO_PROMPT_TEMPLATE, "image-123", "Node ID"),
+        (
+            VIDEO_PROMPT_TEMPLATE.replace("不包含任何字幕", "不要字幕"),
+            "node_image_123",
+            "缺少必检短语",
+        ),
+    ],
+)
+def test_render_video_prompt_rejects_invalid_runtime_inputs(
+    prompt: str, image_node_id: str, message: str
+) -> None:
+    with pytest.raises(DreaminaAdapterError, match=message):
+        render_dreamina_video_prompt(prompt, image_node_id=image_node_id)
