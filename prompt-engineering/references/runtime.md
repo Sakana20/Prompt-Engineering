@@ -212,7 +212,8 @@ uv run avatar-prompts export-csv \
 - `libtv_omnihuman_package` 写出 LibTV CSV、interface JSON 和 plan Markdown 三件套。
 - `dreamina_canvas_package` 写出 Dreamina CSV、interface JSON 和 plan Markdown 三件套；
   不创建画布或节点，不提交生成。完整纯口播直接写入视频 Prompt，且 Prompt 精确包含
-  `不包含任何字幕`；不创建 TTS 或音频节点。
+  `不包含任何字幕`；不创建 TTS 或音频节点，也不重复 `avatar_prompt` 中的人物、服装和场景
+  信息，视频外观只依赖选中的参考图片。
 - `save-dreamina-video-node` 读取上述 CSV/interface，用真实 `image_node_id` 替换
   `{image_node_id}`，只把图片作为 `--ref node:<id>` 传给官方 Dreamina CLI，且不带 `--run`。
   它会保存线上视频节点草稿；调用前必须由用户明确要求该写入。视频 Prompt 要求完整逐字说出

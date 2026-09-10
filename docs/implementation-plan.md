@@ -152,6 +152,8 @@
     并调用官方 Dreamina CLI 保存视频节点草稿；不附加 `--run`；
   - Dreamina 视频模型使用用户指定的 `seedance_2.0mini`，Prompt 鼓励人物根据口播语义自然
     接触、拿起或使用商品；执行前必须实时确认 canonical model；
+  - Dreamina 视频 Prompt 不重复人物、服装和场景描述，只包含参考图片绑定、商品互动方向、
+    完整口播与无字幕约束；
   - `<task>.libtv.plan.md`：保存人审计划；
 - 首版不创建 LibTV 画布、不创建节点、不运行 `libtv node --run`，付费生成仍需用户单独确认；
 - 默认语义音色：女声 `温暖闺蜜`，男声 `温润男声`；

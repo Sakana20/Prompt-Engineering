@@ -8,7 +8,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from .dreamina import remove_dreamina_video_restrictions
 from .models import (
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
@@ -177,14 +176,9 @@ class GeneratedTaskRecord:
         )
 
     def dreamina_task(self, *, notes: str) -> DreaminaCanvasTask:
-        avatar_prompt = remove_dreamina_video_restrictions(self.avatar_prompt).rstrip("。")
         plain_script = self.marked_script.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")
         suffix = _DREAMINA_VIDEO_PROMPT_SUFFIX.format(script=plain_script)
-        if DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE in avatar_prompt:
-            suffix = suffix.replace(f"，{DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE}", "")
-        video_prompt = (
-            f"让{{{{node:{{image_node_id}}}}}}中的人物保持首帧身份与服装，{avatar_prompt}。{suffix}"
-        )
+        video_prompt = f"以{{{{node:{{image_node_id}}}}}}为参考图生成视频。{suffix}"
         return DreaminaCanvasTask(
             task_id=self.task_id,
             image_prompt=self.image_prompt,

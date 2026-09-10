@@ -37,7 +37,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
   `<task>.libtv.plan.md`，只用于人审和后续执行，不创建画布或运行节点。
 - 输出 Dreamina Canvas 三件套：`<task>.dreamina.csv`、
   `<task>.dreamina.interface.json`、`<task>.dreamina.plan.md`。完整口播文案直接嵌入视频
-  Prompt，不再创建 TTS 或音频节点；视频 Prompt 必须包含`不包含任何字幕`。
+  Prompt，不再创建 TTS 或音频节点，也不重复人物、服装或场景信息；视频外观只依赖首帧
+  参考图。视频 Prompt 必须包含`不包含任何字幕`。
 - `save-dreamina-video-node` 使用真实图片 Node ID 渲染正文引用，并只把图片节点作为 `--ref`
   传给 Dreamina 视频节点。该命令只保存草稿，不带 `--run`；生成仍需另行批准。
   视频模型配置为用户指定的 `seedance_2.0mini`。视频 Prompt 鼓励人物根据口播语义自然接触、

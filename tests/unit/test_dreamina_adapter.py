@@ -12,7 +12,7 @@ from avatar_prompt_pipeline.dreamina import (
 )
 
 VIDEO_PROMPT_TEMPLATE = (
-    "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
+    "以{{node:{image_node_id}}}为参考图生成视频。"
     "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
     "“这是需要完整说出的口播文案。”口型与口播内容同步，身体动作自然，不包含任何字幕。"
@@ -104,7 +104,7 @@ def test_dreamina_video_removes_product_touch_and_camera_restrictions_only() -> 
         assert removed not in cleaned
 
 
-def test_runtime_render_removes_restrictions_from_older_package_prompt() -> None:
+def test_runtime_render_removes_restrictions_from_legacy_package_prompt() -> None:
     legacy_prompt = VIDEO_PROMPT_TEMPLATE.replace(
         "自然口播。",
         "自然口播，人物不接触商品，固定机位，不切镜、不运镜。",

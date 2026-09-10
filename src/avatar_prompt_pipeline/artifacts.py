@@ -146,7 +146,7 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
 }
 
 DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
-    "schema_version": "dreamina-interface-config/v2",
+    "schema_version": "dreamina-interface-config/v3",
     "interface": "dreamina_canvas",
     "catalog_observed_at": None,
     "model_selection_source": "user_requested_pending_runtime_discovery",
@@ -190,7 +190,7 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
             "prompt_field": "video_prompt",
             "prompt_write_timing": "after_image_reference_selected",
             "prompt_template": (
-                "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。"
+                "以{{node:{image_node_id}}}为参考图生成视频。"
                 "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
                 "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
                 "\u201c{script}\u201d。口型与口播内容同步，身体动作自然，"

@@ -253,8 +253,7 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
     interface_path = tmp_path / "dreamina" / "hami-melon-batch.dreamina.interface.json"
     plan_path = tmp_path / "dreamina" / "hami-melon-batch.dreamina.plan.md"
     video_prompt = (
-        "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，"
-        "年轻中国女生在餐桌旁自然口播，全程直视镜头。"
+        "以{{node:{image_node_id}}}为参考图生成视频。"
         "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
         "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
         f"“{PLAIN_SCRIPT}”。口型与口播内容同步，身体动作自然，不包含任何字幕。"
@@ -292,10 +291,11 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
         "csv": "hami-melon-batch.dreamina.csv",
         "plan": "hami-melon-batch.dreamina.plan.md",
     }
-    assert interface_config["schema_version"] == "dreamina-interface-config/v2"
+    assert interface_config["schema_version"] == "dreamina-interface-config/v3"
     assert "audio" not in interface_config["nodes"]
     assert interface_config["nodes"]["video"]["inputs"] == ["image"]
     assert interface_config["nodes"]["video"]["model"] == "seedance_2.0mini"
+    assert "{avatar_prompt}" not in interface_config["nodes"]["video"]["prompt_template"]
     assert "不包含任何字幕" in interface_config["nodes"]["video"]["prompt_template"]
     assert interface_config["execution_boundary"]["run_nodes"] is False
 

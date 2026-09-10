@@ -156,8 +156,10 @@ help, tests, or Skill validation.
    When the user requests a Dreamina Canvas package, read
    [dreamina-canvas-contract.md](references/dreamina-canvas-contract.md). Treat Dreamina as a
    separate output adapter. Derive `image_prompt` from the accepted static first-frame prompt and
-   a new `video_prompt` from the full `avatar_prompt` plus the accepted plain script. Put the full
-   plain script directly in `video_prompt`; do not create an `audio_prompt` or TTS node. After the
+   derive `video_prompt` only from the selected image reference, the product-interaction direction,
+   and the accepted plain script. Do not repeat identity, outfit, scene, or other `avatar_prompt`
+   descriptions in the video Prompt. Put the full plain script directly in `video_prompt`; do not
+   create an `audio_prompt` or TTS node. After the
    image reference is selected, replace `{image_node_id}` with the real image Node ID, include only
    that image as `--ref node:<id>`, and pass the rendered Prompt to the video node. The final video
    Prompt must require the embedded script to be spoken verbatim without omission, rewriting,

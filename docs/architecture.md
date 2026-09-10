@@ -205,7 +205,8 @@ CSV 中的 `{image_node_id}` 替换为真实 Node ID，只传入图片节点引�
 
 Dreamina 视频默认使用用户指定的 `seedance_2.0mini`，并要求执行前实时确认 canonical model。
 视频 Prompt 鼓励人物根据口播语义自然接触、拿起或使用商品；静态首帧的不手持、不接触约束
-不会带入视频阶段。
+不会带入视频阶段。人物、服装与场景只由参考图片提供，视频 Prompt 不再重复
+`avatar_prompt` 或 `image_prompt` 的视觉描述。
 
 - Dreamina CSV 只保存逐条任务数据：`task_id`、`title`、`notes`、`image_prompt`、
   `video_prompt`、`aspect_ratio`、`reference_image_key`；

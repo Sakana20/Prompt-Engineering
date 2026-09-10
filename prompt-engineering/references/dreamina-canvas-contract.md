@@ -14,9 +14,10 @@
 ## 固定决策
 
 - Dreamina 链路只包含图片节点和视频节点，不创建 TTS 或音频节点。
-- `video_prompt` 必须从完整 `avatar_prompt` 和已通过校验的纯口播文案派生，不得用静态
-  `image_prompt` 代替。去除 `[[NO_SPLIT]]` 标签后，把完整口播文案直接写入
-  `video_prompt`；任务包中保留唯一 `{image_node_id}` 占位符。
+- `video_prompt` 只使用选中的图片引用、商品互动方向和已通过校验的纯口播文案，不再写入
+  `avatar_prompt` 中的人物、服装、场景或其他描述，也不得复制静态 `image_prompt`。去除
+  `[[NO_SPLIT]]` 标签后，把完整口播文案直接写入 `video_prompt`；任务包中保留唯一
+  `{image_node_id}` 占位符。
 - 选择图片引用后，用真实图片 Node ID 替换 `{image_node_id}`，再把最终 Prompt 写入视频
   节点；只把图片作为 `--ref node:<id>` 传入。
 - 最终 Prompt 必须包含`必须严格按照以下口播文案逐字说完`，并要求不得省略、改写、截断

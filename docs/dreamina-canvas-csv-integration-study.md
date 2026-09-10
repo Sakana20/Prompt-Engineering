@@ -24,7 +24,8 @@ image_prompt ──> 图片节点 ──> m2v 视频节点
 - CLI 版本：`1.0.0`，公开中国区版本。
 - 当前用户指定模型名为 `seedance_2.0mini`；本次实时查询因登录失效而未能确认其 canonical
   名称和动态参数，执行前必须重新运行 `model find`。
-- 视频 Prompt 最长 15000 字符，当前 80–100 字口播加完整数字人描述可放入 Prompt。
+- 视频 Prompt 最长 15000 字符；当前只写图片引用、互动方向和 80–100 字口播，不重复数字人
+  视觉描述。
 - 支持 `9:16`、`720p`，时长范围 4–30 秒，步长 1 秒。
 - 视频节点可以只保存草稿；`--run`、报价和积分批准保持为独立步骤。
 
@@ -42,14 +43,15 @@ task_id,title,notes,image_prompt,video_prompt,aspect_ratio,reference_image_key
 
 - `image_prompt`：静态数字人口播首帧 Prompt；有商品参考图时由执行层转换为 Dreamina 可用
   的图片资源或节点。
-- `video_prompt`：从完整 `avatar_prompt` 派生，并直接包含去除 `NO_SPLIT` 标签后的完整口播。
+- `video_prompt`：只使用图片引用、商品互动方向和去除 `NO_SPLIT` 标签后的完整口播，不重复
+  `avatar_prompt` 或 `image_prompt` 中的人物、服装和场景描述。
 - `reference_image_key`：包外稳定资产登记键，不保存签名 URL。
 - Oceanengine URI/PID 不是 Dreamina Node ID，禁止混用。
 
 视频 Prompt 使用以下合同：
 
 ```text
-让{{node:<image-node-id>}}中的人物保持首帧身份与服装，<avatar_prompt>。
+以{{node:<image-node-id>}}为参考图生成视频。
 鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。
 必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束：
 “<完整纯口播文案>”。口型与口播内容同步，身体动作自然，不包含任何字幕。
@@ -69,7 +71,7 @@ Dreamina 视频适配层会移除静态首帧带入的“不手持商品”“�
 <task>.dreamina.plan.md
 ```
 
-接口配置版本为 `dreamina-interface-config/v2`。节点图只包含 `image` 和 `video`：
+接口配置版本为 `dreamina-interface-config/v3`。节点图只包含 `image` 和 `video`：
 
 - 图片默认候选：`seedream_4.6`，无参考图 `t2i`，有参考图 `i2i`；
 - 视频用户指定候选：`seedance_2.0mini + m2v + 9:16 + 720p`，执行前以实时发现结果为准；
@@ -123,7 +125,8 @@ avatar-prompts save-dreamina-video-node \
 
 - Oceanengine CSV 和 LibTV OmniHuman 三件套保持不变。
 - Dreamina CSV 已删除 `audio_prompt`、`voice_intent`、`dreamina_voice_name`。
-- Dreamina interface 已升级到 v2，并删除 `nodes.audio` 和全部语速门禁字段。
+- Dreamina interface 已升级到 v3，删除 `nodes.audio`、全部语速门禁字段和
+  `{avatar_prompt}` 视频模板变量。
 - `save-dreamina-video-node` 已删除 `--audio-node-id`，生成命令只传图片引用。
 - 完整口播从 `marked_script` 去除控制标签后确定性嵌入视频 Prompt。
 - 本地打包仍不创建画布、节点或付费生成。
