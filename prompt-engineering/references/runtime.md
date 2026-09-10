@@ -216,7 +216,8 @@ uv run avatar-prompts export-csv \
 - `save-dreamina-video-node` 读取上述 CSV/interface，用真实 `image_node_id` 替换
   `{image_node_id}`，把图片和音频分别作为 `--ref node:<id>` 传给官方 Dreamina CLI，且不带
   `--run`。它会保存线上视频节点草稿；调用前必须由用户明确要求该写入。视频 Prompt 要求完整
-  逐字使用所选音频内容，不得省略、改写、截断或提前结束；不限制切镜或运镜。
+  逐字使用所选音频内容，不得省略、改写、截断或提前结束；Dreamina 专用清洗会去掉不得
+  触碰商品、固定机位、禁止切镜和禁止运镜类限制。静态首帧及其他下游适配器不受影响。
 
 统一输出层级为：
 

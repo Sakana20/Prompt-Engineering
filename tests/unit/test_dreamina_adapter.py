@@ -7,6 +7,7 @@ import pytest
 from avatar_prompt_pipeline.dreamina import (
     DreaminaAdapterError,
     load_dreamina_video_node_draft,
+    remove_dreamina_video_restrictions,
     render_dreamina_video_prompt,
 )
 
@@ -65,6 +66,49 @@ def test_render_video_prompt_uses_real_image_node_and_preserves_required_constra
     assert "必须完整使用所选音频节点的全部内容进行口播" in prompt
     assert "不得省略、改写、截断或提前结束" in prompt
     assert "不包含任何字幕" in prompt
+    assert "固定机位" not in prompt
+    assert "不切镜" not in prompt
+    assert "不运镜" not in prompt
+
+
+def test_dreamina_video_removes_product_touch_and_camera_restrictions_only() -> None:
+    source = (
+        "竖屏9:16，固定中景，手机固定拍摄，人物不看商品、不接触商品，"
+        "商品不由人物手持，固定机位，不允许切镜，不切镜，一镜到底，"
+        "不允许运镜，不运镜，不推拉摇移，身体稳定"
+    )
+
+    cleaned = remove_dreamina_video_restrictions(source)
+
+    assert "人物不看商品" in cleaned
+    assert "商品不由人物手持" in cleaned
+    assert "中景" in cleaned
+    assert "手机实拍" in cleaned
+    assert "身体稳定" in cleaned
+    for removed in (
+        "不接触商品",
+        "不触碰商品",
+        "固定机位",
+        "镜头固定",
+        "不允许切镜",
+        "不切镜",
+        "一镜到底",
+        "不允许运镜",
+        "不运镜",
+        "不推拉摇移",
+    ):
+        assert removed not in cleaned
+
+
+def test_runtime_render_removes_restrictions_from_older_package_prompt() -> None:
+    legacy_prompt = VIDEO_PROMPT_TEMPLATE.replace(
+        "自然口播。",
+        "自然口播，人物不接触商品，固定机位，不切镜、不运镜。",
+    )
+
+    prompt = render_dreamina_video_prompt(legacy_prompt, image_node_id="node_image_123")
+
+    assert "人物不接触商品" not in prompt
     assert "固定机位" not in prompt
     assert "不切镜" not in prompt
     assert "不运镜" not in prompt

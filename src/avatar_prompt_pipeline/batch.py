@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from .dreamina import remove_dreamina_video_restrictions
 from .models import (
     DEFAULT_DREAMINA_VOICE_NAME,
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
@@ -175,7 +176,7 @@ class GeneratedTaskRecord:
         )
 
     def dreamina_task(self, *, notes: str) -> DreaminaCanvasTask:
-        avatar_prompt = _clean(self.avatar_prompt).rstrip("。")
+        avatar_prompt = remove_dreamina_video_restrictions(self.avatar_prompt).rstrip("。")
         suffix = _DREAMINA_VIDEO_PROMPT_SUFFIX
         if DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE in avatar_prompt:
             suffix = suffix.replace(f"，{DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE}", "")

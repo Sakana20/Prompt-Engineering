@@ -16,6 +16,31 @@ from .models import (
 
 IMAGE_NODE_ID_PLACEHOLDER = "{image_node_id}"
 _NODE_ID_PATTERN = re.compile(r"^node_[A-Za-z0-9_-]+$")
+_DREAMINA_VIDEO_REPLACEMENTS = (
+    ("人物不看商品、不接触商品", "人物不看商品"),
+    ("人物不看商品，不接触商品", "人物不看商品"),
+    ("人物不看商品且不接触商品", "人物不看商品"),
+    ("手机固定拍摄", "手机实拍"),
+    ("固定中景", "中景"),
+)
+_DREAMINA_VIDEO_REMOVED_RESTRICTIONS = (
+    "人物不接触商品",
+    "人物不触碰商品",
+    "不得触碰商品",
+    "不能触碰商品",
+    "不接触商品",
+    "不触碰商品",
+    "固定机位",
+    "镜头固定",
+    "禁止切镜",
+    "不允许切镜",
+    "不切镜",
+    "一镜到底",
+    "禁止运镜",
+    "不允许运镜",
+    "不运镜",
+    "不推拉摇移",
+)
 
 
 class DreaminaAdapterError(ValueError):
@@ -88,11 +113,25 @@ def _validate_node_id(value: str, *, field: str) -> str:
     return node_id
 
 
+def remove_dreamina_video_restrictions(prompt: str) -> str:
+    """Remove constraints that apply to static prompts but not Dreamina video synthesis."""
+    cleaned = " ".join(prompt.replace("\x00", "").split())
+    for old, new in _DREAMINA_VIDEO_REPLACEMENTS:
+        cleaned = cleaned.replace(old, new)
+    for phrase in _DREAMINA_VIDEO_REMOVED_RESTRICTIONS:
+        cleaned = cleaned.replace(phrase, "")
+    cleaned = re.sub(r"[，,]{2,}", "，", cleaned)
+    cleaned = re.sub(r"[；;]{2,}", "；", cleaned)
+    cleaned = cleaned.replace("，。", "。").replace("；。", "。").replace("。，", "。")
+    return cleaned.strip(" ，,；;。")
+
+
 def render_dreamina_video_prompt(prompt_template: str, *, image_node_id: str) -> str:
     node_id = _validate_node_id(image_node_id, field="image_node_id")
-    if prompt_template.count(IMAGE_NODE_ID_PLACEHOLDER) != 1:
+    cleaned_template = remove_dreamina_video_restrictions(prompt_template)
+    if cleaned_template.count(IMAGE_NODE_ID_PLACEHOLDER) != 1:
         raise DreaminaAdapterError("video_prompt 必须且只能包含一个 {image_node_id} 占位符")
-    prompt = prompt_template.replace(IMAGE_NODE_ID_PLACEHOLDER, node_id)
+    prompt = cleaned_template.replace(IMAGE_NODE_ID_PLACEHOLDER, node_id)
     expected_reference = f"{{{{node:{node_id}}}}}"
     if expected_reference not in prompt:
         raise DreaminaAdapterError("video_prompt 未形成有效的图片节点正文引用")

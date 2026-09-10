@@ -321,7 +321,10 @@ def test_package_cli_writes_dreamina_canvas_package(
                     {
                         "task_id": "HM-001",
                         "marked_script": marked_script,
-                        "avatar_prompt": "年轻中国女生在餐桌旁自然口播，全程直视镜头。",
+                        "avatar_prompt": (
+                            "年轻中国女生在餐桌旁自然口播，全程直视镜头，人物不接触商品，"
+                            "固定机位，不切镜、不运镜。"
+                        ),
                         "identity_key": "圆脸-黑色短发",
                         "outfit_key": "白衬衫-蓝牛仔裤",
                         "person_prompt": person_prompt,
@@ -369,6 +372,7 @@ def test_package_cli_writes_dreamina_canvas_package(
     assert "固定机位" not in row["video_prompt"]
     assert "不切镜" not in row["video_prompt"]
     assert "不运镜" not in row["video_prompt"]
+    assert "不接触商品" not in row["video_prompt"]
     assert row["video_prompt"].count("不包含任何字幕") == 1
     interface = json.loads(interface_path.read_text(encoding="utf-8"))
     assert interface["defaults"]["speech_speed"] == 1.2

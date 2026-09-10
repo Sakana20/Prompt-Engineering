@@ -236,7 +236,7 @@ task_id,title,notes,image_prompt,audio_prompt,video_prompt,aspect_ratio,voice_in
 
 - `image_prompt`：复用上游 `image_prompt`，无值时复用 `person_prompt`；
 - `audio_prompt`：由 `marked_script` 去标签后生成；
-- `video_prompt`：不能只复用静态图片 Prompt；应从上游 `avatar_prompt` 与 Dreamina 约束重新组装，任务包保留 `{image_node_id}` 占位符，选择图片、音频后替换为真实图片 Node ID；要求完整逐字使用音频节点内容，不得省略、改写、截断或提前结束，并强制包含原句 `不包含任何字幕`；默认允许切镜和运镜；
+- `video_prompt`：不能只复用静态图片 Prompt；应从上游 `avatar_prompt` 与 Dreamina 约束重新组装，任务包保留 `{image_node_id}` 占位符，选择图片、音频后替换为真实图片 Node ID；要求完整逐字使用音频节点内容，不得省略、改写、截断或提前结束，并强制包含原句 `不包含任何字幕`；Dreamina 视频阶段允许人物触碰商品、切镜和运镜，适配器需移除上游带入的对应禁止语句；
 - `voice_intent`：保留业务语义；
 - `dreamina_voice_name`：必须由实时目录确认；
 - `reference_image_key`：只引用包外稳定资产登记，不复制 signed URL。
@@ -337,7 +337,7 @@ audio_prompt ──> TTS 节点 ─┘
 让{{node:<image-node-id>}}中的人物保持首帧身份与服装，<avatar_prompt>。必须完整使用所选音频节点的全部内容进行口播，逐字说完，不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。
 ```
 
-其中图片节点必须通过 `--ref node:<image-node-id>` 建立引用，同时在 Prompt 中使用真实 `{{node:<image-node-id>}}` 占位符强化人物绑定；音频节点通过 `--ref node:<audio-node-id>` 建立引用。提交前必须确认两条引用均存在，并对最终 Prompt 做精确短语校验：必须包含完整音频、逐字说完、不得省略改写截断或提前结束，以及 `不包含任何字幕`。默认不加入固定机位、不切镜或不运镜限制。
+其中图片节点必须通过 `--ref node:<image-node-id>` 建立引用，同时在 Prompt 中使用真实 `{{node:<image-node-id>}}` 占位符强化人物绑定；音频节点通过 `--ref node:<audio-node-id>` 建立引用。提交前必须确认两条引用均存在，并对最终 Prompt 做精确短语校验：必须包含完整音频、逐字说完、不得省略改写截断或提前结束，以及 `不包含任何字幕`。Dreamina 专用适配层会移除“不接触/不触碰商品”、固定机位、不切镜、一镜到底、不运镜和不推拉摇移等限制；静态首帧和其他平台规则保持不变。
 
 ## 8. 执行阶段与授权边界
 

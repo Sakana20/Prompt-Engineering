@@ -162,7 +162,10 @@ help, tests, or Skill validation.
    the rendered Prompt to the video node. The final video Prompt must require all selected audio
    content to be spoken verbatim without omission, rewriting, truncation, or early ending, and
    contain the exact phrase `不包含任何字幕`. Do not add fixed-camera, no-cut, or no-camera-motion
-   restrictions unless the user separately requests them. Use the exact Dreamina voice name
+   restrictions unless the user separately requests them. Do not carry static-image restrictions
+   that prevent the person from touching the product into the Dreamina video Prompt. This
+   relaxation applies only to Dreamina video synthesis; keep Oceanengine, LibTV, and static image
+   prompt validation unchanged. Use the exact Dreamina voice name
    `明媚女声`. Record 1.2x
    as the required speech-speed target, but do not invent a CLI speed flag: Dreamina Canvas CLI
    1.0.0 must stop before audio execution until an authorized implementation can enforce it.

@@ -24,6 +24,7 @@ from .dreamina import (
     DreaminaAdapterError,
     DreaminaVideoNodeDraft,
     load_dreamina_video_node_draft,
+    remove_dreamina_video_restrictions,
     render_dreamina_video_prompt,
     save_dreamina_video_node,
 )
@@ -78,6 +79,7 @@ __all__ = [
     "default_task_directory",
     "load_dreamina_video_node_draft",
     "load_task_batch",
+    "remove_dreamina_video_restrictions",
     "render_dreamina_video_prompt",
     "save_dreamina_video_node",
     "strip_no_split_markers",
