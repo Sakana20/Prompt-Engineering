@@ -369,6 +369,7 @@ def test_package_cli_writes_dreamina_canvas_package(
     assert "年轻中国女生在餐桌旁自然口播" in row["video_prompt"]
     assert "{{node:{image_node_id}}}" in row["video_prompt"]
     assert "必须严格按照以下口播文案逐字说完" in row["video_prompt"]
+    assert "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品" in row["video_prompt"]
     assert (
         marked_script.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")
         in row["video_prompt"]
@@ -378,6 +379,7 @@ def test_package_cli_writes_dreamina_canvas_package(
     assert "不切镜" not in row["video_prompt"]
     assert "不运镜" not in row["video_prompt"]
     assert "不接触商品" not in row["video_prompt"]
+    assert "商品不由人物手持" not in row["video_prompt"]
     assert row["video_prompt"].count("不包含任何字幕") == 1
     interface = json.loads(interface_path.read_text(encoding="utf-8"))
     assert interface["schema_version"] == "dreamina-interface-config/v2"
@@ -404,6 +406,7 @@ def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
                 "title": "数字人口播",
                 "video_prompt": (
                     "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
+                    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
                     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
                     "“这是需要完整说出的口播文案。”口型与口播内容同步，"
                     "身体动作自然，不包含任何字幕。"
@@ -419,7 +422,7 @@ def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
                 "nodes": {
                     "video": {
                         "mode": "m2v",
-                        "model": "seedance_2.5",
+                        "model": "seedance_2.0mini",
                         "resolution": "720p",
                         "count": 1,
                     }

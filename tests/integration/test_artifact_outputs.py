@@ -255,6 +255,7 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
     video_prompt = (
         "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，"
         "年轻中国女生在餐桌旁自然口播，全程直视镜头。"
+        "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
         "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
         f"“{PLAIN_SCRIPT}”。口型与口播内容同步，身体动作自然，不包含任何字幕。"
     )
@@ -294,6 +295,7 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
     assert interface_config["schema_version"] == "dreamina-interface-config/v2"
     assert "audio" not in interface_config["nodes"]
     assert interface_config["nodes"]["video"]["inputs"] == ["image"]
+    assert interface_config["nodes"]["video"]["model"] == "seedance_2.0mini"
     assert "不包含任何字幕" in interface_config["nodes"]["video"]["prompt_template"]
     assert interface_config["execution_boundary"]["run_nodes"] is False
 
@@ -315,6 +317,7 @@ def test_dreamina_task_rejects_missing_required_phrase_or_embedded_script() -> N
         "image_prompt": "有效首帧 Prompt",
         "marked_script": MARKED_SCRIPT,
         "video_prompt": (
+            "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
             "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
             f"“{PLAIN_SCRIPT}”。不包含任何字幕。"
         ),
@@ -326,6 +329,7 @@ def test_dreamina_task_rejects_missing_required_phrase_or_embedded_script() -> N
             **{
                 **base,
                 "video_prompt": (
+                    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
                     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
                     f"“{PLAIN_SCRIPT}”。"
                 ),
@@ -333,11 +337,22 @@ def test_dreamina_task_rejects_missing_required_phrase_or_embedded_script() -> N
         )
     with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：必须严格按照"):
         DreaminaCanvasTask(**{**base, "video_prompt": "不包含任何字幕。"})
+    with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：鼓励人物"):
+        DreaminaCanvasTask(
+            **{
+                **base,
+                "video_prompt": str(base["video_prompt"]).replace(
+                    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。",
+                    "",
+                ),
+            }
+        )
     with pytest.raises(ValueError, match="必须直接包含完整口播文案"):
         DreaminaCanvasTask(
             **{
                 **base,
                 "video_prompt": (
+                    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
                     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
                     "“另一段文案”。不包含任何字幕。"
                 ),

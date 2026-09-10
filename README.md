@@ -40,8 +40,9 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
   Prompt，不再创建 TTS 或音频节点；视频 Prompt 必须包含`不包含任何字幕`。
 - `save-dreamina-video-node` 使用真实图片 Node ID 渲染正文引用，并只把图片节点作为 `--ref`
   传给 Dreamina 视频节点。该命令只保存草稿，不带 `--run`；生成仍需另行批准。
-  视频 Prompt 允许人物触碰商品、切镜和运镜，但要求完整逐字说出内嵌文案，不得省略、
-  改写或截断。放宽只作用于 Dreamina 视频阶段，不改变静态首帧、Oceanengine 或 LibTV 约束。
+  视频模型配置为用户指定的 `seedance_2.0mini`。视频 Prompt 鼓励人物根据口播语义自然接触、
+  拿起或使用商品，同时允许切镜和运镜；它仍要求完整逐字说出内嵌文案，不得省略、改写或
+  截断。放宽只作用于 Dreamina 视频阶段，不改变静态首帧、Oceanengine 或 LibTV 约束。
 
 ```bash
 avatar-prompts save-dreamina-video-node \

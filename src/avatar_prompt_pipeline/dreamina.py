@@ -11,6 +11,7 @@ from typing import Any
 
 from .models import (
     DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE,
+    DREAMINA_REQUIRED_PRODUCT_INTERACTION_PHRASE,
     DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE,
 )
 
@@ -40,6 +41,17 @@ _DREAMINA_VIDEO_REMOVED_RESTRICTIONS = (
     "不允许运镜",
     "不运镜",
     "不推拉摇移",
+    "商品不由人物手持",
+    "禁止手持商品",
+    "不得手持商品",
+    "不能手持商品",
+    "不拿起商品",
+    "不得拿起商品",
+    "不能拿起商品",
+    "不递近镜头",
+    "不用手持续展示包装",
+    "远离人物双手",
+    "商品只提供环境信息",
 )
 
 
@@ -134,6 +146,7 @@ def render_dreamina_video_prompt(prompt_template: str, *, image_node_id: str) ->
         raise DreaminaAdapterError("video_prompt 未形成有效的图片节点正文引用")
     required_phrases = (
         DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE,
+        DREAMINA_REQUIRED_PRODUCT_INTERACTION_PHRASE,
         DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE,
     )
     missing = [phrase for phrase in required_phrases if phrase not in prompt]
@@ -177,7 +190,7 @@ def load_dreamina_video_node_draft(
     duration_seconds: float,
 ) -> DreaminaVideoNodeDraft:
     if not 4 <= duration_seconds <= 30:
-        raise DreaminaAdapterError("duration_seconds 必须在 seedance_2.5 的 4-30 秒范围内")
+        raise DreaminaAdapterError("duration_seconds 必须在 Dreamina 当前视频契约的 4-30 秒范围内")
     row = _load_task_row(Path(csv_path), task_id)
     video = _load_video_config(Path(interface_path))
     prompt = render_dreamina_video_prompt(

@@ -14,6 +14,9 @@ DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE = "不包含任何字幕"
 DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE = (
     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束"
 )
+DREAMINA_REQUIRED_PRODUCT_INTERACTION_PHRASE = (
+    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制"
+)
 LIBTV_VOICE_IDS_BY_LABEL = {
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL: DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_MALE_VOICE_LABEL: DEFAULT_LIBTV_MALE_VOICE_ID,
@@ -496,6 +499,10 @@ class DreaminaCanvasTask:
         if DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE not in video_prompt:
             raise BriefValidationError(
                 f"Dreamina 视频 Prompt 必须包含：{DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE}"
+            )
+        if DREAMINA_REQUIRED_PRODUCT_INTERACTION_PHRASE not in video_prompt:
+            raise BriefValidationError(
+                f"Dreamina 视频 Prompt 必须包含：{DREAMINA_REQUIRED_PRODUCT_INTERACTION_PHRASE}"
             )
         plain_script = _clean(
             self.marked_script.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")

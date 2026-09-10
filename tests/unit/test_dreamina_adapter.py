@@ -13,6 +13,7 @@ from avatar_prompt_pipeline.dreamina import (
 
 VIDEO_PROMPT_TEMPLATE = (
     "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
+    "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
     "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
     "“这是需要完整说出的口播文案。”口型与口播内容同步，身体动作自然，不包含任何字幕。"
 )
@@ -42,7 +43,7 @@ def _write_package_files(tmp_path: Path) -> tuple[Path, Path]:
                 "nodes": {
                     "video": {
                         "mode": "m2v",
-                        "model": "seedance_2.5",
+                        "model": "seedance_2.0mini",
                         "resolution": "720p",
                         "count": 1,
                     }
@@ -65,6 +66,7 @@ def test_render_video_prompt_uses_real_image_node_and_preserves_required_constra
     assert "{image_node_id}" not in prompt
     assert "必须严格按照以下口播文案逐字说完" in prompt
     assert "这是需要完整说出的口播文案" in prompt
+    assert "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品" in prompt
     assert "不得省略、改写、截断或提前结束" in prompt
     assert "不包含任何字幕" in prompt
     assert "固定机位" not in prompt
@@ -82,7 +84,7 @@ def test_dreamina_video_removes_product_touch_and_camera_restrictions_only() -> 
     cleaned = remove_dreamina_video_restrictions(source)
 
     assert "人物不看商品" in cleaned
-    assert "商品不由人物手持" in cleaned
+    assert "商品不由人物手持" not in cleaned
     assert "中景" in cleaned
     assert "手机实拍" in cleaned
     assert "身体稳定" in cleaned
@@ -97,6 +99,7 @@ def test_dreamina_video_removes_product_touch_and_camera_restrictions_only() -> 
         "不允许运镜",
         "不运镜",
         "不推拉摇移",
+        "商品不由人物手持",
     ):
         assert removed not in cleaned
 
@@ -143,6 +146,14 @@ def test_video_node_command_passes_prompt_and_image_reference_only(tmp_path: Pat
         (VIDEO_PROMPT_TEMPLATE, "image-123", "Node ID"),
         (
             VIDEO_PROMPT_TEMPLATE.replace("不包含任何字幕", "不要字幕"),
+            "node_image_123",
+            "缺少必检短语",
+        ),
+        (
+            VIDEO_PROMPT_TEMPLATE.replace(
+                "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。",
+                "",
+            ),
             "node_image_123",
             "缺少必检短语",
         ),

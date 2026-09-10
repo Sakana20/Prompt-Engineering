@@ -203,6 +203,10 @@ Dreamina 视频节点草稿由显式命令 `save-dreamina-video-node` 交给官�
 CSV 中的 `{image_node_id}` 替换为真实 Node ID，只传入图片节点引用；完整口播已直接嵌入
 视频 Prompt，默认不运行生成。
 
+Dreamina 视频默认使用用户指定的 `seedance_2.0mini`，并要求执行前实时确认 canonical model。
+视频 Prompt 鼓励人物根据口播语义自然接触、拿起或使用商品；静态首帧的不手持、不接触约束
+不会带入视频阶段。
+
 - Dreamina CSV 只保存逐条任务数据：`task_id`、`title`、`notes`、`image_prompt`、
   `video_prompt`、`aspect_ratio`、`reference_image_key`；
 - Dreamina interface JSON 保存接口类型、图片/视频模型、节点模板、可写模型参数和

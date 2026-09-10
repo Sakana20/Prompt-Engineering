@@ -163,8 +163,10 @@ help, tests, or Skill validation.
    Prompt must require the embedded script to be spoken verbatim without omission, rewriting,
    truncation, or early ending, and contain the exact phrase `不包含任何字幕`. Do not add
    fixed-camera, no-cut, or no-camera-motion
-   restrictions unless the user separately requests them. Do not carry static-image restrictions
-   that prevent the person from touching the product into the Dreamina video Prompt. This
+   restrictions unless the user separately requests them. Encourage the person to interact
+   naturally with the product when the script semantics permit it. Do not carry static-image
+   restrictions that prevent holding, picking up, touching, or using the product into the
+   Dreamina video Prompt. This
    relaxation applies only to Dreamina video synthesis; keep Oceanengine, LibTV, and static image
    prompt validation unchanged. Dreamina voice and speech-speed fields do not apply to this
    image-to-video path; never create an intermediate audio node for it.

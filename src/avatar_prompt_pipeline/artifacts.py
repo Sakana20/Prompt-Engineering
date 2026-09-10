@@ -148,7 +148,8 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
 DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
     "schema_version": "dreamina-interface-config/v2",
     "interface": "dreamina_canvas",
-    "catalog_observed_at": "2026-09-09T00:00:00+08:00",
+    "catalog_observed_at": None,
+    "model_selection_source": "user_requested_pending_runtime_discovery",
     "discovery_required_before_execution": True,
     "task_package": {
         "csv": "<task>.dreamina.csv",
@@ -160,6 +161,7 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
     },
     "defaults": {
         "required_video_prompt_phrases": [
+            "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制",
             "必须严格按照以下口播文案逐字说完",
             "不得省略、改写、截断或提前结束",
             "不包含任何字幕",
@@ -180,7 +182,7 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
         "video": {
             "name_template": "{task_id}-video",
             "type": "video",
-            "model": "seedance_2.5",
+            "model": "seedance_2.0mini",
             "mode": "m2v",
             "resolution": "720p",
             "ratio_field": "aspect_ratio",
@@ -189,11 +191,13 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
             "prompt_write_timing": "after_image_reference_selected",
             "prompt_template": (
                 "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。"
+                "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制。"
                 "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
                 "\u201c{script}\u201d。口型与口播内容同步，身体动作自然，"
                 "不包含任何字幕。"
             ),
             "required_prompt_phrases": [
+                "鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制",
                 "必须严格按照以下口播文案逐字说完",
                 "不得省略、改写、截断或提前结束",
                 "不包含任何字幕",
@@ -502,6 +506,9 @@ def write_dreamina_canvas_plan(
             handle.write(f"  prompt: {task.video_prompt}\n")
             handle.write("  image_node_id_placeholder: {image_node_id}\n")
             handle.write("  required_prompt_phrases:\n")
+            handle.write(
+                "    - 鼓励人物在口播过程中根据文案语义自然接触、拿起或使用商品，动作真实克制\n"
+            )
             handle.write("    - 必须严格按照以下口播文案逐字说完\n")
             handle.write("    - 不得省略、改写、截断或提前结束\n")
             handle.write("    - 不包含任何字幕\n")

@@ -150,6 +150,8 @@
   - `<task>.dreamina.plan.md`：保存 Dreamina 人审计划和执行边界；
   - `save-dreamina-video-node`：在人审后绑定真实图片 Node ID、渲染最终视频 Prompt，
     并调用官方 Dreamina CLI 保存视频节点草稿；不附加 `--run`；
+  - Dreamina 视频模型使用用户指定的 `seedance_2.0mini`，Prompt 鼓励人物根据口播语义自然
+    接触、拿起或使用商品；执行前必须实时确认 canonical model；
   - `<task>.libtv.plan.md`：保存人审计划；
 - 首版不创建 LibTV 画布、不创建节点、不运行 `libtv node --run`，付费生成仍需用户单独确认；
 - 默认语义音色：女声 `温暖闺蜜`，男声 `温润男声`；
