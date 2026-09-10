@@ -36,12 +36,11 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
 - 输出 LibTV OmniHuman 三件套：`<task>.libtv.csv`、`<task>.libtv.interface.json`、
   `<task>.libtv.plan.md`，只用于人审和后续执行，不创建画布或运行节点。
 - 输出 Dreamina Canvas 三件套：`<task>.dreamina.csv`、
-  `<task>.dreamina.interface.json`、`<task>.dreamina.plan.md`。默认音色为`明媚女声`，
-  视频 Prompt 必须包含`不包含任何字幕`；1.2x 是强制目标，但当前 Dreamina CLI 不支持
-  TTS 语速参数，因此接口配置要求执行器在音频运行前停止。
-- `save-dreamina-video-node` 使用真实图片 Node ID 渲染正文引用，并把图片、音频 Node ID
-  同时作为 `--ref` 传给 Dreamina 视频节点。该命令只保存草稿，不带 `--run`；生成仍需另行批准。
-  视频 Prompt 允许人物触碰商品、切镜和运镜，但要求完整逐字使用音频节点内容，不得省略、
+  `<task>.dreamina.interface.json`、`<task>.dreamina.plan.md`。完整口播文案直接嵌入视频
+  Prompt，不再创建 TTS 或音频节点；视频 Prompt 必须包含`不包含任何字幕`。
+- `save-dreamina-video-node` 使用真实图片 Node ID 渲染正文引用，并只把图片节点作为 `--ref`
+  传给 Dreamina 视频节点。该命令只保存草稿，不带 `--run`；生成仍需另行批准。
+  视频 Prompt 允许人物触碰商品、切镜和运镜，但要求完整逐字说出内嵌文案，不得省略、
   改写或截断。放宽只作用于 Dreamina 视频阶段，不改变静态首帧、Oceanengine 或 LibTV 约束。
 
 ```bash
@@ -49,7 +48,7 @@ avatar-prompts save-dreamina-video-node \
   --input <task>.dreamina.csv \
   --interface <task>.dreamina.interface.json \
   --task-id <task-id> --project-id <project-id> \
-  --image-node-id <image-node-id> --audio-node-id <audio-node-id> \
+  --image-node-id <image-node-id> \
   --duration <verified-seconds> --dry-run
 ```
 - 提供本地审核台，扫描 CSV 并可只读合并同目录 SQLite 中的任务状态。

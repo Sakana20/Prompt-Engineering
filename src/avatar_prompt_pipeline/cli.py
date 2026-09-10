@@ -233,7 +233,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_generation_learning_gate_argument(export_csv)
     save_dreamina_video = commands.add_parser(
         "save-dreamina-video-node",
-        help="把 Dreamina 任务包中的视频 Prompt 绑定真实图片/音频节点并保存视频节点草稿",
+        help="把 Dreamina 任务包中的视频 Prompt 绑定真实图片节点并保存视频节点草稿",
     )
     save_dreamina_video.add_argument("--input", type=Path, required=True, help="Dreamina CSV")
     save_dreamina_video.add_argument(
@@ -242,7 +242,6 @@ def build_parser() -> argparse.ArgumentParser:
     save_dreamina_video.add_argument("--task-id", required=True)
     save_dreamina_video.add_argument("--project-id", required=True)
     save_dreamina_video.add_argument("--image-node-id", required=True)
-    save_dreamina_video.add_argument("--audio-node-id", required=True)
     save_dreamina_video.add_argument("--duration", type=float, required=True)
     save_dreamina_video.add_argument(
         "--dry-run",
@@ -579,7 +578,6 @@ def run(argv: Sequence[str] | None = None) -> int:
                 task_id=str(args.task_id),
                 project_id=str(args.project_id),
                 image_node_id=str(args.image_node_id),
-                audio_node_id=str(args.audio_node_id),
                 duration_seconds=float(args.duration),
             )
         except DreaminaAdapterError as exc:

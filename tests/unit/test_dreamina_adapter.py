@@ -13,8 +13,8 @@ from avatar_prompt_pipeline.dreamina import (
 
 VIDEO_PROMPT_TEMPLATE = (
     "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
-    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-    "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。"
+    "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+    "“这是需要完整说出的口播文案。”口型与口播内容同步，身体动作自然，不包含任何字幕。"
 )
 
 
@@ -63,7 +63,8 @@ def test_render_video_prompt_uses_real_image_node_and_preserves_required_constra
 
     assert "{{node:node_image_123}}" in prompt
     assert "{image_node_id}" not in prompt
-    assert "必须完整使用所选音频节点的全部内容进行口播" in prompt
+    assert "必须严格按照以下口播文案逐字说完" in prompt
+    assert "这是需要完整说出的口播文案" in prompt
     assert "不得省略、改写、截断或提前结束" in prompt
     assert "不包含任何字幕" in prompt
     assert "固定机位" not in prompt
@@ -114,7 +115,7 @@ def test_runtime_render_removes_restrictions_from_older_package_prompt() -> None
     assert "不运镜" not in prompt
 
 
-def test_video_node_command_passes_prompt_and_both_node_references(tmp_path: Path) -> None:
+def test_video_node_command_passes_prompt_and_image_reference_only(tmp_path: Path) -> None:
     csv_path, interface_path = _write_package_files(tmp_path)
     draft = load_dreamina_video_node_draft(
         csv_path=csv_path,
@@ -122,7 +123,6 @@ def test_video_node_command_passes_prompt_and_both_node_references(tmp_path: Pat
         task_id="TASK-001",
         project_id="project-123",
         image_node_id="node_image_123",
-        audio_node_id="node_audio_456",
         duration_seconds=18,
     )
 
@@ -130,7 +130,7 @@ def test_video_node_command_passes_prompt_and_both_node_references(tmp_path: Pat
     assert command[:4] == ("dreamina-canvas", "node", "create", "video")
     assert command[command.index("--prompt") + 1] == draft.prompt
     ref_values = [command[index + 1] for index, value in enumerate(command) if value == "--ref"]
-    assert ref_values == ["node:node_image_123", "node:node_audio_456"]
+    assert ref_values == ["node:node_image_123"]
     assert "--run" not in command
     assert "--dry-run" not in command
     assert draft.command(dry_run=True)[-1] == "--dry-run"

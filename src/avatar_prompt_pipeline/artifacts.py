@@ -13,8 +13,6 @@ from typing import TextIO
 
 from .batch import GeneratedTaskRecord
 from .models import (
-    DEFAULT_DREAMINA_SPEECH_SPEED,
-    DEFAULT_DREAMINA_VOICE_NAME,
     DEFAULT_LIBTV_FEMALE_VOICE_ID,
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL,
     DEFAULT_LIBTV_MALE_VOICE_ID,
@@ -66,11 +64,8 @@ DREAMINA_CANVAS_CSV_FIELDS = (
     "title",
     "notes",
     "image_prompt",
-    "audio_prompt",
     "video_prompt",
     "aspect_ratio",
-    "voice_intent",
-    "dreamina_voice_name",
     "reference_image_key",
 )
 
@@ -151,7 +146,7 @@ LIBTV_OMNIHUMAN_INTERFACE_CONFIG: dict[str, object] = {
 }
 
 DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
-    "schema_version": "dreamina-interface-config/v1",
+    "schema_version": "dreamina-interface-config/v2",
     "interface": "dreamina_canvas",
     "catalog_observed_at": "2026-09-09T00:00:00+08:00",
     "discovery_required_before_execution": True,
@@ -164,11 +159,8 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
         "one_canvas_per_batch": True,
     },
     "defaults": {
-        "dreamina_voice_name": DEFAULT_DREAMINA_VOICE_NAME,
-        "speech_speed": DEFAULT_DREAMINA_SPEECH_SPEED,
         "required_video_prompt_phrases": [
-            "必须完整使用所选音频节点的全部内容进行口播",
-            "逐字说完",
+            "必须严格按照以下口播文案逐字说完",
             "不得省略、改写、截断或提前结束",
             "不包含任何字幕",
         ],
@@ -185,16 +177,6 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
             "count": 1,
             "prompt_field": "image_prompt",
         },
-        "audio": {
-            "name_template": "{task_id}-audio",
-            "type": "audio",
-            "mode": "tts",
-            "prompt_field": "audio_prompt",
-            "voice_name": DEFAULT_DREAMINA_VOICE_NAME,
-            "speech_speed": DEFAULT_DREAMINA_SPEECH_SPEED,
-            "speech_speed_enforcement": "unsupported_by_dreamina_cli_1.0.0",
-            "on_unsupported_speech_speed": "stop_before_audio_run",
-        },
         "video": {
             "name_template": "{task_id}-video",
             "type": "video",
@@ -202,22 +184,21 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
             "mode": "m2v",
             "resolution": "720p",
             "ratio_field": "aspect_ratio",
-            "duration_policy": "requires_verified_audio_duration",
+            "duration_policy": "explicit_seconds_based_on_script_length_and_model_limits",
             "prompt_field": "video_prompt",
-            "prompt_write_timing": "after_image_and_audio_references_selected",
+            "prompt_write_timing": "after_image_reference_selected",
             "prompt_template": (
                 "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。"
-                "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-                "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，"
+                "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+                "\u201c{script}\u201d。口型与口播内容同步，身体动作自然，"
                 "不包含任何字幕。"
             ),
             "required_prompt_phrases": [
-                "必须完整使用所选音频节点的全部内容进行口播",
-                "逐字说完",
+                "必须严格按照以下口播文案逐字说完",
                 "不得省略、改写、截断或提前结束",
                 "不包含任何字幕",
             ],
-            "inputs": ["image", "audio"],
+            "inputs": ["image"],
             "count": 1,
         },
     },
@@ -228,14 +209,10 @@ DREAMINA_CANVAS_INTERFACE_CONFIG: dict[str, object] = {
         "requires_user_confirmation_for_paid_generation": True,
     },
     "limitations": {
-        "speech_speed": (
-            "Dreamina Canvas CLI 1.0.0 does not expose a TTS speed flag; 1.2x is a "
-            "required target and execution must stop until an authorized implementation can "
-            "enforce it."
-        ),
-        "lip_sync": (
-            "Image-plus-audio input support does not prove stable lip sync; validate with one "
-            "approved paid sample before batch use."
+        "spoken_copy": (
+            "The video model receives the script in its prompt without a separate TTS node; "
+            "verbatim speech and voice characteristics must be checked on one approved paid "
+            "sample before batch use."
         ),
     },
 }
@@ -471,11 +448,8 @@ def write_dreamina_canvas_csv(
                     "title": task.title,
                     "notes": task.notes,
                     "image_prompt": task.image_prompt,
-                    "audio_prompt": strip_no_split_markers(task.marked_script),
                     "video_prompt": task.video_prompt,
                     "aspect_ratio": task.aspect_ratio,
-                    "voice_intent": task.voice_intent,
-                    "dreamina_voice_name": task.dreamina_voice_name,
                     "reference_image_key": task.reference_image_key,
                 }
             )
@@ -513,36 +487,27 @@ def write_dreamina_canvas_plan(
         handle.write("# Dreamina Canvas 任务计划\n\n")
         handle.write("接口配置：`<task>.dreamina.interface.json`\n\n")
         handle.write("执行边界：本计划不创建画布、不创建节点、不运行生成任务。\n\n")
-        handle.write(
-            "语速门禁：目标为 1.2x；Dreamina Canvas CLI 1.0.0 暂不支持 TTS 语速参数，"
-            "执行器必须在音频运行前停止。\n\n"
-        )
+        handle.write("链路：参考图片直接生成视频，不创建 TTS 或音频节点。\n\n")
         for task in tasks:
             handle.write(f"## {task.task_id}\n\n")
             handle.write(f"- title: {task.title}\n")
             handle.write(f"- notes: {task.notes}\n")
-            handle.write(f"- voice_intent: {task.voice_intent}\n")
-            handle.write(f"- dreamina_voice_name: {task.dreamina_voice_name}\n")
             handle.write(f"- aspect_ratio: {task.aspect_ratio}\n\n")
             handle.write("image:\n")
             handle.write(f"  node: {task.task_id}-image\n")
             handle.write(f"  prompt: {task.image_prompt}\n\n")
-            handle.write("audio:\n")
-            handle.write(f"  node: {task.task_id}-audio\n")
-            handle.write(f"  script: {strip_no_split_markers(task.marked_script)}\n\n")
             handle.write("video:\n")
             handle.write(f"  node: {task.task_id}-video\n")
-            handle.write("  prompt_write_timing: after_image_and_audio_references_selected\n")
+            handle.write("  prompt_write_timing: after_image_reference_selected\n")
             handle.write(f"  prompt: {task.video_prompt}\n")
             handle.write("  image_node_id_placeholder: {image_node_id}\n")
             handle.write("  required_prompt_phrases:\n")
-            handle.write("    - 必须完整使用所选音频节点的全部内容进行口播\n")
-            handle.write("    - 逐字说完\n")
+            handle.write("    - 必须严格按照以下口播文案逐字说完\n")
             handle.write("    - 不得省略、改写、截断或提前结束\n")
             handle.write("    - 不包含任何字幕\n")
             handle.write("  inputs:\n")
             handle.write(f"    - {task.task_id}-image\n")
-            handle.write(f"    - {task.task_id}-audio\n\n")
+            handle.write("\n")
 
     return _write_atomic(Path(path), write)
 

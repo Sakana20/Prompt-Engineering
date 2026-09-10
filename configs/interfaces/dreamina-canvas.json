@@ -1,5 +1,5 @@
 {
-  "schema_version": "dreamina-interface-config/v1",
+  "schema_version": "dreamina-interface-config/v2",
   "interface": "dreamina_canvas",
   "catalog_observed_at": "2026-09-09T00:00:00+08:00",
   "discovery_required_before_execution": true,
@@ -12,11 +12,8 @@
     "one_canvas_per_batch": true
   },
   "defaults": {
-    "dreamina_voice_name": "明媚女声",
-    "speech_speed": 1.2,
     "required_video_prompt_phrases": [
-      "必须完整使用所选音频节点的全部内容进行口播",
-      "逐字说完",
+      "必须严格按照以下口播文案逐字说完",
       "不得省略、改写、截断或提前结束",
       "不包含任何字幕"
     ]
@@ -33,16 +30,6 @@
       "count": 1,
       "prompt_field": "image_prompt"
     },
-    "audio": {
-      "name_template": "{task_id}-audio",
-      "type": "audio",
-      "mode": "tts",
-      "prompt_field": "audio_prompt",
-      "voice_name": "明媚女声",
-      "speech_speed": 1.2,
-      "speech_speed_enforcement": "unsupported_by_dreamina_cli_1.0.0",
-      "on_unsupported_speech_speed": "stop_before_audio_run"
-    },
     "video": {
       "name_template": "{task_id}-video",
       "type": "video",
@@ -50,19 +37,17 @@
       "mode": "m2v",
       "resolution": "720p",
       "ratio_field": "aspect_ratio",
-      "duration_policy": "requires_verified_audio_duration",
+      "duration_policy": "explicit_seconds_based_on_script_length_and_model_limits",
       "prompt_field": "video_prompt",
-      "prompt_write_timing": "after_image_and_audio_references_selected",
-      "prompt_template": "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。必须完整使用所选音频节点的全部内容进行口播，逐字说完，不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。",
+      "prompt_write_timing": "after_image_reference_selected",
+      "prompt_template": "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，{avatar_prompt}。必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束：“{script}”。口型与口播内容同步，身体动作自然，不包含任何字幕。",
       "required_prompt_phrases": [
-        "必须完整使用所选音频节点的全部内容进行口播",
-        "逐字说完",
+        "必须严格按照以下口播文案逐字说完",
         "不得省略、改写、截断或提前结束",
         "不包含任何字幕"
       ],
       "inputs": [
-        "image",
-        "audio"
+        "image"
       ],
       "count": 1
     }
@@ -74,7 +59,6 @@
     "requires_user_confirmation_for_paid_generation": true
   },
   "limitations": {
-    "speech_speed": "Dreamina Canvas CLI 1.0.0 does not expose a TTS speed flag; 1.2x is a required target and execution must stop until an authorized implementation can enforce it.",
-    "lip_sync": "Image-plus-audio input support does not prove stable lip sync; validate with one approved paid sample before batch use."
+    "spoken_copy": "The video model receives the script in its prompt without a separate TTS node; verbatim speech and voice characteristics must be checked on one approved paid sample before batch use."
   }
 }

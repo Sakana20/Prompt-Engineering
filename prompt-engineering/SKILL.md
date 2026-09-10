@@ -155,20 +155,19 @@ help, tests, or Skill validation.
    behind the person, in the background, far away, or off to the side/back.
    When the user requests a Dreamina Canvas package, read
    [dreamina-canvas-contract.md](references/dreamina-canvas-contract.md). Treat Dreamina as a
-   separate output adapter. Derive `image_prompt` from the accepted static first-frame prompt,
-   `audio_prompt` from the accepted plain script, and a new `video_prompt` from the full
-   `avatar_prompt` after image/audio references are selected. Replace `{image_node_id}` with the
-   real image Node ID, include image and audio as separate `--ref node:<id>` arguments, and pass
-   the rendered Prompt to the video node. The final video Prompt must require all selected audio
-   content to be spoken verbatim without omission, rewriting, truncation, or early ending, and
-   contain the exact phrase `不包含任何字幕`. Do not add fixed-camera, no-cut, or no-camera-motion
+   separate output adapter. Derive `image_prompt` from the accepted static first-frame prompt and
+   a new `video_prompt` from the full `avatar_prompt` plus the accepted plain script. Put the full
+   plain script directly in `video_prompt`; do not create an `audio_prompt` or TTS node. After the
+   image reference is selected, replace `{image_node_id}` with the real image Node ID, include only
+   that image as `--ref node:<id>`, and pass the rendered Prompt to the video node. The final video
+   Prompt must require the embedded script to be spoken verbatim without omission, rewriting,
+   truncation, or early ending, and contain the exact phrase `不包含任何字幕`. Do not add
+   fixed-camera, no-cut, or no-camera-motion
    restrictions unless the user separately requests them. Do not carry static-image restrictions
    that prevent the person from touching the product into the Dreamina video Prompt. This
    relaxation applies only to Dreamina video synthesis; keep Oceanengine, LibTV, and static image
-   prompt validation unchanged. Use the exact Dreamina voice name
-   `明媚女声`. Record 1.2x
-   as the required speech-speed target, but do not invent a CLI speed flag: Dreamina Canvas CLI
-   1.0.0 must stop before audio execution until an authorized implementation can enforce it.
+   prompt validation unchanged. Dreamina voice and speech-speed fields do not apply to this
+   image-to-video path; never create an intermediate audio node for it.
    Strip `[[NO_SPLIT]]` tags from the CSV `script`; manuscript annotation and CSV export are
    separate operations. Never create or write a CSV merely because a copy was annotated.
    Set each CSV `notes` value to `{actual user category}+{1-based sequence}`. Never write the
@@ -243,14 +242,15 @@ quoting, paths, atomic writes, and overwrite protection.
   canvas, create nodes, run `libtv node --run`, or submit paid generation.
 - **Dreamina Canvas package:** create three independent handoffs from accepted copy/avatar
   results: `<task>.dreamina.csv`, `<task>.dreamina.interface.json`, and
-  `<task>.dreamina.plan.md`. The CSV contains per-row image/audio/video prompts and the exact
-  Dreamina voice. The interface configuration contains canonical model candidates, node
-  templates, 1.2x target-speed enforcement state, and execution boundaries. The plan is for
+  `<task>.dreamina.plan.md`. The CSV contains per-row image and video prompts, with the complete
+  plain script embedded in each video Prompt. The interface configuration contains canonical model
+  candidates, image/video node templates, and execution boundaries. The plan is for
   human review. This output must not create a Dreamina canvas, save online nodes, quote credits,
   or submit paid generation.
   When the user explicitly asks to save the prepared video node, run
   `avatar-prompts save-dreamina-video-node` with the package CSV/interface, task ID, project ID,
-  real image/audio Node IDs, and verified duration. This command may save an online draft but
+  the real image Node ID, and an explicit duration within the current model limits. This command
+  may save an online draft but
   never adds `--run`; paid generation remains a separate approval boundary.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.

@@ -143,11 +143,12 @@
 - 新增三件套产物：
   - `<task>.libtv.csv`：只保存逐条任务数据；
   - `<task>.libtv.interface.json`：保存 LibTV 接口、模型、节点、参数、命名、音色默认值和验收配置；
-  - `<task>.dreamina.csv`：保存 Dreamina 每条任务的图片、音频和视频 Prompt；
-  - `<task>.dreamina.interface.json`：保存 Dreamina 模型、节点、明媚女声、1.2x 目标、
-    语速阻断策略及视频 Prompt 必检短语；
+  - `<task>.dreamina.csv`：保存 Dreamina 每条任务的图片 Prompt，以及内嵌完整口播文案的
+    视频 Prompt；
+  - `<task>.dreamina.interface.json`：保存 Dreamina 图片/视频模型、节点依赖及视频 Prompt
+    必检短语，不包含 TTS 节点；
   - `<task>.dreamina.plan.md`：保存 Dreamina 人审计划和执行边界；
-  - `save-dreamina-video-node`：在人审后绑定真实图片/音频 Node ID、渲染最终视频 Prompt，
+  - `save-dreamina-video-node`：在人审后绑定真实图片 Node ID、渲染最终视频 Prompt，
     并调用官方 Dreamina CLI 保存视频节点草稿；不附加 `--run`；
   - `<task>.libtv.plan.md`：保存人审计划；
 - 首版不创建 LibTV 画布、不创建节点、不运行 `libtv node --run`，付费生成仍需用户单独确认；

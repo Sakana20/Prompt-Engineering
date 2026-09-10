@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import (
-    DREAMINA_REQUIRED_FULL_AUDIO_PHRASE,
+    DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE,
     DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE,
 )
 
@@ -53,7 +53,6 @@ class DreaminaVideoNodeDraft:
     task_id: str
     title: str
     image_node_id: str
-    audio_node_id: str
     prompt: str
     mode: str
     model: str
@@ -88,8 +87,6 @@ class DreaminaVideoNodeDraft:
             self.prompt,
             "--ref",
             f"node:{self.image_node_id}",
-            "--ref",
-            f"node:{self.audio_node_id}",
         )
         return (*command, "--dry-run") if dry_run else command
 
@@ -136,7 +133,7 @@ def render_dreamina_video_prompt(prompt_template: str, *, image_node_id: str) ->
     if expected_reference not in prompt:
         raise DreaminaAdapterError("video_prompt 未形成有效的图片节点正文引用")
     required_phrases = (
-        DREAMINA_REQUIRED_FULL_AUDIO_PHRASE,
+        DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE,
         DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE,
     )
     missing = [phrase for phrase in required_phrases if phrase not in prompt]
@@ -177,7 +174,6 @@ def load_dreamina_video_node_draft(
     task_id: str,
     project_id: str,
     image_node_id: str,
-    audio_node_id: str,
     duration_seconds: float,
 ) -> DreaminaVideoNodeDraft:
     if not 4 <= duration_seconds <= 30:
@@ -193,7 +189,6 @@ def load_dreamina_video_node_draft(
         task_id=task_id,
         title=_require_string(row.get("title"), field="title"),
         image_node_id=_validate_node_id(image_node_id, field="image_node_id"),
-        audio_node_id=_validate_node_id(audio_node_id, field="audio_node_id"),
         prompt=prompt,
         mode=_require_string(video.get("mode"), field="nodes.video.mode"),
         model=_require_string(video.get("model"), field="nodes.video.model"),

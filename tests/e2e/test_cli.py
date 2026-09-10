@@ -364,10 +364,15 @@ def test_package_cli_writes_dreamina_canvas_package(
 
     with csv_path.open(encoding="utf-8", newline="") as handle:
         row = next(csv.DictReader(handle))
-    assert row["dreamina_voice_name"] == "明媚女声"
+    assert "audio_prompt" not in row
+    assert "dreamina_voice_name" not in row
     assert "年轻中国女生在餐桌旁自然口播" in row["video_prompt"]
     assert "{{node:{image_node_id}}}" in row["video_prompt"]
-    assert "必须完整使用所选音频节点的全部内容进行口播" in row["video_prompt"]
+    assert "必须严格按照以下口播文案逐字说完" in row["video_prompt"]
+    assert (
+        marked_script.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")
+        in row["video_prompt"]
+    )
     assert "不得省略、改写、截断或提前结束" in row["video_prompt"]
     assert "固定机位" not in row["video_prompt"]
     assert "不切镜" not in row["video_prompt"]
@@ -375,8 +380,9 @@ def test_package_cli_writes_dreamina_canvas_package(
     assert "不接触商品" not in row["video_prompt"]
     assert row["video_prompt"].count("不包含任何字幕") == 1
     interface = json.loads(interface_path.read_text(encoding="utf-8"))
-    assert interface["defaults"]["speech_speed"] == 1.2
-    assert interface["nodes"]["audio"]["on_unsupported_speech_speed"] == ("stop_before_audio_run")
+    assert interface["schema_version"] == "dreamina-interface-config/v2"
+    assert "audio" not in interface["nodes"]
+    assert interface["nodes"]["video"]["inputs"] == ["image"]
 
 
 @pytest.mark.e2e
@@ -398,8 +404,8 @@ def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
                 "title": "数字人口播",
                 "video_prompt": (
                     "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，自然口播。"
-                    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-                    "不得省略、改写、截断或提前结束，口型与音频同步，"
+                    "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+                    "“这是需要完整说出的口播文案。”口型与口播内容同步，"
                     "身体动作自然，不包含任何字幕。"
                 ),
                 "aspect_ratio": "9:16",
@@ -446,8 +452,6 @@ def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
             "project-123",
             "--image-node-id",
             "node_image_123",
-            "--audio-node-id",
-            "node_audio_456",
             "--duration",
             "18",
             "--dry-run",
@@ -462,7 +466,7 @@ def test_save_dreamina_video_node_cli_binds_real_nodes_and_forwards_prompt(
         for index, value in enumerate(captured_command)
         if value == "--ref"
     ]
-    assert ref_values == ["node:node_image_123", "node:node_audio_456"]
+    assert ref_values == ["node:node_image_123"]
     assert captured_command[-1] == "--dry-run"
     assert "--run" not in captured_command
 

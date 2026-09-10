@@ -31,6 +31,7 @@ MARKED_SCRIPT = (
     "就买了个哈密瓜。送到后切几块装进盘里，坐在沙发上慢慢吃，"
     "剩下的用保鲜盒收好，晚上家里人回来还能一起分。"
 )
+PLAIN_SCRIPT = MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")
 
 
 def test_checked_in_dreamina_config_matches_production_defaults() -> None:
@@ -254,8 +255,8 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
     video_prompt = (
         "让{{node:{image_node_id}}}中的人物保持首帧身份与服装，"
         "年轻中国女生在餐桌旁自然口播，全程直视镜头。"
-        "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-        "不得省略、改写、截断或提前结束，口型与音频同步，身体动作自然，不包含任何字幕。"
+        "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+        f"“{PLAIN_SCRIPT}”。口型与口播内容同步，身体动作自然，不包含任何字幕。"
     )
     task = DreaminaCanvasTask(
         task_id="HM-001",
@@ -269,7 +270,6 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
         video_prompt=video_prompt,
         title="哈密瓜居家水果场景",
         notes="哈密瓜+1",
-        voice_intent="明朗女声",
     )
 
     written_csv = write_dreamina_canvas_csv(csv_path, [task])
@@ -277,12 +277,11 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
     assert not plan_path.exists()
     with written_csv.open(encoding="utf-8", newline="") as handle:
         row = next(csv.DictReader(handle))
-    assert row["audio_prompt"] == MARKED_SCRIPT.replace("[[NO_SPLIT]]", "").replace(
-        "[[/NO_SPLIT]]", ""
-    )
+    assert "audio_prompt" not in row
     assert row["video_prompt"] == video_prompt
-    assert row["dreamina_voice_name"] == "明媚女声"
-    assert row["voice_intent"] == "明朗女声"
+    assert PLAIN_SCRIPT in row["video_prompt"]
+    assert "dreamina_voice_name" not in row
+    assert "voice_intent" not in row
     assert row["reference_image_key"] == ""
 
     written_interface = write_dreamina_canvas_interface_config(interface_path)
@@ -292,20 +291,17 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
         "csv": "hami-melon-batch.dreamina.csv",
         "plan": "hami-melon-batch.dreamina.plan.md",
     }
-    assert interface_config["defaults"]["dreamina_voice_name"] == "明媚女声"
-    assert interface_config["defaults"]["speech_speed"] == 1.2
-    assert interface_config["nodes"]["audio"]["on_unsupported_speech_speed"] == (
-        "stop_before_audio_run"
-    )
+    assert interface_config["schema_version"] == "dreamina-interface-config/v2"
+    assert "audio" not in interface_config["nodes"]
+    assert interface_config["nodes"]["video"]["inputs"] == ["image"]
     assert "不包含任何字幕" in interface_config["nodes"]["video"]["prompt_template"]
     assert interface_config["execution_boundary"]["run_nodes"] is False
 
     written_plan = write_dreamina_canvas_plan(plan_path, [task])
     plan = written_plan.read_text(encoding="utf-8")
     assert "接口配置：`<task>.dreamina.interface.json`" in plan
-    assert "dreamina_voice_name: 明媚女声" in plan
-    assert "目标为 1.2x" in plan
-    assert "prompt_write_timing: after_image_and_audio_references_selected" in plan
+    assert "不创建 TTS 或音频节点" in plan
+    assert "prompt_write_timing: after_image_reference_selected" in plan
     assert "image_node_id_placeholder: {image_node_id}" in plan
     assert "不得省略、改写、截断或提前结束" in plan
     assert "不包含任何字幕" in plan
@@ -313,33 +309,40 @@ def test_dreamina_canvas_package_writers_are_independent(tmp_path: Path) -> None
 
 
 @pytest.mark.integration
-def test_dreamina_task_rejects_wrong_voice_or_missing_required_video_phrase() -> None:
+def test_dreamina_task_rejects_missing_required_phrase_or_embedded_script() -> None:
     base = {
         "task_id": "HM-001",
         "image_prompt": "有效首帧 Prompt",
         "marked_script": MARKED_SCRIPT,
         "video_prompt": (
-            "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-            "不得省略、改写、截断或提前结束，不包含任何字幕。"
+            "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+            f"“{PLAIN_SCRIPT}”。不包含任何字幕。"
         ),
         "title": "哈密瓜居家水果场景",
         "notes": "哈密瓜+1",
-        "voice_intent": "明朗女声",
     }
-    with pytest.raises(ValueError, match="Dreamina 音色必须是精确值：明媚女声"):
-        DreaminaCanvasTask(**base, dreamina_voice_name="纯净女声")
     with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：不包含任何字幕"):
         DreaminaCanvasTask(
             **{
                 **base,
                 "video_prompt": (
-                    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，"
-                    "不得省略、改写、截断或提前结束。"
+                    "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+                    f"“{PLAIN_SCRIPT}”。"
                 ),
             }
         )
-    with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：必须完整使用"):
+    with pytest.raises(ValueError, match="Dreamina 视频 Prompt 必须包含：必须严格按照"):
         DreaminaCanvasTask(**{**base, "video_prompt": "不包含任何字幕。"})
+    with pytest.raises(ValueError, match="必须直接包含完整口播文案"):
+        DreaminaCanvasTask(
+            **{
+                **base,
+                "video_prompt": (
+                    "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束："
+                    "“另一段文案”。不包含任何字幕。"
+                ),
+            }
+        )
 
 
 @pytest.mark.integration

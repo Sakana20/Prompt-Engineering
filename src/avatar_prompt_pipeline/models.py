@@ -10,11 +10,9 @@ DEFAULT_LIBTV_MALE_VOICE_LABEL = "温润男声"
 DEFAULT_LIBTV_MALE_VOICE_ID = "Chinese (Mandarin)_Gentleman"
 DEFAULT_LIBTV_VOICE_SPEED = 1.2
 DEFAULT_LIBTV_VOICE_VOLUME = 8
-DEFAULT_DREAMINA_VOICE_NAME = "明媚女声"
-DEFAULT_DREAMINA_SPEECH_SPEED = 1.2
 DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE = "不包含任何字幕"
-DREAMINA_REQUIRED_FULL_AUDIO_PHRASE = (
-    "必须完整使用所选音频节点的全部内容进行口播，逐字说完，不得省略、改写、截断或提前结束"
+DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE = (
+    "必须严格按照以下口播文案逐字说完，不得省略、改写、截断或提前结束"
 )
 LIBTV_VOICE_IDS_BY_LABEL = {
     DEFAULT_LIBTV_FEMALE_VOICE_LABEL: DEFAULT_LIBTV_FEMALE_VOICE_ID,
@@ -486,27 +484,25 @@ class DreaminaCanvasTask:
     video_prompt: str
     title: str
     notes: str
-    voice_intent: str
-    dreamina_voice_name: str = DEFAULT_DREAMINA_VOICE_NAME
     aspect_ratio: str = "9:16"
     reference_image_key: str = ""
 
     def __post_init__(self) -> None:
-        voice_name = _clean(self.dreamina_voice_name) or DEFAULT_DREAMINA_VOICE_NAME
         video_prompt = _clean(self.video_prompt)
-        if voice_name != DEFAULT_DREAMINA_VOICE_NAME:
-            raise BriefValidationError(f"Dreamina 音色必须是精确值：{DEFAULT_DREAMINA_VOICE_NAME}")
         if DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE not in video_prompt:
             raise BriefValidationError(
                 f"Dreamina 视频 Prompt 必须包含：{DREAMINA_REQUIRED_VIDEO_PROMPT_PHRASE}"
             )
-        if DREAMINA_REQUIRED_FULL_AUDIO_PHRASE not in video_prompt:
+        if DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE not in video_prompt:
             raise BriefValidationError(
-                f"Dreamina 视频 Prompt 必须包含：{DREAMINA_REQUIRED_FULL_AUDIO_PHRASE}"
+                f"Dreamina 视频 Prompt 必须包含：{DREAMINA_REQUIRED_FULL_SCRIPT_PHRASE}"
             )
-        object.__setattr__(self, "dreamina_voice_name", voice_name)
+        plain_script = _clean(
+            self.marked_script.replace("[[NO_SPLIT]]", "").replace("[[/NO_SPLIT]]", "")
+        )
+        if plain_script not in video_prompt:
+            raise BriefValidationError("Dreamina 视频 Prompt 必须直接包含完整口播文案")
         object.__setattr__(self, "video_prompt", video_prompt)
-        object.__setattr__(self, "voice_intent", _clean(self.voice_intent))
         object.__setattr__(self, "aspect_ratio", _clean(self.aspect_ratio) or "9:16")
         object.__setattr__(self, "reference_image_key", _clean(self.reference_image_key))
 
