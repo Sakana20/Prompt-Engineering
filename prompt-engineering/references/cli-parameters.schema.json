@@ -313,6 +313,51 @@
         "manifest": {"type": "string", "minLength": 1, "x-cli": "--manifest"},
         "learning_root": {"$ref": "#/$defs/learning_root"}
       }
+    },
+    {
+      "title": "preflight-feishu-h3",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "input", "interface"],
+      "properties": {
+        "command": {"const": "preflight-feishu-h3"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "interface": {"type": "string", "minLength": 1, "x-cli": "--interface"},
+        "preset": {"enum": ["taobao-instant-commerce-default", "none"], "default": "taobao-instant-commerce-default", "x-cli": "--preset"},
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": [], "x-cli": "--benefit-point", "x-repeatable": true},
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "render-feishu-h3-drafts",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "input", "interface", "output"],
+      "properties": {
+        "command": {"const": "render-feishu-h3-drafts"},
+        "input": {"type": "string", "minLength": 1, "x-cli": "--input"},
+        "interface": {"type": "string", "minLength": 1, "x-cli": "--interface"},
+        "output": {"type": "string", "minLength": 1, "x-cli": "--output"},
+        "preset": {"enum": ["taobao-instant-commerce-default", "none"], "default": "taobao-instant-commerce-default", "x-cli": "--preset"},
+        "platform": {"type": "string", "default": "", "x-cli": "--platform"},
+        "campaign_name": {"type": "string", "default": "", "x-cli": "--campaign-name"},
+        "benefit_point": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": [], "x-cli": "--benefit-point", "x-repeatable": true},
+        "config": {"type": ["string", "null"], "default": null, "x-cli": "--config"},
+        "learning_root": {"$ref": "#/$defs/learning_root"}
+      }
+    },
+    {
+      "title": "validate-feishu-h3-receipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "receipt"],
+      "properties": {
+        "command": {"const": "validate-feishu-h3-receipt"},
+        "receipt": {"type": "string", "minLength": 1, "x-cli": "--receipt"}
+      }
     }
   ],
   "$defs": {

@@ -228,6 +228,24 @@ Oceanengine CSV 必须通过 `export-csv` 生成。Agent 不允许自行编写 C
 拼接行；字段顺序、引号与换行转义、`NO_SPLIT` 清理、`notes`、原子写入和拒绝覆盖均已
 固化在项目 writer 中。
 
+需要同步创建飞书 H3 草稿时，现有 CSV 仍照常导出，再生成只读预检或本地草稿执行清单：
+
+```bash
+uv run avatar-prompts preflight-feishu-h3 \
+  --input generated-task-batch.json \
+  --interface configs/interfaces/feishu-h3.json
+
+uv run avatar-prompts render-feishu-h3-drafts \
+  --input generated-task-batch.json \
+  --interface configs/interfaces/feishu-h3.json \
+  --output feishu-h3.drafts.json
+```
+
+清单固定 Dreamina 首帧为 `seedream_4.0`、9:16、2K、1 张，飞书记录为“草稿”、15 秒、
+9:16、720p、1 条。CLI 本身不调用 Dreamina 或飞书，也不会提交 H3；运行代理下载并验收首帧、
+上传附件并创建草稿后，用 `validate-feishu-h3-receipt` 校验回执。只有人工审阅完成且再次明确
+批准，才允许按精确 record ID 把状态改为“待生成”。
+
 ## 本地审核台
 
 启动审核台：

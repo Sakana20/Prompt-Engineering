@@ -178,6 +178,32 @@ uv run avatar-prompts export-csv \
 `NO_SPLIT` 标签移除、`notes={真实品类}+{序号}`、输出层级、UTF-8 原子写入和拒绝覆盖均由
 项目代码负责；Agent 只能填写任务清单，不能复制或改写这些逻辑。
 
+## 飞书 H3 草稿镜像
+
+使用 `configs/interfaces/feishu-h3.json` 生成确定性执行清单：
+
+```bash
+uv run avatar-prompts preflight-feishu-h3 \
+  --input generated-task-batch.json \
+  --interface configs/interfaces/feishu-h3.json
+
+uv run avatar-prompts render-feishu-h3-drafts \
+  --input generated-task-batch.json \
+  --interface configs/interfaces/feishu-h3.json \
+  --output feishu-h3.drafts.json
+
+uv run avatar-prompts validate-feishu-h3-receipt \
+  --receipt feishu-h3.receipt.json
+```
+
+前两个命令经过与 CSV 相同的学习门禁和整批校验，但只读取/写入本地 JSON，不调用 Dreamina、
+飞书或 H3。执行清单不保存提交人的个人标识或私有参考图 URL，仅保存运行时 binding key。
+运行代理必须使用官方 Dreamina CLI，实时确认 `seedream_4.0` 的 schema，按 9:16、2K、1 张生成，
+保存 project/node/submit/resource 身份并下载首帧；若报价要求积分确认，必须先停下取得用户确认。
+上传下载后的图片并写入飞书时，状态只能是“草稿”。只有用户审阅完成并明确批准后，才可按回执中
+精确的 record ID 独立更新为“待生成”。回执必须记录原 CSV 与首帧文件的大小、SHA-256、Dreamina
+身份、附件 token 和飞书 record ID，并通过上述回执校验命令。
+
 ## 批处理
 
 `count > 1` 或 `batch=true` 时执行批处理。每条记录保持独立的文案、人物、服装、

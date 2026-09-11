@@ -258,6 +258,18 @@ quoting, paths, atomic writes, and overwrite protection.
   the real image Node ID, and an explicit duration within the current model limits. This command
   may save an online draft but
   never adds `--run`; paid generation remains a separate approval boundary.
+- **Feishu H3 draft mirror:** keep the existing Oceanengine CSV unchanged. First run
+  `preflight-feishu-h3`, then `render-feishu-h3-drafts` with
+  `configs/interfaces/feishu-h3.json`. The manifest fixes H3 fields to status `草稿`, type
+  `首帧图生视频`, duration `15`, ratio `9:16`, resolution `720p`, and count `1`. Use the official
+  `$dreamina-canvas-cli` workflow to rediscover and run canonical model `seedream_4.0` at `9:16`,
+  `2K`, count `1`; if a quote requires credits, obtain user confirmation before submission. Wait
+  for a terminal resource, download the image, validate non-empty bytes and SHA-256, then upload
+  that downloaded file to the bound `首帧图片` field. Resolve the configured submitter binding at
+  runtime; never persist personal IDs in the repository. Create the Base record only as `草稿`.
+  Changing exact returned record IDs to `待生成` is a separate action requiring explicit approval
+  after review. Never infer that approval from permission to create CSV, images, or drafts. Validate
+  the execution receipt with `validate-feishu-h3-receipt`.
 
 Preserve all existing CLI arguments by forwarding them unchanged through `scripts/run_cli.py`.
 Validate every explicit parameter against `references/cli-parameters.schema.json` or
@@ -265,6 +277,11 @@ Validate every explicit parameter against `references/cli-parameters.schema.json
 `references/generated-task-batch.schema.json`. Preserve requested configuration files, batching, installed
 Codex plugins, safe debug output, and all requested output formats. Never remove an existing field,
 command, format, hook, or behavior while packaging or installing this skill.
+
+For Feishu H3 mirroring, also validate the selected resources against
+`references/feishu-h3-interface.schema.json`, `references/feishu-h3-draft-batch.schema.json`, and
+`references/feishu-h3-publish-receipt.schema.json`. Read the H3 section of `references/runtime.md`
+before any live Dreamina or Feishu mutation.
 
 Compatibility defaults:
 

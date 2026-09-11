@@ -1,0 +1,56 @@
+{
+  "schema_version": "feishu-h3-interface/v1",
+  "interface": "feishu_h3",
+  "base": {
+    "base_token": "M9qVbumzHaKPYhsAnKlcPcjkn6c",
+    "table_id": "tblDA5s4ZIBzpDaF",
+    "view_id": "vewVEjpYEB"
+  },
+  "submitter_binding_key": "feishu_h3_submitter",
+  "fields": {
+    "task_name": {"id": "fldqh9WIJt", "name": "任务名称", "type": "text"},
+    "status": {"id": "fldwOheGjA", "name": "提交状态", "type": "select"},
+    "project_name": {"id": "fldSa0VLon", "name": "项目名称", "type": "text"},
+    "generation_type": {"id": "fldTpYEuIz", "name": "生成类型", "type": "select"},
+    "prompt": {"id": "fld8KxzWME", "name": "提示词", "type": "text"},
+    "negative_prompt": {"id": "fldkDClnqA", "name": "Negative Prompt", "type": "text"},
+    "duration": {"id": "fldA3i7Uzm", "name": "时长（秒）", "type": "select"},
+    "aspect_ratio": {"id": "fldqoOeJ9T", "name": "画面比例", "type": "select"},
+    "resolution": {"id": "fldiiL9U35", "name": "分辨率", "type": "select"},
+    "generation_count": {"id": "fldhDhfFd3", "name": "生成数量", "type": "number"},
+    "random_seed": {"id": "fldsci3YuQ", "name": "随机种子", "type": "number"},
+    "first_frame": {"id": "fld3K2Oijc", "name": "首帧图片", "type": "attachment"},
+    "operations_note": {"id": "fldgYeWimp", "name": "运营备注", "type": "text"},
+    "submitter": {"id": "fldnCKPV7C", "name": "提交人", "type": "user"}
+  },
+  "defaults": {
+    "draft_status": "草稿",
+    "ready_status": "待生成",
+    "generation_type": "首帧图生视频",
+    "duration_seconds": "15",
+    "aspect_ratio": "9:16",
+    "resolution": "720p",
+    "generation_count": 1,
+    "negative_prompt": ""
+  },
+  "dreamina": {
+    "requested_model": "seedream4.0",
+    "canonical_model": "seedream_4.0",
+    "ratio": "9:16",
+    "resolution": "2K",
+    "count": 1,
+    "prompt_max_chars": 2000,
+    "modes": ["t2i", "i2i"],
+    "max_reference_images": 6,
+    "discovery_required_before_execution": true
+  },
+  "execution_boundary": {
+    "create_csv": true,
+    "generate_first_frames": true,
+    "download_first_frames": true,
+    "create_feishu_drafts": true,
+    "submit_h3": false,
+    "requires_user_confirmation_for_image_credits": true,
+    "requires_user_confirmation_for_h3_submission": true
+  }
+}

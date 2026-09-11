@@ -34,6 +34,13 @@ CLI 边界固定为两段：`compose` 生成供 Codex 使用的 Prompt 包；Cod
 CSV 或 LibTV 三件套。完整视频 Prompt 与身份/服装键保留在审计产物中，不因下游只消费
 静态 Prompt 而丢失。
 
+飞书 H3 作为独立队列镜像适配器，不替代现有 CSV。领域层从同一
+`GeneratedTaskBatch` 生成带稳定指纹的 `FeishuH3DraftBatch`，固定飞书草稿参数与 Dreamina
+首帧合同；CLI 只负责预检、原子写清单和校验回执，不直接调用外部服务。Codex 运行时通过官方
+Dreamina CLI 完成模型发现、报价确认、生成、终态等待与下载，再通过飞书工具上传附件并创建
+“草稿”记录。回执把 CSV 与首帧 SHA-256、Dreamina project/node/submit/resource 身份及飞书
+record ID 绑定起来。“待生成”状态更新不属于草稿创建事务，必须在审核后的独立批准动作中执行。
+
 ## 领域模型
 
 `ProductBrief` 是所有生成的事实来源：

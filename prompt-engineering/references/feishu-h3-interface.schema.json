@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/feishu-h3-interface.schema.json",
+  "title": "Feishu H3 interface configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "interface", "base", "submitter_binding_key", "fields", "defaults", "dreamina", "execution_boundary"],
+  "properties": {
+    "schema_version": {"const": "feishu-h3-interface/v1"},
+    "interface": {"const": "feishu_h3"},
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_token", "table_id", "view_id"],
+      "properties": {
+        "base_token": {"type": "string", "minLength": 1},
+        "table_id": {"type": "string", "pattern": "^tbl[A-Za-z0-9]+$"},
+        "view_id": {"type": "string", "pattern": "^vew[A-Za-z0-9]+$"}
+      }
+    },
+    "submitter_binding_key": {"const": "feishu_h3_submitter"},
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_name", "status", "project_name", "generation_type", "prompt", "negative_prompt", "duration", "aspect_ratio", "resolution", "generation_count", "random_seed", "first_frame", "operations_note", "submitter"],
+      "properties": {
+        "task_name": {"$ref": "#/$defs/text_field"},
+        "status": {"$ref": "#/$defs/select_field"},
+        "project_name": {"$ref": "#/$defs/text_field"},
+        "generation_type": {"$ref": "#/$defs/select_field"},
+        "prompt": {"$ref": "#/$defs/text_field"},
+        "negative_prompt": {"$ref": "#/$defs/text_field"},
+        "duration": {"$ref": "#/$defs/select_field"},
+        "aspect_ratio": {"$ref": "#/$defs/select_field"},
+        "resolution": {"$ref": "#/$defs/select_field"},
+        "generation_count": {"$ref": "#/$defs/number_field"},
+        "random_seed": {"$ref": "#/$defs/number_field"},
+        "first_frame": {"$ref": "#/$defs/attachment_field"},
+        "operations_note": {"$ref": "#/$defs/text_field"},
+        "submitter": {"$ref": "#/$defs/user_field"}
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draft_status", "ready_status", "generation_type", "duration_seconds", "aspect_ratio", "resolution", "generation_count", "negative_prompt"],
+      "properties": {
+        "draft_status": {"const": "草稿"},
+        "ready_status": {"const": "待生成"},
+        "generation_type": {"const": "首帧图生视频"},
+        "duration_seconds": {"const": "15"},
+        "aspect_ratio": {"const": "9:16"},
+        "resolution": {"const": "720p"},
+        "generation_count": {"const": 1},
+        "negative_prompt": {"type": "string"}
+      }
+    },
+    "dreamina": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_model", "canonical_model", "ratio", "resolution", "count", "prompt_max_chars", "modes", "max_reference_images", "discovery_required_before_execution"],
+      "properties": {
+        "requested_model": {"const": "seedream4.0"},
+        "canonical_model": {"const": "seedream_4.0"},
+        "ratio": {"const": "9:16"},
+        "resolution": {"const": "2K"},
+        "count": {"const": 1},
+        "prompt_max_chars": {"const": 2000},
+        "modes": {"const": ["t2i", "i2i"]},
+        "max_reference_images": {"const": 6},
+        "discovery_required_before_execution": {"const": true}
+      }
+    },
+    "execution_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create_csv", "generate_first_frames", "download_first_frames", "create_feishu_drafts", "submit_h3", "requires_user_confirmation_for_image_credits", "requires_user_confirmation_for_h3_submission"],
+      "properties": {
+        "create_csv": {"const": true},
+        "generate_first_frames": {"const": true},
+        "download_first_frames": {"const": true},
+        "create_feishu_drafts": {"const": true},
+        "submit_h3": {"const": false},
+        "requires_user_confirmation_for_image_credits": {"const": true},
+        "requires_user_confirmation_for_h3_submission": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "field_base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^fld[A-Za-z0-9]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "type": {"type": "string"}
+      }
+    },
+    "text_field": {"allOf": [{"$ref": "#/$defs/field_base"}, {"properties": {"type": {"const": "text"}}}]},
+    "select_field": {"allOf": [{"$ref": "#/$defs/field_base"}, {"properties": {"type": {"const": "select"}}}]},
+    "number_field": {"allOf": [{"$ref": "#/$defs/field_base"}, {"properties": {"type": {"const": "number"}}}]},
+    "attachment_field": {"allOf": [{"$ref": "#/$defs/field_base"}, {"properties": {"type": {"const": "attachment"}}}]},
+    "user_field": {"allOf": [{"$ref": "#/$defs/field_base"}, {"properties": {"type": {"const": "user"}}}]}
+  }
+}

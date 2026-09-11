@@ -2,6 +2,22 @@
 
 ## 当前状态
 
+### Phase 16：飞书 H3 任务队列适配器（本地合同与 CLI 已完成）
+
+- 已只读调研“自动化视频生产队 / AI视频批量任务”表的字段、视图、历史记录和 Base 工作流；
+- 已形成 [飞书 H3 任务表接入方案](feishu-h3-base-integration-plan.md)，保留现有 CSV 合同，
+  同批通过官方 Dreamina CLI 使用 `seedream_4.0`、9:16、2K、count=1 生成首帧，下载验收后
+  镜像写入飞书草稿；用户审阅完成后才把精确记录切换为“待生成”；
+- 飞书草稿默认参数确定为 15 秒、9:16、720p、生成数量 1、首帧图生视频，并使用用户指定的
+  固定提交人；
+- 已新增严格 interface、草稿清单和执行回执模型与 JSON Schema，以及
+  `preflight-feishu-h3`、`render-feishu-h3-drafts`、`validate-feishu-h3-receipt` 三个 CLI；
+- 配置不保存固定提交人的个人 ID，只保存运行时 binding key；参考图 URL 同样不进入执行清单；
+- 本地命令不调用 Dreamina、飞书或 H3；实际发布由 Codex 通过官方工具执行，并以下载文件
+  SHA-256、Dreamina 身份、飞书附件 token 与 record ID 回执验收；
+- 当前仍未修改飞书表格、未生成首帧、未触发 H3。切换“待生成”保持独立人工批准边界；
+- 上线运行前仍需实时复核 Dreamina 模型 schema、飞书字段/枚举与外部 worker 触发条件。
+
 ### Phase 15：GPT-5.6 文案 Prompt 减约束（已完成）
 
 - 生产模板移除固定 20/50/30、固定信息流、动作教学、长反向示例和完整三模式审计说明；

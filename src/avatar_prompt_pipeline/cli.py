@@ -32,6 +32,13 @@ from .dreamina import (
     load_dreamina_video_node_draft,
     save_dreamina_video_node,
 )
+from .feishu_h3 import (
+    FeishuH3Error,
+    build_draft_batch,
+    load_interface_config,
+    validate_publish_receipt,
+    write_draft_batch,
+)
 from .io import serialize_package, write_package
 from .learning.asr_provider import AsrProviderError, AsrWorkerConfig
 from .learning.models import CandidateKind, LearningCandidate, LearningStatus
@@ -74,6 +81,8 @@ GENERATION_COMMANDS = frozenset(
         "validate-batch",
         "package",
         "export-csv",
+        "preflight-feishu-h3",
+        "render-feishu-h3-drafts",
     }
 )
 
@@ -247,6 +256,34 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="转交 Dreamina CLI 做纯本地校验，不连接服务端或保存节点",
+    )
+    preflight_feishu_h3 = commands.add_parser(
+        "preflight-feishu-h3",
+        help="校验任务清单并渲染 Dreamina 首帧与飞书草稿计划，不写文件或外部提交",
+    )
+    preflight_feishu_h3.add_argument("--input", required=True, help="已填写的任务清单 JSON")
+    preflight_feishu_h3.add_argument(
+        "--interface", type=Path, required=True, help="飞书 H3 interface JSON"
+    )
+    _add_campaign_arguments(preflight_feishu_h3)
+    _add_generation_learning_gate_argument(preflight_feishu_h3)
+    render_feishu_h3 = commands.add_parser(
+        "render-feishu-h3-drafts",
+        help="校验任务清单并原子写出 Dreamina 首帧与飞书草稿执行清单",
+    )
+    render_feishu_h3.add_argument("--input", required=True, help="已填写的任务清单 JSON")
+    render_feishu_h3.add_argument(
+        "--interface", type=Path, required=True, help="飞书 H3 interface JSON"
+    )
+    render_feishu_h3.add_argument("--output", type=Path, required=True, help="草稿清单 JSON")
+    _add_campaign_arguments(render_feishu_h3)
+    _add_generation_learning_gate_argument(render_feishu_h3)
+    validate_feishu_h3_receipt = commands.add_parser(
+        "validate-feishu-h3-receipt",
+        help="校验 Dreamina 下载、CSV 与飞书草稿写入回执",
+    )
+    validate_feishu_h3_receipt.add_argument(
+        "--receipt", type=Path, required=True, help="飞书 H3 发布回执 JSON"
     )
     transcribe = commands.add_parser(
         "learning-transcribe", help="从显式本地媒体创建 ASR 文案学习候选"
@@ -592,6 +629,13 @@ def run(argv: Sequence[str] | None = None) -> int:
                 file=sys.stderr,
             )
         return completed.returncode
+    if args.command == "validate-feishu-h3-receipt":
+        try:
+            receipt_report = validate_publish_receipt(args.receipt)
+        except FeishuH3Error as exc:
+            raise SystemExit(str(exc)) from exc
+        print(json.dumps(receipt_report.to_dict(), ensure_ascii=False, indent=2))
+        return 0 if receipt_report.is_valid else 1
     config = _load_config_from_args(args)
     campaign = _campaign_from_args(args, config)
     validation_config = (
@@ -601,7 +645,13 @@ def run(argv: Sequence[str] | None = None) -> int:
         report = validate_copy(args.text, campaign, validation_config)
         print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
         return 0 if report.is_valid else 1
-    if args.command in {"validate-batch", "package", "export-csv"}:
+    if args.command in {
+        "validate-batch",
+        "package",
+        "export-csv",
+        "preflight-feishu-h3",
+        "render-feishu-h3-drafts",
+    }:
         batch = _load_batch(str(args.input))
         if config is not None and config.brief.category != batch.category:
             raise SystemExit(
@@ -614,6 +664,31 @@ def run(argv: Sequence[str] | None = None) -> int:
         if not batch_report["is_valid"]:
             print(json.dumps(batch_report, ensure_ascii=False, indent=2))
             return 1
+        if args.command in {"preflight-feishu-h3", "render-feishu-h3-drafts"}:
+            try:
+                interface = load_interface_config(args.interface)
+                draft_batch = build_draft_batch(batch, interface)
+                if args.command == "preflight-feishu-h3":
+                    payload: dict[str, object] = {
+                        "is_valid": True,
+                        "review_required": True,
+                        "draft_batch": draft_batch.to_dict(),
+                    }
+                else:
+                    destination = write_draft_batch(args.output, draft_batch)
+                    payload = {
+                        "is_valid": True,
+                        "review_required": True,
+                        "draft_manifest": str(destination),
+                        "batch_fingerprint": draft_batch.batch_fingerprint,
+                        "task_count": len(draft_batch.tasks),
+                        "paid_image_generation_submitted": False,
+                        "h3_generation_submitted": False,
+                    }
+            except (FeishuH3Error, FileExistsError) as exc:
+                raise SystemExit(str(exc)) from exc
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
         formats = (
             ("csv",)
             if args.command == "export-csv"

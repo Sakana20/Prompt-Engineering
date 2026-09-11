@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/feishu-h3-draft-batch.schema.json",
+  "title": "Feishu H3 draft execution manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_schema_version", "task_name", "category", "interface_schema_version", "base_token", "table_id", "view_id", "batch_fingerprint", "tasks", "runtime_checks_required", "paid_image_generation_submitted", "h3_generation_submitted"],
+  "properties": {
+    "schema_version": {"const": "feishu-h3-draft-batch/v1"},
+    "source_schema_version": {"type": "string", "minLength": 1},
+    "task_name": {"type": "string", "minLength": 1},
+    "category": {"type": "string", "minLength": 1},
+    "interface_schema_version": {"const": "feishu-h3-interface/v1"},
+    "base_token": {"type": "string", "minLength": 1},
+    "table_id": {"type": "string", "pattern": "^tbl[A-Za-z0-9]+$"},
+    "view_id": {"type": "string", "pattern": "^vew[A-Za-z0-9]+$"},
+    "batch_fingerprint": {"$ref": "#/$defs/sha256"},
+    "tasks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/task"}},
+    "runtime_checks_required": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "paid_image_generation_submitted": {"const": false},
+    "h3_generation_submitted": {"const": false}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["field_key", "field_id", "field_name", "binding_key", "required"],
+      "properties": {
+        "field_key": {"type": "string", "minLength": 1}, "field_id": {"type": "string", "pattern": "^fld[A-Za-z0-9]+$"}, "field_name": {"type": "string", "minLength": 1}, "binding_key": {"type": "string", "minLength": 1}, "required": {"const": true}
+      }
+    },
+    "task": {
+      "type": "object", "additionalProperties": false,
+      "required": ["task_id", "task_fingerprint", "csv_row_number", "dreamina", "feishu"],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+        "task_fingerprint": {"$ref": "#/$defs/sha256"},
+        "csv_row_number": {"type": "integer", "minimum": 2},
+        "dreamina": {
+          "type": "object", "additionalProperties": false,
+          "required": ["business_key", "title", "mode", "model", "ratio", "resolution", "count", "prompt", "reference_binding_key", "discovery_required", "credit_confirmation_required_when_quoted", "terminal_resource_required", "download_required"],
+          "properties": {
+            "business_key": {"type": "string", "minLength": 1}, "title": {"type": "string", "minLength": 1}, "mode": {"enum": ["t2i", "i2i"]}, "model": {"const": "seedream_4.0"}, "ratio": {"const": "9:16"}, "resolution": {"const": "2K"}, "count": {"const": 1}, "prompt": {"type": "string", "minLength": 1, "maxLength": 2000}, "reference_binding_key": {"type": "string"}, "discovery_required": {"const": true}, "credit_confirmation_required_when_quoted": {"const": true}, "terminal_resource_required": {"const": true}, "download_required": {"const": true}
+          }
+        },
+        "feishu": {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_values", "first_frame", "submitter"],
+          "properties": {
+            "record_values": {"type": "array", "minItems": 10, "items": {"type": "object", "additionalProperties": false, "required": ["field_key", "field_id", "field_name", "value"], "properties": {"field_key": {"type": "string", "minLength": 1}, "field_id": {"type": "string", "pattern": "^fld[A-Za-z0-9]+$"}, "field_name": {"type": "string", "minLength": 1}, "value": {"type": ["string", "integer", "array"]}}}},
+            "first_frame": {"$ref": "#/$defs/runtime_binding"},
+            "submitter": {"$ref": "#/$defs/runtime_binding"}
+          }
+        }
+      }
+    }
+  }
+}

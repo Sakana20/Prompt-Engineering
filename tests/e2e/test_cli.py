@@ -607,3 +607,67 @@ def test_agent_can_fill_template_and_export_csv_without_writing_code(
     assert export_output["written"] == [str(csv_path)]
     assert csv_path.is_file()
     assert "[[NO_SPLIT]]" not in csv_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.e2e
+def test_feishu_h3_cli_renders_reviewable_draft_without_external_submission(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "batch.json"
+    source.write_text(
+        json.dumps(
+            {
+                "task_name": "h3-draft-batch",
+                "category": "水果",
+                "tasks": [
+                    {
+                        "task_id": "TASK-001",
+                        "marked_script": "完整口播正文",
+                        "avatar_prompt": "人物自然口播，固定机位。",
+                        "identity_key": "identity",
+                        "outfit_key": "outfit",
+                        "person_prompt": "竖屏真实生活化人物首帧",
+                        "title": "水果场景",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    interface = Path(__file__).resolve().parents[2] / "configs/interfaces/feishu-h3.json"
+    destination = tmp_path / "h3-draft.json"
+
+    def valid_batch_report(_batch: object, _campaign: object, _config: object) -> dict[str, object]:
+        return {"is_valid": True}
+
+    monkeypatch.setattr(cli_module, "_validate_generated_batch", valid_batch_report)
+    result = run(
+        [
+            "render-feishu-h3-drafts",
+            "--input",
+            str(source),
+            "--interface",
+            str(interface),
+            "--output",
+            str(destination),
+            "--preset",
+            "none",
+        ]
+    )
+
+    output: dict[str, Any] = json.loads(capsys.readouterr().out)
+    manifest: dict[str, Any] = json.loads(destination.read_text(encoding="utf-8"))
+    assert result == 0
+    assert output["review_required"] is True
+    assert output["paid_image_generation_submitted"] is False
+    assert output["h3_generation_submitted"] is False
+    assert manifest["tasks"][0]["dreamina"]["model"] == "seedream_4.0"
+    status = next(
+        cell
+        for cell in manifest["tasks"][0]["feishu"]["record_values"]
+        if cell["field_key"] == "status"
+    )
+    assert status["value"] == ["草稿"]

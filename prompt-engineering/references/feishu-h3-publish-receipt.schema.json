@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/prompt-engineering/feishu-h3-publish-receipt.schema.json",
+  "title": "Feishu H3 draft publication receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "draft_batch_fingerprint", "csv", "tasks"],
+  "properties": {
+    "schema_version": {"const": "feishu-h3-publish-receipt/v1"},
+    "draft_batch_fingerprint": {"$ref": "#/$defs/sha256"},
+    "csv": {"$ref": "#/$defs/file"},
+    "tasks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/task"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {"type": "string", "format": "uuid"},
+    "file": {"type": "object", "additionalProperties": false, "required": ["path", "size_bytes", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "size_bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"}}},
+    "task": {
+      "type": "object", "additionalProperties": false,
+      "required": ["task_id", "task_fingerprint", "stage", "dreamina", "first_frame", "feishu"],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}, "task_fingerprint": {"$ref": "#/$defs/sha256"}, "stage": {"const": "draft_created"},
+        "dreamina": {"type": "object", "additionalProperties": false, "required": ["project_id", "node_id", "submit_id", "operation_ref", "resource_id"], "properties": {"project_id": {"$ref": "#/$defs/uuid"}, "node_id": {"type": "string", "pattern": "^node_[A-Za-z0-9_-]+$"}, "submit_id": {"$ref": "#/$defs/uuid"}, "operation_ref": {"$ref": "#/$defs/uuid"}, "resource_id": {"$ref": "#/$defs/uuid"}}},
+        "first_frame": {"$ref": "#/$defs/image_file"},
+        "feishu": {"type": "object", "additionalProperties": false, "required": ["record_id", "attachment_token", "status"], "properties": {"record_id": {"type": "string", "pattern": "^rec[A-Za-z0-9]+$"}, "attachment_token": {"type": "string", "minLength": 1}, "status": {"const": "草稿"}}}
+      }
+    },
+    "image_file": {"type": "object", "additionalProperties": false, "required": ["path", "size_bytes", "sha256", "media_type"], "properties": {"path": {"type": "string", "minLength": 1}, "size_bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"}, "media_type": {"enum": ["image/png", "image/jpeg", "image/webp"]}}}
+  }
+}

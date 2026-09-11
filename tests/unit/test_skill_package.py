@@ -28,6 +28,9 @@ def test_skill_has_required_frontmatter_and_runtime_resources() -> None:
     assert (SKILL_ROOT / "references" / "person-prompt-source-blocks.md").is_file()
     assert (SKILL_ROOT / "references" / "person-prompt-block-contracts.md").is_file()
     assert (SKILL_ROOT / "references" / "validation-config.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "feishu-h3-interface.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "feishu-h3-draft-batch.schema.json").is_file()
+    assert (SKILL_ROOT / "references" / "feishu-h3-publish-receipt.schema.json").is_file()
     assert (SKILL_ROOT / "scripts" / "run_cli.py").is_file()
     assert "$smartsplit" not in skill.lower()
     assert "invoke smartsplit" not in skill.lower()
@@ -174,6 +177,9 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
     package = schema["oneOf"][3]["properties"]
     init_batch = schema["oneOf"][4]["properties"]
     export_csv = schema["oneOf"][5]["properties"]
+    preflight_feishu_h3 = schema["oneOf"][-3]["properties"]
+    render_feishu_h3 = schema["oneOf"][-2]["properties"]
+    validate_feishu_h3_receipt = schema["oneOf"][-1]["properties"]
 
     assert set(compose) == {
         "command",
@@ -246,6 +252,19 @@ def test_cli_schema_covers_every_existing_cli_parameter() -> None:
         "config",
         "learning_root",
     }
+    assert set(preflight_feishu_h3) == {
+        "command",
+        "input",
+        "interface",
+        "preset",
+        "platform",
+        "campaign_name",
+        "benefit_point",
+        "config",
+        "learning_root",
+    }
+    assert set(render_feishu_h3) == set(preflight_feishu_h3) | {"output"}
+    assert set(validate_feishu_h3_receipt) == {"command", "receipt"}
     assert set(schema["$defs"]["launcher"]["properties"]) == {
         "project_root",
         "debug",
