@@ -80,6 +80,7 @@ _ALLOWED_VALIDATION_CONFIG_KEYS = {
     "max_characters",
     "banned_expressions",
     "call_to_actions",
+    "required_ending_call_to_actions",
     "format_prefixes",
     "forbid_numeric_redpacket_amounts",
 }
@@ -280,6 +281,14 @@ def validation_config_from_mapping(data: dict[str, Any]) -> ValidationConfig:
                 _expect_string_tuple(data.get("call_to_actions"), field="call_to_actions")
                 if "call_to_actions" in data
                 else default_config.call_to_actions
+            ),
+            required_ending_call_to_actions=(
+                _expect_string_tuple(
+                    data.get("required_ending_call_to_actions"),
+                    field="required_ending_call_to_actions",
+                )
+                if "required_ending_call_to_actions" in data
+                else default_config.required_ending_call_to_actions
             ),
             format_prefixes=(
                 _expect_string_tuple(data.get("format_prefixes"), field="format_prefixes")

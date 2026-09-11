@@ -128,12 +128,14 @@ uv run avatar-prompts compose --config configs/projects/taobao-instant-commerce-
 `creative_brief` 只包含受众、传播目标、voice 和最多三条偏好，不参与确定性校验；校验仍由
 活动契约、禁词、行动引导和格式规则负责。兼容字段 `language_style` 仍可读取，但不能与
 `creative_brief` 同时配置，且只会先转换为精简 brief，不会把旧字段全文注入创作 Prompt。
-`validation_config_path` 指向独立校验配置，校验配置决定字数、禁词、行动引导禁用词和格式
-前缀；不要在项目口径里维护 CTA 许可列表。
+`validation_config_path` 指向独立校验配置，校验配置决定字数、禁词、行动引导禁用词、
+`required_ending_call_to_actions` 结尾许可列表和格式前缀；不要在项目 creative brief 中维护
+CTA 许可列表。
 完整校验配置 schema 见 [validation-config.schema.json](validation-config.schema.json)。
 `forbid_numeric_redpacket_amounts=true` 时，成稿不得出现阿拉伯数字或中文数字的红包金额；
 该开关默认关闭，当前由 `configs/validation/taobao-compliance.json` 开启。
-该合规校验配置与 25 元项目一样不设置行动引导禁用词，以便美食外卖投流口播在结尾使用自然引导语。
+该合规校验配置与 25 元项目一样不设置行动引导禁用词，并要求正文以配置中的一条完整自然
+引导语收尾。12 元项目未配置该要求，继续沿用原有行动引导禁用规则。
 `confirmed_claims` 是确认可用但不强制每条都写入的活动事实或商品场景；不得从样本文案中
 扩展出未确认品牌、价格、商品范围或配送承诺。
 

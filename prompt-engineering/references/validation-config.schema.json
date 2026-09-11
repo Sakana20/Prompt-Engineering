@@ -23,6 +23,12 @@
       "type": "array",
       "items": {"type": "string", "minLength": 1}
     },
+    "required_ending_call_to_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "default": [],
+      "description": "非空时，正文必须以其中任一完整行动引导语收尾"
+    },
     "format_prefixes": {
       "type": "array",
       "items": {"type": "string", "minLength": 1}

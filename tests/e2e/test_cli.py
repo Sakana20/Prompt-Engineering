@@ -63,7 +63,13 @@ def test_compose_cli_uses_project_config_without_default_campaign(
     config_path = tmp_path / "taobao-25-project.json"
     validation_path = tmp_path / "promo-validation.json"
     validation_path.write_text(
-        json.dumps({"call_to_actions": ["直播间", "立即购买"]}, ensure_ascii=False),
+        json.dumps(
+            {
+                "call_to_actions": ["直播间", "立即购买"],
+                "required_ending_call_to_actions": ["点下方链接看看。"],
+            },
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
     )
     config_path.write_text(
@@ -100,10 +106,12 @@ def test_compose_cli_uses_project_config_without_default_campaign(
     assert output["campaign"]["benefit_points"][0]["text"] == "最高25元无门槛红包"
     assert output["campaign"]["forbidden_expressions"] == ["最高12元无门槛红包"]
     assert output["validation_config"]["call_to_actions"] == ["直播间", "立即购买"]
+    assert output["validation_config"]["required_ending_call_to_actions"] == ["点下方链接看看。"]
     assert output["language_style"]["name"] == "benefit-forward-promo"
     assert "表达声音：自然直接" in output["copywriting_prompt"]
     assert output["copy_mode"] == "natural_generate"
     assert "禁止出现以下行动引导：直播间、立即购买" in output["copywriting_prompt"]
+    assert "正文必须以以下任一完整行动引导语收尾" in output["copywriting_prompt"]
     assert (
         f"利益点[primary-benefit]：[[NO_SPLIT]]{REQUIRED_BENEFIT}"
         not in output["copywriting_prompt"]

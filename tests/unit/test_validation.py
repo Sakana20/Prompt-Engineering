@@ -467,6 +467,40 @@ def test_call_to_action_rules_come_from_validation_config() -> None:
     assert any(issue.code is IssueCode.CALL_TO_ACTION for issue in validate_copy(copy).issues)
 
 
+def test_configured_ending_call_to_action_is_required_at_the_end() -> None:
+    config = ValidationConfig(
+        min_characters=1,
+        max_characters=200,
+        banned_expressions=(),
+        call_to_actions=(),
+        required_ending_call_to_actions=(
+            "点下方链接看看。",
+            "点开下面的链接看看吧。",
+        ),
+    )
+    valid_copy = "午后想喝杯奶茶，附近门店有不少口味可以慢慢挑。点下方链接看看。"
+    missing_copy = "午后想喝杯奶茶，附近门店有不少口味可以慢慢挑。"
+    misplaced_copy = "点下方链接看看。午后想喝杯奶茶，附近门店有不少口味可以慢慢挑。"
+
+    assert validate_copy(valid_copy, CampaignSpec(), config).is_valid is True
+    for copy in (missing_copy, misplaced_copy):
+        report = validate_copy(copy, CampaignSpec(), config)
+        assert any(issue.code is IssueCode.MISSING_ENDING_CALL_TO_ACTION for issue in report.issues)
+
+
+def test_empty_required_ending_call_to_actions_preserves_existing_behavior() -> None:
+    config = ValidationConfig(
+        min_characters=1,
+        max_characters=200,
+        banned_expressions=(),
+        call_to_actions=(),
+    )
+
+    report = validate_copy("这条正文不需要行动引导语。", CampaignSpec(), config)
+
+    assert report.is_valid is True
+
+
 def test_project_no_split_phrase_must_wrap_combined_benefit_text() -> None:
     campaign = CampaignSpec(
         platform="淘宝闪购",

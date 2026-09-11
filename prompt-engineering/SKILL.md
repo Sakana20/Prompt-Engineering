@@ -115,8 +115,10 @@ help, tests, or Skill validation.
    - when no benefit is supplied and no preset is selected, do not invent promotions, amounts,
      thresholds, or platform benefits.
 6. Validate every copy before continuing:
-   - reject banned words and only the click/purchase calls to action configured for the active
-     validation config;
+   - reject banned words and the prohibited click/purchase calls to action configured for the
+     active validation config;
+   - when `required_ending_call_to_actions` is non-empty, require the copy to end with one complete
+     configured phrase and do not append any content after it;
    - use only confirmed product facts;
    - output natural prose, not a title, list, explanation, or Markdown.
    When working from this repository, run `uv run avatar-prompts validate-copy '<copy>'` with
@@ -276,7 +278,8 @@ Compatibility defaults:
   any promotional benefit.
 - If the user selects `configs/projects/taobao-instant-commerce-regular.json`, follow the 25-yuan
   project structure with required `最高25元无门槛红包` and optional `0.1元起`, but never use either
-  `9折津贴卡` or `九折津贴卡`.
+  `9折津贴卡` or `九折津贴卡`. End every copy with one complete CTA from the active validation
+  config.
 - If the user selects the project configuration
   `configs/projects/taobao-instant-commerce-compliance.json`, require the exact benefit `大额红包`
   and use only food-delivery scenarios such as coffee, milk tea, or fried chicken. Follow the
@@ -284,7 +287,7 @@ Compatibility defaults:
   do not use the 12-yuan project's retail/lifestyle structure. `优惠价`、`活动价`、`福利价` and
   similar fuzzy wording may be used only without a concrete amount. Its validation configuration enables
   `forbid_numeric_redpacket_amounts`; never write an Arabic-numeral or Chinese-numeral redpacket
-  amount for this project.
+  amount for this project. End every copy with one complete CTA from the active validation config.
 - If the user provides a project configuration file, treat it as the complete project mouthpiece:
   use its product facts, campaign facts, benefit points, forbidden expressions, and disclosures.
   Use its `creative_brief` to guide audience, communication goal, voice, and at most three creative

@@ -65,7 +65,8 @@ Prompt 指导 Codex 选择自然切口，但不参与确定性校验。`Language
 模型存在，读取后先转换成 `CreativeBrief`，不会把旧字段和长负面词表全文注入 Prompt。
 
 `GeneratedScript` 与 `AvatarVideoPrompt` 表示 Codex 的两层生成结果。文案必须先通过
-`CopyValidationReport`：字符数、活动契约、禁词、行动引导和格式均合格后，才进入
+`CopyValidationReport`：字符数、活动契约、禁词、禁止行动引导、项目要求的结尾行动引导语和
+格式均合格后，才进入
 数字人 Prompt 阶段。批量结果另以二元字符 Jaccard 相似度检测重复和高同质内容；该指标
 只做保守预警，不能替代 Codex 对场景和表达差异的语义判断。
 
@@ -85,10 +86,11 @@ Prompt 指导 Codex 选择自然切口，但不参与确定性校验。`Language
 3. 在实现计划中记录变更；
 4. 对代表性品类重新验收。
 
-文案模板 `2026-08-13-gpt-5-6-lean-copy-prompt-v25` 定位为“结果导向的生活化分享”：只定义
+文案模板 `2026-09-10-required-ending-cta-v26` 定位为“结果导向的生活化分享”：只定义
 真人口语感、商品动机、事实清晰、利益点自然融入和信息密度等成功标准，不规定内容比例或
-固定信息流。确定性校验负责字数、活动利益点、禁词、行动引导和单段格式；自然度与创意差异
-由 Codex 和人工审核判断。
+固定信息流。确定性校验负责字数、活动利益点、禁词、行动引导和单段格式；当项目配置
+`required_ending_call_to_actions` 时，还要求正文以允许句式之一完整收尾。自然度与创意差异由
+Codex 和人工审核判断。
 
 跑量样本由 `volume-copy-source-blocks.md` 保存审核后的真人原句块。批次采用三模式：
 `human_rewrite` 固定占 `floor(N/2)`；其余条目优先 `source_fill`，不兼容时使用
@@ -134,7 +136,8 @@ CSV 代码生成职责，因此不会在不同任务中重复实现或漂移字�
 无门槛红包项目与 25 元无门槛红包项目应拆成两个配置文件，分别禁止另一个利益点口径。
 “淘宝闪购常规”也使用独立配置：继承 25 元利益点结构，但移除津贴卡并显式禁止两种数字写法。
 CLI 传入 `--config` 后只使用该配置中的商品与活动事实，不再叠加默认预设或其他活动参数。
-行动引导禁用词和 `forbid_numeric_redpacket_amounts` 由独立校验配置维护，
+行动引导禁用词、`required_ending_call_to_actions` 和 `forbid_numeric_redpacket_amounts`
+由独立校验配置维护，
 项目配置只引用对应校验配置路径。
 
 Skill 使用透明 CLI 启动器调用仓库入口，不复制或删减底层参数。CLI 与 Skill 配置分别由

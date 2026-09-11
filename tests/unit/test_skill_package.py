@@ -76,7 +76,8 @@ def test_skill_ui_prompt_explicitly_invokes_skill() -> None:
 def test_copywriting_rules_define_lean_dynamic_prompt_contract() -> None:
     rules = (SKILL_ROOT / "references" / "copywriting-rules.md").read_text(encoding="utf-8")
 
-    assert "不使用固定开头、信息比例或结尾结构" in rules
+    assert "不使用固定开头或信息比例" in rules
+    assert "required_ending_call_to_actions" in rules
     assert "creative_brief" in rules
     assert "生成后使用与当前项目完全匹配的 `validate-copy`" in rules
     assert "约占全文 20%" not in rules
@@ -286,7 +287,7 @@ def test_skill_config_schema_preserves_runtime_capabilities() -> None:
     assert "avoid_phrases" in properties["language_style"]["properties"]
 
 
-def test_validation_config_schema_exposes_numeric_redpacket_rule() -> None:
+def test_validation_config_schema_exposes_project_specific_rules() -> None:
     schema = json.loads(
         (SKILL_ROOT / "references" / "validation-config.schema.json").read_text(encoding="utf-8")
     )
@@ -294,6 +295,9 @@ def test_validation_config_schema_exposes_numeric_redpacket_rule() -> None:
     rule = schema["properties"]["forbid_numeric_redpacket_amounts"]
     assert rule["type"] == "boolean"
     assert rule["default"] is False
+    ending_rule = schema["properties"]["required_ending_call_to_actions"]
+    assert ending_rule["type"] == "array"
+    assert ending_rule["default"] == []
 
 
 def test_single_skill_is_generalized_with_campaign_contract() -> None:

@@ -22,7 +22,8 @@ Auto Oceanengine、LibTV 等下游执行器必须由用户另行确认后再运�
   校验器仍拒绝成稿中的跨季表达，并拦截任务未确认的实时天气描述。
 - 文案和人物正式学习库均完整保存；`natural_generate` 不读取真人文案块，`source_fill` 与
   `human_rewrite` 各只注入当前最终选择的一个块。人物 Prompt 仍按任务最多注入 10 个变量块。
-- 校验活动利益点、平台名、禁词、行动引导、`[[NO_SPLIT]]` 标签完整性、批量文案相似度及
+- 校验活动利益点、平台名、禁词、禁止行动引导，以及项目要求的结尾行动引导语、
+  `[[NO_SPLIT]]` 标签完整性、批量文案相似度及
   50% 改写比例、三模式字段边界和原文块来源去重；另外拦截饮品套用饱腹逻辑，以及平台、红包、
   津贴或配送被填入商品组成插槽。
 - 支持“淘宝闪购合规”美食外卖项目配置：沿用 25 元项目的福利前置投流口径和行动引导，
@@ -128,7 +129,9 @@ task_id,person_prompt,script,aspect_ratio,voice,title,notes,reference_image_uri,
 `configs/projects/taobao-instant-commerce-compliance.json` 是无数字红包金额的美食外卖口径，
 其品类、投流风格、配送场景和行动引导规则与 25 元项目一致，
 引用 `configs/validation/taobao-compliance.json`。后者开启
-`forbid_numeric_redpacket_amounts`，不影响现有 12 元和 25 元项目。
+`forbid_numeric_redpacket_amounts`，并通过 `required_ending_call_to_actions` 要求正文以配置的
+九种自然引导语之一收尾。25 元与常规项目通过 `taobao-25-promo.json` 使用同一结尾要求；
+12 元项目保持原有规则，不要求结尾引导语。
 
 兼容预设：
 

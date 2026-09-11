@@ -28,6 +28,11 @@ def _call_to_action_rules(validation_config: ValidationConfig) -> str:
         rules.append("禁止出现以下行动引导：" + "、".join(validation_config.call_to_actions) + "。")
     else:
         rules.append("当前校验配置没有额外行动引导禁词。")
+    if validation_config.required_ending_call_to_actions:
+        rules.append(
+            "正文必须以以下任一完整行动引导语收尾，引导语后不得再添加其他内容："
+            + "；".join(validation_config.required_ending_call_to_actions)
+        )
     if validation_config.forbid_numeric_redpacket_amounts:
         rules.append("禁止出现任何阿拉伯数字或中文数字的红包金额；只能使用已确认的模糊福利表达。")
     return "\n".join(rules)

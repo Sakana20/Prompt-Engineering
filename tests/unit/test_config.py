@@ -147,6 +147,7 @@ def test_load_project_config_uses_referenced_validation_config(tmp_path: Path) -
         tmp_path / "promo-validation.json",
         {
             "call_to_actions": ["直播间"],
+            "required_ending_call_to_actions": ["点下方链接看看。"],
             "forbid_numeric_redpacket_amounts": True,
         },
     )
@@ -161,6 +162,7 @@ def test_load_project_config_uses_referenced_validation_config(tmp_path: Path) -
     config = load_project_config(source)
 
     assert config.validation_config.call_to_actions == ("直播间",)
+    assert config.validation_config.required_ending_call_to_actions == ("点下方链接看看。",)
     assert config.validation_config.forbid_numeric_redpacket_amounts is True
 
 

@@ -437,6 +437,16 @@ def validate_copy(
     for expression in validation_config.call_to_actions:
         if expression in cleaned:
             issues.append(ValidationIssue(IssueCode.CALL_TO_ACTION, "出现行动引导", expression))
+    ending_scope = strip_no_split_markers(cleaned)
+    required_endings = validation_config.required_ending_call_to_actions
+    if required_endings and not any(ending_scope.endswith(ending) for ending in required_endings):
+        issues.append(
+            ValidationIssue(
+                IssueCode.MISSING_ENDING_CALL_TO_ACTION,
+                "正文必须以项目配置允许的行动引导语收尾",
+                "；".join(required_endings),
+            )
+        )
     if "\n" in cleaned or cleaned.startswith(validation_config.format_prefixes):
         issues.append(
             ValidationIssue(

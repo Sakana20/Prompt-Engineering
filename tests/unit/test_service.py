@@ -46,7 +46,7 @@ def test_compose_prompt_package_injects_only_confirmed_product_context() -> None
     assert "禁止出现以下行动引导" in package.copywriting_prompt
     assert package.language_style.name == "product-led-conversational"
     assert package.copy_mode == "natural_generate"
-    assert package.template_version == "2026-08-13-gpt-5-6-lean-copy-prompt-v25"
+    assert package.template_version == "2026-09-10-required-ending-cta-v26"
     assert "{{SCRIPT}}" in package.avatar_prompt_template
     assert package.review_required is True
 
@@ -119,12 +119,17 @@ def test_compose_prompt_package_renders_validation_call_to_actions() -> None:
             benefit_points=(BenefitPoint(id="primary-benefit", text="最高25元无门槛红包"),),
             confirmed_claims=("可提及配送到家",),
         ),
-        validation_config=ValidationConfig(call_to_actions=("直播间", "点击视频下方链接")),
+        validation_config=ValidationConfig(
+            call_to_actions=("直播间", "点击视频下方链接"),
+            required_ending_call_to_actions=("点下方链接看看。", "点开下面的链接看看吧。"),
+        ),
     )
 
     assert "已确认可用信息：可提及配送到家" in package.copywriting_prompt
     assert "平台：未指定" in package.copywriting_prompt
     assert "禁止出现以下行动引导：直播间、点击视频下方链接" in package.copywriting_prompt
+    assert "正文必须以以下任一完整行动引导语收尾" in package.copywriting_prompt
+    assert "点下方链接看看。；点开下面的链接看看吧。" in package.copywriting_prompt
 
 
 def test_compose_prompt_package_renders_numeric_redpacket_compliance_rule() -> None:

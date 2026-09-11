@@ -51,6 +51,7 @@ class IssueCode(StrEnum):
     MALFORMED_NO_SPLIT_MARKER = "MALFORMED_NO_SPLIT_MARKER"
     BANNED_EXPRESSION = "BANNED_EXPRESSION"
     CALL_TO_ACTION = "CALL_TO_ACTION"
+    MISSING_ENDING_CALL_TO_ACTION = "MISSING_ENDING_CALL_TO_ACTION"
     FORMAT_VIOLATION = "FORMAT_VIOLATION"
     DUPLICATE_COPY = "DUPLICATE_COPY"
     HIGH_SIMILARITY = "HIGH_SIMILARITY"
@@ -254,6 +255,7 @@ class ValidationConfig:
         "快叫上",
         "直播间",
     )
+    required_ending_call_to_actions: tuple[str, ...] = ()
     format_prefixes: tuple[str, ...] = ("#", "-", "*", "1.", "1、", "①")
     forbid_numeric_redpacket_amounts: bool = False
 
@@ -271,6 +273,13 @@ class ValidationConfig:
             self,
             "call_to_actions",
             tuple(value for item in self.call_to_actions if (value := _clean(item))),
+        )
+        object.__setattr__(
+            self,
+            "required_ending_call_to_actions",
+            tuple(
+                value for item in self.required_ending_call_to_actions if (value := _clean(item))
+            ),
         )
         object.__setattr__(
             self,
